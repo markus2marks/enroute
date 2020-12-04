@@ -92,7 +92,8 @@ set(SOURCES
     SatNav.h
     ScaleQuickItem.h
     Waypoint.h
-
+	Flarm.h
+	
     # C++ files
     Aircraft.cpp
     Airspace.cpp
@@ -123,6 +124,7 @@ set(SOURCES
     TileServer.cpp
     Waypoint.cpp
     Wind.cpp
+    Flarm.cpp
     )
 
 
@@ -216,7 +218,7 @@ if (NOT ANDROID)
 
     # Add executable and libraries
     add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg qhttpengine kdsingleapplication sunset)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg Qt5::SerialPort qhttpengine kdsingleapplication sunset)
     target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src)
 
     # Install

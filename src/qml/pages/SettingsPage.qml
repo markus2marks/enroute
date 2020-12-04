@@ -192,6 +192,39 @@ Page {
                     dialogLoader.active = true
                 }
             }
+            
+            Label {
+                Layout.leftMargin: Qt.application.font.pixelSize
+                text: qsTr("externe Geräte")
+                font.pixelSize: Qt.application.font.pixelSize*1.2
+                font.bold: true
+                color: Material.primary
+            }
+            
+             ItemDelegate {
+                text: qsTr("Flarm")
+                      +`<br><font color="#606060" size="2">`
+                      + qsTr("Current Status")
+                      + `: ${satNav.statusAsString}</font>`
+                icon.source: "/icons/material/flarm.svg"
+                icon.color: Material.primary
+                Layout.fillWidth: true
+                onClicked: {
+                    mobileAdaptor.vibrateBrief()
+                    dialogLoader.active = false
+                    dialogLoader.source = "../dialogs/SatNavStatusDialog.qml"
+                    dialogLoader.active = true
+                }
+            }
+            ItemDelegate {
+                text: qsTr("Variometer")
+                      +`<br><font color="#606060" size="2">`
+                      + qsTr("Current Status")
+                      + `: ${satNav.statusAsString}</font>`
+                icon.source: "/icons/material/vario.svg"
+                icon.color: Material.primary
+                Layout.fillWidth: true
+            }
 
         } // ColumnLayout
     } // Scrollview

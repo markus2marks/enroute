@@ -47,6 +47,7 @@
 #include "SatNav.h"
 #include "ScaleQuickItem.h"
 #include "Wind.h"
+#include "Flarm.h"
 
 int main(int argc, char *argv[])
 {
@@ -113,6 +114,8 @@ int main(int argc, char *argv[])
     /*
      * Set up ApplicationEngine for QML
      */
+    auto flarm = new Flarm();
+
     auto engine = new QQmlApplicationEngine();
     QObject::connect(GlobalSettings::globalInstance(), &GlobalSettings::preferEnglishChanged, engine, &QQmlApplicationEngine::retranslate);
 
