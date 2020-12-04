@@ -201,7 +201,7 @@ Page {
                 color: Material.primary
             }
             
-             ItemDelegate {
+			ItemDelegate {
                 text: qsTr("Flarm")
                       +`<br><font color="#606060" size="2">`
                       + qsTr("Current Status")
@@ -211,9 +211,8 @@ Page {
                 Layout.fillWidth: true
                 onClicked: {
                     mobileAdaptor.vibrateBrief()
-                    dialogLoader.active = false
-                    dialogLoader.source = "../dialogs/SatNavStatusDialog.qml"
-                    dialogLoader.active = true
+                    stackView.push("FlarmManager.qml")
+                    drawer.close()
                 }
             }
             ItemDelegate {

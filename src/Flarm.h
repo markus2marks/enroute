@@ -12,7 +12,7 @@
 #include <QSerialPortInfo>
 #include <QtCore>
 
-class Flarm : public QThread
+class Flarm : public QObject
 {
     Q_OBJECT
 
@@ -25,6 +25,7 @@ class Flarm : public QThread
 	~Flarm();
 	bool trafficAvailable();
 	void handleReadyRead();
+	bool connectionstatus();
 
 	private:
 		QByteArray m_readData;

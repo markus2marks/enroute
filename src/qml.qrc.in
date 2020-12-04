@@ -32,5 +32,6 @@
         <file alias="pages/ParticipatePage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/ParticipatePage.qml</file>
         <file alias="pages/SettingsPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/SettingsPage.qml</file>
         <file alias="pages/WeatherPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/WeatherPage.qml</file>
+        <file alias="pages/FlarmManager.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/FlarmManager.qml</file>
     </qresource>
 </RCC>

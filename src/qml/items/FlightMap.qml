@@ -26,7 +26,9 @@ import enroute 1.0
 
 Map {
     id: flightMap
-
+	
+	
+	
     /*! \brief Pixel per 10 kilometer
 
     This read-only propery is set to the number of screen pixel per ten

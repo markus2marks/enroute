@@ -36,4 +36,7 @@ bool Flarm::trafficAvailable()
 	return isTraffic;
 }
 
+bool Flarm::connectionstatus()
+{
 
+}
