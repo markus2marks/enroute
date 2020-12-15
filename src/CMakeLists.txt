@@ -93,6 +93,8 @@ set(SOURCES
     ScaleQuickItem.h
     Waypoint.h
 	Flarm.h
+	Variometer.h
+	UdpConnection.h
 	
     # C++ files
     Aircraft.cpp
@@ -125,6 +127,8 @@ set(SOURCES
     Waypoint.cpp
     Wind.cpp
     Flarm.cpp
+    Variometer.cpp
+    UdpConnection.cpp
     )
 
 
