@@ -223,6 +223,11 @@ Page {
                 icon.source: "/icons/material/vario.svg"
                 icon.color: Material.primary
                 Layout.fillWidth: true
+                onClicked: {
+                    mobileAdaptor.vibrateBrief()
+                    stackView.push("VarioManager.qml")
+                    drawer.close()
+                }
             }
 
         } // ColumnLayout

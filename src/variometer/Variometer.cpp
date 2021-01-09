@@ -10,6 +10,9 @@
 
 Variometer::Variometer()
 {
-	data = new UdpConnection();
-	data->initSocket();
+
 }
+
+
+
+

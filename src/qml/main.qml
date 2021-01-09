@@ -40,10 +40,21 @@ ApplicationWindow {
         id: drawer
         width: col.implicitWidth
         height: view.height
-
+		
+		
+		
         ScrollView {
             anchors.fill: parent
-
+			focus: true
+			
+			//close drawer with remote control
+			Keys.onPressed: {
+			    if (event.key == Qt.Key_Left) {
+			        event.accepted = true;
+			        drawer.close()
+			    }
+			}
+			
             ColumnLayout {
                 id: col
 
@@ -254,8 +265,8 @@ ApplicationWindow {
                     Layout.fillHeight: true
                 }
             }
+            Keys.forwardTo: [menuItemRoute, menuItemNearby, weatherItem]
         }
-
     } // Drawer
 
     StackView {
@@ -313,8 +324,14 @@ ApplicationWindow {
                 event.accepted = true
             }
         }
-
-    }
+        //Menu open with remote control
+		Keys.onPressed: {
+	        if (event.key == Qt.Key_Left) {
+	            event.accepted = true;
+	            drawer.open()
+	        }
+	    }
+    } //Stackview
 
     DropArea {
         anchors.fill: stackView

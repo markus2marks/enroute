@@ -47,7 +47,9 @@
 #include "SatNav.h"
 #include "ScaleQuickItem.h"
 #include "Wind.h"
-#include "Flarm.h"
+#include "variometer/Flarm.h"
+#include "variometer/Variometer.h"
+#include "variometer/DataSwitch.h"
 
 int main(int argc, char *argv[])
 {
@@ -114,11 +116,17 @@ int main(int argc, char *argv[])
     /*
      * Set up ApplicationEngine for QML
      */
-    auto flarm = new Flarm();
+
 
     auto engine = new QQmlApplicationEngine();
     QObject::connect(GlobalSettings::globalInstance(), &GlobalSettings::preferEnglishChanged, engine, &QQmlApplicationEngine::retranslate);
 
+    //auto vario = new Variometer();
+    auto udp = new UdpConnection();
+    auto sensorSwitch = new DataSwitch(udp, engine);
+    // Make Flarm available to QML engine
+    auto flarm = new Flarm();
+    engine->rootContext()->setContextProperty("flarm", flarm);
     // Make GPS available to QML engine
     engine->rootContext()->setContextProperty("satNav", SatNav::globalInstance());
 

@@ -92,9 +92,11 @@ set(SOURCES
     SatNav.h
     ScaleQuickItem.h
     Waypoint.h
-	Flarm.h
-	Variometer.h
-	UdpConnection.h
+	variometer/Flarm.h
+	variometer/Variometer.h
+	variometer/UdpConnection.h
+	variometer/DataSwitch.h
+	variometer/KalmanFilter.h
 	
     # C++ files
     Aircraft.cpp
@@ -126,9 +128,11 @@ set(SOURCES
     TileServer.cpp
     Waypoint.cpp
     Wind.cpp
-    Flarm.cpp
-    Variometer.cpp
-    UdpConnection.cpp
+    variometer/Flarm.cpp
+    variometer/Variometer.cpp
+    variometer/UdpConnection.cpp
+    variometer/DataSwitch.cpp
+    variometer/KalmanFilter.cpp
     )
 
 

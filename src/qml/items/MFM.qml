@@ -32,7 +32,10 @@ import "../dialogs"
 
 Item {
     id: page
-
+	focus: true
+	property FlightMap map: flightMap
+	
+	
     Plugin {
         id: mapPlugin
         name: "mapboxgl"
@@ -47,7 +50,7 @@ Item {
     FlightMap {
         id: flightMap
         objectName: "flightMap"
-
+		focus: true
         anchors.fill: parent
         geoJSON: geoMapProvider.geoJSON
 
@@ -135,6 +138,18 @@ Item {
             interval: 410  // little more than time for animation
             onTriggered: centerBindingAnimation.enabled = true
         }
+		MapCircle {
+			id:flarm
+		 	border.width:8
+	        center {
+	            latitude: satNav.lastValidCoordinate.latitude 
+	            longitude: satNav.lastValidCoordinate.longitude
+	        }
+	        radius: 5000.0
+	        //color: 'blue'
+    	}
+	
+
 
         // PROPERTY "zoomLevel"
 
@@ -302,6 +317,9 @@ Item {
             trackChangedConnection.onLastValidTrackChanged()
         }
     }
+
+
+	
 
     Button {
         id: zoomIn

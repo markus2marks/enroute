@@ -18,6 +18,10 @@ class UdpConnection : public QObject
 		UdpConnection();
 		void initSocket();
 		void readData();
+		void sendData(char *data);
+
+	signals:
+		void	dataAvailable(QByteArray data);
 	private:
 		QUdpSocket *udpSocket;
 };
