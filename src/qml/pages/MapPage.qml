@@ -22,6 +22,8 @@ import QtLocation 5.15
 import QtPositioning 5.15
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+import QtQuick.Controls.Material 2.15
 
 import enroute 1.0
 
@@ -29,7 +31,8 @@ import "../items"
 
 Page {
     id: page
-
+	property var movingmap: false
+	
     title: qsTr("Moving Map")
 	focus: true
     Loader {
@@ -68,130 +71,180 @@ Page {
     }
     //zoom in and out for remote control
 	Keys.onPressed: {
-		if (event.key == Qt.Key_Up) {
-		    event.accepted = true;
-		    mapLoader.item.map.zoomLevel += 0.5
-		}
-		
-		if (event.key == Qt.Key_Down) {
-		    event.accepted = true;
-		    mapLoader.item.map.zoomLevel -= 0.5
-		}
-		
-		if (event.key == Qt.Key_Return) {
-		    event.accepted = true;
-		   	if(qickmenulabel.visible != true)
-		   	{
-				qickmenu.popup(page, (parent.width / 2) - 100, (parent.height / 2) - 100);
-				qickmenulabel.open();
+		event.accepted = true;
+		if(movingmap == true)
+		{
+			//stay in moving map modus
+			timer.restart();
+			if (event.key == Qt.Key_Up) {
+				mapLoader.item.map.pan(0,-50);
 			}
-			else
-			{
-				qickmenulabel.close();
+			if (event.key == Qt.Key_Down) {
+				mapLoader.item.map.pan(0,50);
+			}
+			if (event.key == Qt.Key_Right) {
+				mapLoader.item.map.pan(50,0);
+			}
+			if (event.key == Qt.Key_Left) {
+				mapLoader.item.map.pan(-50,0);
+			}
+		}
+		else
+		{
+			//Menu open with remote control
+			if (event.key == Qt.Key_Left) {
+	            event.accepted = true;
+	            drawer.open()
+	        }
+			
+			if (event.key == Qt.Key_Up) {
+			    event.accepted = true;
+			    mapLoader.item.map.zoomLevel += 0.5
+			}
+			
+			if (event.key == Qt.Key_Down) {
+			    event.accepted = true;
+			    mapLoader.item.map.zoomLevel -= 0.5
+			}
+			
+			if (event.key == Qt.Key_Return) {
+			    event.accepted = true;
+			   	if(qickmenu.visible != true)
+			   	{
+					qickmenu.open();
+				}
+				else
+				{
+					qickmenu.close();
+				}
 			}
 		}
 			
 	}
 	
+	function closeSession()  {
+	 	if(movingmap == true)
+	 	{
+	 		movingmap = false;
+	 		stackView.focus = true;
+	 		page.focus = true;
+	 	}
+	 }
+	
 	
 	Popup {
-		id: qickmenulabel
+		id: qickmenu
 		width: 200
-		height: 40
+		height: 162
 		x: (parent.width / 2) - 100
 		y: (parent.height / 2) - 140
-		contentItem: Text {
-		        text: "Quick Menu"
-				font.pixelSize: 20
-		        opacity: enabled ? 1.0 : 0.3
-		        color: "white"
-		        horizontalAlignment: Text.AlignHCenter
-		        verticalAlignment: Text.AlignVCenter
-		        elide: Text.ElideRight
-		}
+		focus: true
 		
+
 		
-		 background: Rectangle {
-		    implicitWidth: 200
-		    implicitHeight: 40
-		    color: "#000000"
-		    border.color: "darkgray"
-		    radius: 10
-		    gradient: Gradient {
-		         GradientStop { position: 0 ; color:  "#525252" }
-		         GradientStop { position: 1 ; color:  "#232323" }
+		contentItem: ListView
+		{
+			anchors.fill: parent
+			anchors.margins: 1
+			headerPositioning : ListView.OverlayFooter
+			keyNavigationEnabled : true
+			focus: true
+	  		clip: true
+			header: Label
+				{
+					id:quickmenulabel
+					width: ListView.view.width
+					z:2
+					//text:"Quick Menu"
+					//font.pointSize: 16
+					//color: "white"
+					//horizontalAlignment : Text.AlignHCenter
+				    //verticalAlignment : Text.AlignVCenter
+				    //Layout.alignment :  Qt.AlignHCenter		
+				    
+				    Layout.fillWidth: true
+				
+				    text: "<strong>Quick Menu</strong>"
+				    color: "white"
+				    padding: Qt.application.font.pixelSize
+					 
+					background: Rectangle {
+						color:  Material.primary
+					}				
+	                      				
+			}//header
+			
+		    model: ListModel 
+		    {
+			    ListElement {
+			        name: "Volume"
+			    }
+			    ListElement {
+			        name: "Moving Map"
+			    }
+			    ListElement {
+			        name: "Mc Ready"
+			    }
+			}
+		
+		    delegate: ItemDelegate {	    	
+		  	 	
+		  	 	Layout.alignment : Qt.AlignHCenter 
+		  	 	id: wrapper
+		        Text 
+		        { 
+		        	text: name
+		        	color: wrapper.ListView.isCurrentItem ? Material.primary : "black"
+
+		        	font.pointSize: 14
+		        	horizontalAlignment : Text.AlignHCenter
+		        	verticalAlignment : Text.AlignVCenter
+		        	anchors.fill: parent
+		        }
+		       	background: Rectangle {
+				    implicitWidth: 202
+				    implicitHeight: 40
+				    gradient: Gradient {
+				         GradientStop { position: 0 ; color:  "#FFFFFF" }
+				         GradientStop { position: 1 ; color:  "#EEEEEE" }
+				    }
+				}
+				Keys.onPressed: {
+					if (event.key == Qt.Key_Return) {
+		    			event.accepted = true;
+		    			qickmenu.close();
+		    			timer.start();
+		    			if(modelData == "Volume")
+		    			{
+		    				volumecontrol.visible = true
+		    				volumecontrol.focus = true
+		   				}
+		   				if(modelData == "Moving Map")
+		    			{
+		    				 
+		    				 page.movingmap = true
+		    			}
+					}
+				}
 		    }
+		    highlight: Rectangle {
+		        width: parent.width
+		        color: "#AAAAAA"
+		         
+		    }
+		
+		    
+		}
+
+		
+		background: Rectangle {
+		   
+		    color: "transparent"
+			  border.color:"black"
+			  border.width: 1
 		}
         
 	} 
-        
-        
-	Menu{
-        id : qickmenu
-        visible: false
-        focus : true
-
-        property var lablecolor: "white";
- 		
- 
-
- 		
- 		
-        Action{ 
-       		text: "Volume"
-       		onTriggered: {
-       	 		volumecontrol.visible = true,
-       	 		qickmenulabel.visible = false,
-       	 		volumecontrol.focus = true
-       		}
-        }
-        MenuSeparator { }
-        Action{ text: "Moving Map"}
-        MenuSeparator { }
-        Action{ 
-        	text: "MC Ready"
-        	
-        }
- 
-        topPadding: 10
-        bottomPadding: 10
-		
-		//Custom style, refer to Qt help documentation
-        delegate: MenuItem {
-            id: menuItem
-            implicitWidth: 200
-            implicitHeight: 40
-           
- 
-            contentItem: Text {
-                leftPadding: menuItem.indicator.width
-                rightPadding: menuItem.arrow.width
-                text: menuItem.text
-                font: menuItem.font
-                opacity: enabled ? 1.0 : 0.3
-                color: menuItem.highlighted ? "#fff000" : lablecolor
-                horizontalAlignment: Text.AlignLeft
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
- 
-            
-        }
- 
-        background: Rectangle {
-            implicitWidth: 200
-            implicitHeight: 40
-            color: "#000000"
-            border.color: "darkgray"
-            radius: 10
-            gradient: Gradient {
-                 GradientStop { position: 0 ; color:  "#525252" }
-                 GradientStop { position: 1 ; color:  "#232323" }
-			}
-        }
-    }
-	        
-	
 	
 	
 		
@@ -235,5 +288,11 @@ Page {
 	        border.color: "#bdbebf"
 	    }
 	}
+	
+	Timer {
+		id: timer
+        interval: 1000; 
+       	onTriggered: page.closeSession()	
+    }
 
 }

@@ -324,13 +324,6 @@ ApplicationWindow {
                 event.accepted = true
             }
         }
-        //Menu open with remote control
-		Keys.onPressed: {
-	        if (event.key == Qt.Key_Left) {
-	            event.accepted = true;
-	            drawer.open()
-	        }
-	    }
     } //Stackview
 
     DropArea {
