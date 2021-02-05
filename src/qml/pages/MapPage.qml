@@ -32,6 +32,7 @@ import "../items"
 Page {
     id: page
 	property var movingmap: false
+	property var volume: false
 	
     title: qsTr("Moving Map")
 	focus: true
@@ -89,26 +90,26 @@ Page {
 				mapLoader.item.map.pan(-50,0);
 			}
 		}
+		else if(volume == true)
+		{
+			
+		}
 		else
 		{
 			//Menu open with remote control
 			if (event.key == Qt.Key_Left) {
-	            event.accepted = true;
 	            drawer.open()
 	        }
 			
 			if (event.key == Qt.Key_Up) {
-			    event.accepted = true;
 			    mapLoader.item.map.zoomLevel += 0.5
 			}
 			
 			if (event.key == Qt.Key_Down) {
-			    event.accepted = true;
 			    mapLoader.item.map.zoomLevel -= 0.5
 			}
 			
 			if (event.key == Qt.Key_Return) {
-			    event.accepted = true;
 			   	if(qickmenu.visible != true)
 			   	{
 					qickmenu.open();
@@ -128,6 +129,13 @@ Page {
 	 		movingmap = false;
 	 		stackView.focus = true;
 	 		page.focus = true;
+	 	}
+	 	else if(volume == true)
+	 	{
+	 		popupvolumecontrol.visible = false;
+	 		page.focus = true;
+	 		stackView.focus = true;
+	 		volume = false;
 	 	}
 	 }
 	
@@ -216,8 +224,9 @@ Page {
 		    			timer.start();
 		    			if(modelData == "Volume")
 		    			{
-		    				volumecontrol.visible = true
-		    				volumecontrol.focus = true
+		    				popupvolumecontrol.visible = true
+		    				popupvolumecontrol.focus = true
+		    				page.volume = true
 		   				}
 		   				if(modelData == "Moving Map")
 		    			{
@@ -246,47 +255,73 @@ Page {
         
 	} 
 	
+	Popup {  
+		id: icon
+	}
 	
 		
-	    
-    Slider {
-    	id: volumecontrol
-	    from: 1
-	    value: 25
-	    to: 100
-	    stepSize : 5
-	    visible: false
-	    
-	    x: (parent.width / 2) 
-        y: (parent.height / 2) 
-	   // orientation : Qt.Vertical
-	    
-	    background: Rectangle {
-	        x: volumecontrol.leftPadding
-	        y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
-	        implicitWidth: 200
-	        implicitHeight: 4
-	        width: volumecontrol.availableWidth
-	        height: implicitHeight
-	        radius: 2
-	        color: "#bdbebf"
+	Popup {    
+		id: popupvolumecontrol
+		x: (parent.width / 2) - 150
+		y: (parent.height / 2) - 40
+		
+		width: 300
+		height: 40
+		focus: true
+    	contentItem:  Slider {
+	    	id: volumecontrol
+		    from: 1
+		    value: 25
+		    to: 100
+		    stepSize : 5
+		    focus: true
+		    width: 200
 	
-	        Rectangle {
-	            width: volumecontrol.visualPosition * parent.width
-	            height: parent.height
-	            color: "#21be2b"
-	            radius: 2
-	        }
-	    }
-	    handle: Rectangle {
-	        x: volumecontrol.leftPadding + volumecontrol.visualPosition * (volumecontrol.availableWidth - width)
-	        y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
-	        implicitWidth: 26
-	        implicitHeight: 26
-	        radius: 13
-	        color: volumecontrol.pressed ? "#f0f0f0" : "#f6f6f6"
-	        border.color: "#bdbebf"
-	    }
+		   // visible: false
+		    
+		    //x: (parent.width / 2) 
+	        //y: (parent.height / 2) 
+		   // orientation : Qt.Vertical
+		    
+		    background: Rectangle {
+		        x: volumecontrol.leftPadding
+		        y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
+		        implicitWidth: 200
+		        implicitHeight: 4
+		        width: volumecontrol.availableWidth
+		        height: implicitHeight
+		        radius: 2
+		        color: "#bdbebf"
+		
+		        Rectangle {
+		            width: volumecontrol.visualPosition * parent.width
+		            height: parent.height
+		            color: "#21be2b"
+		            radius: 2
+		        }
+		    }
+		    handle: Rectangle {
+		        x: volumecontrol.leftPadding + volumecontrol.visualPosition * (volumecontrol.availableWidth - width)
+		        y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
+		        implicitWidth: 26
+		        implicitHeight: 26
+		        radius: 13
+		        color: volumecontrol.pressed ? "#f0f0f0" : "#f6f6f6"
+		        border.color: "#bdbebf"
+		    }
+			Keys.onPressed: {
+				timer.restart();
+			}
+		}
+		
+		
+		background: Rectangle {
+		   
+		    color: "white"
+			  border.color:"black"
+			  border.width: 1
+			  radius: 20
+		}
 	}
 	
 	Timer {
