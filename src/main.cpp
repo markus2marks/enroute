@@ -50,6 +50,7 @@
 #include "variometer/Flarm.h"
 #include "variometer/Variometer.h"
 #include "variometer/DataSwitch.h"
+#include "variometer/Logger.h"
 
 int main(int argc, char *argv[])
 {
@@ -124,6 +125,12 @@ int main(int argc, char *argv[])
     //auto vario = new Variometer();
     auto udp = new UdpConnection();
     auto sensorSwitch = new DataSwitch(udp, engine);
+    //generate a logger device to save the sensor data
+    auto logger = new Logger("/home/markus/enroute/logger.csv");
+    QObject::connect(sensorSwitch, &DataSwitch::sensorDataAvailable, logger, &Logger::storeData);
+
+
+
     // Make Flarm available to QML engine
     auto flarm = new Flarm();
     engine->rootContext()->setContextProperty("flarm", flarm);

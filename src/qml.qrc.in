@@ -22,6 +22,7 @@
         <file alias="items/NavBar.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/NavBar.qml</file>
         <file alias="items/StandardHeader.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/StandardHeader.qml</file>	
         <file alias="items/WordWrappingItemDelegate.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/WordWrappingItemDelegate.qml</file>	
+        <!--<file alias="items/Quickmenu.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/Quickmenu.qml</file>	-->
         <file alias="pages/BugReportPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/BugReportPage.qml</file>
         <file alias="pages/FlightRouteEditor.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/FlightRouteEditor.qml</file>	
         <file alias="pages/FlightRouteLibrary.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/FlightRouteLibrary.qml</file>
@@ -33,5 +34,6 @@
         <file alias="pages/SettingsPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/SettingsPage.qml</file>
         <file alias="pages/WeatherPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/WeatherPage.qml</file>
         <file alias="pages/FlarmManager.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/FlarmManager.qml</file>
+        <file alias="pages/VarioManager.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/VarioManager.qml</file>
     </qresource>
 </RCC>
