@@ -30,7 +30,7 @@ void DataSwitch::setData(QByteArray data)
 	int32_t filterValue2 = kalman2->filterUpdate(m_sensorData->sensor2, 0.2f);
 	int32_t filterValue5 = kalman5->filterUpdate(m_sensorData->sensor5, 0.2f);
 
-	qInfo() << "timestamp: " << m_sensorData->timestamp << \
+	/*qInfo() << "timestamp: " << m_sensorData->timestamp << \
 	"\tp1: " << m_sensorData->sensor1 << \
 	"\tp2: " << m_sensorData->sensor2 << \
 	"\tp3: " << m_sensorData->sensor3 << \
@@ -41,6 +41,6 @@ void DataSwitch::setData(QByteArray data)
 	"\ttemp: " << m_sensorData->temp2 << \
 	"\tout2: " << filterValue2 << \
 	"\tout5: " << filterValue5 ;
-	qInfo() << " ";
+	qInfo() << " ";*/
 	emit sensorDataAvailable(m_sensorData);
 }
