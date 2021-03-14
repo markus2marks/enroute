@@ -134,6 +134,7 @@ set(SOURCES
     variometer/DataSwitch.cpp
     variometer/KalmanFilter.cpp
     variometer/Logger.cpp
+    variometer/DiagSensorboard.cpp
     )
 
 

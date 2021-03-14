@@ -13,10 +13,10 @@ UdpConnection::UdpConnection()
 
 }
 
-void UdpConnection::initSocket()
+void UdpConnection::initSocket(int port)
 {
 	udpSocket = new QUdpSocket(this);
-	udpSocket->bind(QHostAddress("0.0.0.0"),7);//Bind IP and address
+	udpSocket->bind(QHostAddress("0.0.0.0"),port);//Bind IP and address
 	connect(udpSocket, &QUdpSocket::readyRead,this, &UdpConnection::readData);
 	qInfo() << "Udp Socket init\n";
 }
@@ -34,5 +34,5 @@ void UdpConnection::readData()
 
 void UdpConnection::sendData(char *data)
 {
-    udpSocket->writeDatagram(data, QHostAddress("192.168.0.3"), 8);
+    udpSocket->writeDatagram((const char*)data, QHostAddress("192.168.0.3"), 8);
 }

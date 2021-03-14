@@ -16,7 +16,7 @@ class UdpConnection : public QObject
 	public:
 
 		UdpConnection();
-		void initSocket();
+		void initSocket(int port);
 		void readData();
 		void sendData(char *data);
 

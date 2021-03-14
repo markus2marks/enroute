@@ -10,7 +10,6 @@
 
 DataSwitch::DataSwitch(UdpConnection* udpConnection, QQmlApplicationEngine* engine):m_udpConnection(udpConnection)
 {
-	m_udpConnection->initSocket();
 	connect(m_udpConnection, &UdpConnection::dataAvailable,this, &DataSwitch::setData);
 
 	QQmlComponent component(engine, QUrl::fromLocalFile("VarioManager.qml"));

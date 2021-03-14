@@ -51,6 +51,7 @@
 #include "variometer/Variometer.h"
 #include "variometer/DataSwitch.h"
 #include "variometer/Logger.h"
+#include "variometer/DiagSensorboard.h"
 
 int main(int argc, char *argv[])
 {
@@ -123,8 +124,18 @@ int main(int argc, char *argv[])
     QObject::connect(GlobalSettings::globalInstance(), &GlobalSettings::preferEnglishChanged, engine, &QQmlApplicationEngine::retranslate);
 
     //auto vario = new Variometer();
-    auto udp = new UdpConnection();
-    auto sensorSwitch = new DataSwitch(udp, engine);
+    auto udpData = new UdpConnection();
+    udpData->initSocket(7u);
+    auto sensorSwitch = new DataSwitch(udpData, engine);
+
+    auto udpDiag = new UdpConnection();
+    udpDiag->initSocket(8u);
+    auto diagSensorboard = new DiagSensorboard(udpDiag);
+    char data[8];
+    if(diagSensorboard->sendDiagRequest(DIAG_BOARD_ID, data) == true)
+    {
+    	qInfo() << "Diag Request send!";
+    }
     //generate a logger device to save the sensor data
     auto logger = new Logger("/home/markus/enroute/logger.csv");
     QObject::connect(sensorSwitch, &DataSwitch::sensorDataAvailable, logger, &Logger::storeData);
