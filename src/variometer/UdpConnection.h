@@ -15,8 +15,8 @@ class UdpConnection : public QObject
 	Q_OBJECT
 	public:
 
-		UdpConnection();
-		void initSocket(int port);
+		UdpConnection(int port);
+		void initSocket();
 		void readData();
 		void sendData(char *data);
 
@@ -24,6 +24,7 @@ class UdpConnection : public QObject
 		void	dataAvailable(QByteArray data);
 	private:
 		QUdpSocket *udpSocket;
+		int m_port;
 };
 
 

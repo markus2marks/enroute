@@ -124,12 +124,12 @@ int main(int argc, char *argv[])
     QObject::connect(GlobalSettings::globalInstance(), &GlobalSettings::preferEnglishChanged, engine, &QQmlApplicationEngine::retranslate);
 
     //auto vario = new Variometer();
-    auto udpData = new UdpConnection();
-    udpData->initSocket(7u);
+    auto udpData = new UdpConnection(7u);
+    udpData->initSocket();
     auto sensorSwitch = new DataSwitch(udpData, engine);
 
-    auto udpDiag = new UdpConnection();
-    udpDiag->initSocket(8u);
+    auto udpDiag = new UdpConnection(8u);
+    udpDiag->initSocket();
     auto diagSensorboard = new DiagSensorboard(udpDiag);
     char data[8];
     if(diagSensorboard->sendDiagRequest(DIAG_BOARD_ID, data) == true)
