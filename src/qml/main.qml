@@ -78,7 +78,7 @@ ApplicationWindow {
                     icon.source: "/icons/material/ic_directions.svg"
                     icon.color: Material.primary
                     Layout.fillWidth: true
-
+					KeyNavigation.down: menuItemNearby
                     onClicked: {
                         mobileAdaptor.vibrateBrief()
                         stackView.pop()
@@ -94,7 +94,7 @@ ApplicationWindow {
                     icon.source: "/icons/material/ic_my_location.svg"
                     icon.color: Material.primary
                     Layout.fillWidth: true
-
+					KeyNavigation.down: weatherItem
                     onClicked: {
                         mobileAdaptor.vibrateBrief()
                         stackView.pop()
@@ -110,7 +110,7 @@ ApplicationWindow {
                     icon.source: "/icons/material/ic_cloud_queue.svg"
                     icon.color: Material.primary
                     Layout.fillWidth: true
-
+					KeyNavigation.down: menuItemSettings
                     onClicked: {
                         mobileAdaptor.vibrateBrief()
                         stackView.pop()
@@ -148,7 +148,8 @@ ApplicationWindow {
                     icon.source: "/icons/material/ic_settings.svg"
                     icon.color: Material.primary
                     Layout.fillWidth: true
-
+					KeyNavigation.down: menuItemInformation
+					
                     onClicked: {
                         mobileAdaptor.vibrateBrief()
                         stackView.pop()
@@ -164,6 +165,7 @@ ApplicationWindow {
                 }
 
                 ItemDelegate {
+                	id: menuItemInformation
                     text: qsTr("Information")
                     icon.source: "/icons/material/ic_info_outline.svg"
                     icon.color: Material.primary
