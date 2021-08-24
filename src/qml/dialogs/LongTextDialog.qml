@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,6 +20,7 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls.Material 2.15
 
 Dialog {
     id: dlg
@@ -31,38 +32,39 @@ Dialog {
     width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
     height: Math.min(parent.height-Qt.application.font.pixelSize, implicitHeight)
 
+    // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+    // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
+    parent: Overlay.overlay
+    x: (parent.width-width)/2.0
+    y: (parent.height-height)/2.0
+
     modal: true
     
     ScrollView{
         id: sv
         anchors.fill: parent
 
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        contentHeight: lbl.height
+        contentWidth: dlg.availableWidth
 
         // The visibility behavior of the vertical scroll bar is a little complex.
         // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
-        ScrollBar.vertical.policy: (height < lbl.implicitHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: (height < contentHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
         ScrollBar.vertical.interactive: false
 
         clip: true
-         
-        // The Label that we really want to show is wrapped into an Item. This allows
-        // to set implicitHeight, and thus compute the implicitHeight of the Dialog
-        // without binding loops
-        Item {
-            implicitHeight: lbl.implicitHeight
-            width: dlg.availableWidth
 
-            Label {
-                id: lbl
-                text: dlg.text
-                width: dlg.availableWidth
-                textFormat: Text.RichText
-                horizontalAlignment: Text.AlignJustify
-                wrapMode: Text.Wrap
-                onLinkActivated: Qt.openUrlExternally(link)
-            } // Label
-        } // Item
+        Label {
+            id: lbl
+            text: "<style>a:link { color: " + Material.accent + "; }</style>"+dlg.text
+            width: dlg.availableWidth
+            textFormat: Text.RichText
+            linkColor: Material.accent
+            wrapMode: Text.Wrap
+            onLinkActivated: Qt.openUrlExternally(link)
+        } // Label
+
     } // ScrollView
 
 } // Dialog

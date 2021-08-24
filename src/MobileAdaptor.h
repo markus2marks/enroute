@@ -21,6 +21,12 @@
 
 #pragma once
 
+#include <QtGlobal>
+
+#ifndef Q_OS_ANDROID
+#include <KNotification>
+#endif
+
 #include <QObject>
 
 /*! \brief Interface to platform-specific capabilities of mobile devices
@@ -88,9 +94,25 @@ public:
      * file name is visible to the user. It appears for instance as the name of
      * the attachment when sending files by e-mail.
      *
-     * @returns Empty string on success, a translated error message otherwise
+     * @returns Empty string on success, the string "abort" on abort, and a translated error message otherwise
      */
     Q_INVOKABLE QString exportContent(const QByteArray& content, const QString& mimeType, const QString& fileNameTemplate);
+
+    /*! \brief Lock connection to Wi-Fi network
+     *
+     * Under Android, this method can lock the Wi-Fi connection by acquiring a
+     * WifiManager.WifiLock. On other platforms, this method does nothing.
+     *
+     * @param lock If true, then lock the network. If false, then release the lock.
+     */
+    Q_INVOKABLE static void lockWifi(bool lock);
+
+    /*! \brief Get SSID of current Wi-Fi network
+     *
+     * @returns The SSID of the current Wi-Fi networks, or an empty of generic string
+     * if the device is not connected to a Wi-Fi or if the SSID could not be determined.
+     */
+    Q_INVOKABLE static QString getSSID();
 
     /*! \brief Import content from file
      *
@@ -120,12 +142,6 @@ public:
      */
     Q_INVOKABLE QString viewContent(const QByteArray& content, const QString& mimeType, const QString& fileNameTemplate);
 
-#if defined (Q_OS_ANDROID)
-    // Get single instance of the Share. This is used from the JNI "callback"
-    // setFileReceived(). It returns the single instance of the Share class.
-    static MobileAdaptor* getInstance();
-#endif
-
     /*! \brief Start receiving "open file" requests from platform
      *
      * This method should be called to indicate that the GUI is set up and ready
@@ -140,7 +156,14 @@ public:
      * fully initialized.
      */
      Q_INVOKABLE void startReceiveOpenFileRequests();
-						 
+
+#if defined (Q_OS_ANDROID)
+    // Emits the signal "WifiConnected".
+    void emitWifiConnected() {
+        emit wifiConnected();
+    }
+#endif
+
 public slots:
     /*! \brief Hides the android splash screen.
      *
@@ -158,7 +181,7 @@ public slots:
      *
      * On other platforms, this does nothing.
     */
-    void vibrateBrief();
+    static void vibrateBrief();
 
     /*! \brief Shows a notifaction, indicating that a download is in progress
      *
@@ -203,6 +226,17 @@ signals:
      */
     void openFileRequest(QString fileName, MobileAdaptor::FileFunction fileFunction);
 
+    /*! \brief Emitted when a new WiFi connections becomes available
+     *
+     *  This signal is emitted when a new WiFi connection becomes available.
+     */
+    void wifiConnected();
+
+private slots:
+    // Intializations that are moved out of the constructor, in order to avoid
+    // nested uses of globalInstance().
+    void deferredInitialization() const;
+
 private:
     Q_DISABLE_COPY_MOVE(MobileAdaptor)
   
@@ -216,10 +250,11 @@ private:
 
 #if defined (Q_OS_ANDROID)
     // @returns True if an app could be started, false if no app was found
-    bool outgoingIntent(const QString& methodName, const QString& filePath, const QString& mimeType);
+    static bool outgoingIntent(const QString& methodName, const QString& filePath, const QString& mimeType);
 
-    // Pointer to instance of this class, required for JNI calls
-    static MobileAdaptor* mInstance;
+    QStringList permissions;
+#else
+    QPointer<KNotification> downloadNotification;
 #endif
 
     bool receiveOpenFileRequestsStarted {false};

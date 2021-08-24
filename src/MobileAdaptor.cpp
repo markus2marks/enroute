@@ -18,29 +18,29 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-
-#include "MobileAdaptor.h"
-
+#include <QCoreApplication>
 #include <QDir>
+#include <QPointer>
 #include <QStandardPaths>
+#include <QTimer>
+
+#include "Global.h"
+#include "MobileAdaptor.h"
+#include "geomaps/GeoMapProvider.h"
+
 
 #if defined(Q_OS_ANDROID)
+#include <QAndroidJniEnvironment>
 #include <QtAndroid>
 #include <QtAndroidExtras/QAndroidJniObject>
-#include <QAndroidJniEnvironment>
-
-const QStringList permissions({"android.permission.ACCESS_COARSE_LOCATION",
-                               "android.permission.ACCESS_FINE_LOCATION",
-                               "android.permission.WRITE_EXTERNAL_STORAGE",
-                               "android.permission.READ_EXTERNAL_STORAGE"});
-
-MobileAdaptor* MobileAdaptor::mInstance = nullptr;
 #endif
+
 
 
 MobileAdaptor::MobileAdaptor(QObject *parent)
     : QObject(parent)
 {
+
     // Do all the set-up required for sharing files
     // Android requires you to use a subdirectory within the AppDataLocation for
     // sending and receiving files. We create this and clear this directory on creation of the Share object -- even if the
@@ -52,10 +52,13 @@ MobileAdaptor::MobileAdaptor(QObject *parent)
     exchangeDir.mkpath(fileExchangeDirectoryName);
 
 #if defined (Q_OS_ANDROID)
-    // we need the instance for the JNI Call
-    mInstance = this;
-
     // Ask for permissions
+    permissions << "android.permission.ACCESS_COARSE_LOCATION";
+    permissions << "android.permission.ACCESS_FINE_LOCATION";
+    permissions << "android.permission.ACCESS_NETWORK_STATE";
+    permissions << "android.permission.ACCESS_WIFI_STATE";
+    permissions << "android.permission.WRITE_EXTERNAL_STORAGE";
+    permissions << "android.permission.READ_EXTERNAL_STORAGE";
     QtAndroid::requestPermissionsSync(permissions);
 #endif
 
@@ -79,25 +82,42 @@ MobileAdaptor::MobileAdaptor(QObject *parent)
             }
         }
         QAndroidJniEnvironment env;
-        if (env->ExceptionCheck()) {
+        if (env->ExceptionCheck() != 0u) {
             env->ExceptionClear();
         }
     });
 #endif
+
+    getSSID();
+
+    // Don't forget the deferred initialization
+    QTimer::singleShot(0, this, &MobileAdaptor::deferredInitialization);
+
+}
+
+
+void MobileAdaptor::deferredInitialization() const
+{
+#if defined(Q_OS_ANDROID)
+    QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "startWiFiMonitor");
+#endif
+
+    QObject::connect(Global::mapManager()->geoMaps(), &GeoMaps::DownloadableGroup::downloadingChanged, this, &MobileAdaptor::showDownloadNotification);
 }
 
 
 MobileAdaptor::~MobileAdaptor()
 {
-  // Close all pending notifications
-  showDownloadNotification(false);
+    // Close all pending notifications
+    showDownloadNotification(false);
 }
 
 
 void MobileAdaptor::hideSplashScreen()
 {
-    if (splashScreenHidden)
+    if (splashScreenHidden) {
         return;
+    }
     splashScreenHidden = true;
 #if defined(Q_OS_ANDROID)
     QtAndroid::hideSplashScreen(200);
@@ -105,13 +125,26 @@ void MobileAdaptor::hideSplashScreen()
 }
 
 
-Q_INVOKABLE bool MobileAdaptor::missingPermissionsExist()
+void MobileAdaptor::lockWifi(bool lock)
+{
+    Q_UNUSED(lock)
+
+#if defined(Q_OS_ANDROID)
+    QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "lockWifi", "(Z)V", lock);
+#endif
+
+}
+
+
+Q_INVOKABLE auto MobileAdaptor::missingPermissionsExist() -> bool
 {
 #if defined (Q_OS_ANDROID)
     // Check is required permissions have been granted
-    for(const QString &permission : permissions)
-        if (QtAndroid::checkPermission(permission) == QtAndroid::PermissionResult::Denied)
+    foreach(auto permission, permissions) {
+        if (QtAndroid::checkPermission(permission) == QtAndroid::PermissionResult::Denied) {
             return true;
+        }
+    }
 #endif
     return false;
 }
@@ -125,15 +158,64 @@ void MobileAdaptor::vibrateBrief()
 }
 
 
+auto MobileAdaptor::getSSID() -> QString
+{
+#if defined(Q_OS_ANDROID)
+    QAndroidJniObject stringObject = QAndroidJniObject::callStaticObjectMethod("de/akaflieg_freiburg/enroute/MobileAdaptor",
+                                                                               "getSSID", "()Ljava/lang/String;");
+    return stringObject.toString();
+#endif
+    return "<unknown ssid>";
+}
+
+
 void MobileAdaptor::showDownloadNotification(bool show)
 {
-  Q_UNUSED(show)
-    
+
 #if defined(Q_OS_ANDROID)
     QString text;
-  if (show)
-    text = tr("Downloading map data…");
-  QAndroidJniObject jni_title   = QAndroidJniObject::fromString(text);
-  QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "notifyDownload", "(Ljava/lang/String;)V", jni_title.object<jstring>());
+    if (show) {
+        text = tr("Downloading map data…");
+    }
+    QAndroidJniObject jni_title   = QAndroidJniObject::fromString(text);
+    QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "notifyDownload", "(Ljava/lang/String;)V", jni_title.object<jstring>());
+#else
+    if (show) {
+        if (downloadNotification.isNull()) {
+            downloadNotification = new KNotification(QStringLiteral("downloading"), KNotification::Persistent, this);
+            downloadNotification->setPixmap( {":/icons/appIcon.png"} );
+            downloadNotification->setText(tr("Downloading map data…"));
+        }
+        downloadNotification->sendEvent();
+    } else {
+        if (!downloadNotification.isNull()) {
+            downloadNotification->close();
+        }
+    }
 #endif
 }
+
+
+
+#if defined(Q_OS_ANDROID)
+
+extern "C" {
+
+JNIEXPORT void JNICALL Java_de_akaflieg_1freiburg_enroute_MobileAdaptor_onWifiConnected(JNIEnv* /*unused*/, jobject /*unused*/)
+{
+
+    // This method gets called from Java before main() has executed
+    // and thus before a QApplication instance has been constructed.
+    // In these cases, the methods of the Global class must not be called
+    // and we simply return.
+    if (QCoreApplication::instance() == nullptr) {
+        return;
+    }
+
+    Global::mobileAdaptor()->emitWifiConnected();
+
+}
+
+
+}
+#endif

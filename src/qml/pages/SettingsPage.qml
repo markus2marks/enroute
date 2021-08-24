@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,6 +23,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
+import "../dialogs"
 import "../items"
 
 Page {
@@ -46,93 +47,54 @@ Page {
                 text: qsTr("Moving Map")
                 font.pixelSize: Qt.application.font.pixelSize*1.2
                 font.bold: true
-                color: Material.primary
+                color: Material.accent
             }
 
             SwitchDelegate {
                 id: hideUpperAsp
                 text: qsTr("Hide Airspaces ≥ FL100") + (
-                    globalSettings.hideUpperAirspaces ? (
-                        `<br><font color="#606060" size="2">`
-                        + qsTr("Upper airspaces hidden")
-                        +"</font>"
-                    ) : (
-                        `<br><font color="#606060" size="2">`
-                        + qsTr("All airspaces shown")
-                        + `</font>`
-                    )
-                )
+                          global.settings().hideUpperAirspaces ? (
+                                                                  `<br><font color="#606060" size="2">`
+                                                                  + qsTr("Upper airspaces hidden")
+                                                                  +"</font>"
+                                                                  ) : (
+                                                                  `<br><font color="#606060" size="2">`
+                                                                  + qsTr("All airspaces shown")
+                                                                  + `</font>`
+                                                                  )
+                          )
                 icon.source: "/icons/material/ic_map.svg"
-                icon.color: Material.primary
                 Layout.fillWidth: true
                 Component.onCompleted: {
-                    hideUpperAsp.checked = globalSettings.hideUpperAirspaces
+                    hideUpperAsp.checked = global.settings().hideUpperAirspaces
                 }
                 onToggled: {
-                    mobileAdaptor.vibrateBrief()
-                    globalSettings.hideUpperAirspaces = hideUpperAsp.checked
+                    global.mobileAdaptor().vibrateBrief()
+                    global.settings().hideUpperAirspaces = hideUpperAsp.checked
                 }
             }
 
             SwitchDelegate {
-                id: autoFlightDetection
-                text: qsTr("Automatic flight detection") + (
-                    globalSettings.autoFlightDetection ? (
-                        `<br><font color="#606060" size="2">`
-                        + qsTr("Switching to flight-mode at 30 kt")
-                        +"</font>"
-                    ) : (
-                        `<br><font color="#606060" size="2">`
-                        + qsTr("Always in flight-mode")
-                        + `</font>`
-                    )
-                )
-                icon.source: "/icons/material/ic_flight.svg"
-                icon.color: Material.primary
+                id: hideGlidingSectors
+                text: qsTr("Hide Gliding Sectors") + (
+                          global.settings().hideGlidingSectors ? (
+                                                                  `<br><font color="#606060" size="2">`
+                                                                  + qsTr("Gliding sectors hidden")
+                                                                  +"</font>"
+                                                                  ) : (
+                                                                  `<br><font color="#606060" size="2">`
+                                                                  + qsTr("Gliding sectors shown")
+                                                                  + `</font>`
+                                                                  )
+                          )
+                icon.source: "/icons/material/ic_map.svg"
                 Layout.fillWidth: true
                 Component.onCompleted: {
-                    autoFlightDetection.checked = globalSettings.autoFlightDetection
+                    hideGlidingSectors.checked = global.settings().hideGlidingSectors
                 }
                 onToggled: {
-                    mobileAdaptor.vibrateBrief()
-                    globalSettings.autoFlightDetection = autoFlightDetection.checked
-                }
-            }
-
-            Label {
-                Layout.leftMargin: Qt.application.font.pixelSize
-                text: qsTr("Libraries")
-                font.pixelSize: Qt.application.font.pixelSize*1.2
-                font.bold: true
-                color: Material.primary
-            }
-
-            ItemDelegate {
-                text: qsTr("Flight Routes")
-                icon.source: "/icons/material/ic_directions.svg"
-                icon.color: Material.primary
-                Layout.fillWidth: true
-
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    stackView.push("FlightRouteLibrary.qml")
-                    drawer.close()
-                }
-            }
-
-            ItemDelegate {
-                text: qsTr("Maps") + (MapManager.aviationMapUpdatesAvailable ?
-                                          `<br><font color="#606060" size="2">`
-                                          +qsTr("Updates available") + "</font>" : "")
-                icon.source: "/icons/material/ic_map.svg"
-                icon.color: Material.primary
-                Layout.fillWidth: true
-
-                enabled: !satNav.isInFlight
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    stackView.push("MapManager.qml")
-                    drawer.close()
+                    global.mobileAdaptor().vibrateBrief()
+                    global.settings().hideGlidingSectors = hideGlidingSectors.checked
                 }
             }
 
@@ -141,96 +103,68 @@ Page {
                 text: qsTr("System")
                 font.pixelSize: Qt.application.font.pixelSize*1.2
                 font.bold: true
-                color: Material.primary
+                color: Material.accent
             }
 
             SwitchDelegate {
                 id: useMetricUnits
                 text: qsTr("Use metric units")
                       + `<br><font color="#606060" size="2">`
-                      + ( globalSettings.useMetricUnits ?
-                            qsTr("Speed in km/h, distance in km") :
-                            qsTr("Speed in kt, distance in NM")
-                        )
+                      + ( global.settings().useMetricUnits ?
+                             qsTr("Speed in km/h, distance in km") :
+                             qsTr("Speed in kn, distance in nm")
+                         )
                       + "</font>"
                 icon.source: "/icons/material/ic_speed.svg"
-                icon.color: Material.primary
                 Layout.fillWidth: true
-                Component.onCompleted: useMetricUnits.checked = globalSettings.useMetricUnits
+                Component.onCompleted: useMetricUnits.checked = global.settings().useMetricUnits
                 onCheckedChanged: {
-                    mobileAdaptor.vibrateBrief()
-                    globalSettings.useMetricUnits = useMetricUnits.checked
+                    global.mobileAdaptor().vibrateBrief()
+                    global.settings().useMetricUnits = useMetricUnits.checked
                 }
             }
 
             SwitchDelegate {
-                id: preferEnglish
-                text: qsTr("Use English")
-                icon.source: "/icons/material/ic_translate.svg"
-                icon.color: Material.primary
-                visible: globalSettings.hasTranslation
+                id: nightMode
+                text: qsTr("Night mode")
+                icon.source: "/icons/material/ic_brightness_3.svg"
                 Layout.fillWidth: true
-                Component.onCompleted: preferEnglish.checked = globalSettings.preferEnglish
-                onCheckedChanged: {
-                    mobileAdaptor.vibrateBrief()
-                    globalSettings.preferEnglish = preferEnglish.checked
+                Component.onCompleted: {
+                    nightMode.checked = global.settings().nightMode
+                }
+                onToggled: {
+                    global.mobileAdaptor().vibrateBrief()
+                    global.settings().nightMode = nightMode.checked
                 }
             }
 
-            ItemDelegate {
-                text: qsTr("Satellite Status")
-                      +`<br><font color="#606060" size="2">`
-                      + qsTr("Current Status")
-                      + `: ${satNav.statusAsString}</font>`
-                icon.source: "/icons/material/ic_satellite.svg"
-                icon.color: Material.primary
-                Layout.fillWidth: true
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    dialogLoader.active = false
-                    dialogLoader.source = "../dialogs/SatNavStatusDialog.qml"
-                    dialogLoader.active = true
-                }
-            }
-            
             Label {
                 Layout.leftMargin: Qt.application.font.pixelSize
-                text: qsTr("externe Geräte")
+                text: qsTr("Help")
                 font.pixelSize: Qt.application.font.pixelSize*1.2
                 font.bold: true
-                color: Material.primary
+                color: Material.accent
             }
-            
-			ItemDelegate {
-                text: qsTr("Flarm")
-                      +`<br><font color="#606060" size="2">`
-                      + qsTr("Current Status")
-                      + `: ${satNav.statusAsString}</font>`
-                icon.source: "/icons/material/flarm.svg"
-                icon.color: Material.primary
+
+            WordWrappingItemDelegate {
                 Layout.fillWidth: true
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    stackView.push("FlarmManager.qml")
-                    drawer.close()
-                }
+                icon.source: "/icons/material/ic_info_outline.svg"
+                text: qsTr("How to connect your traffic receiver…")
+                onClicked: stackView.push("Manual.qml", {"fileName": "02-steps/traffic.html"})
             }
-            ItemDelegate {
-                text: qsTr("Variometer")
-                      +`<br><font color="#606060" size="2">`
-                      + qsTr("Current Status")
-                      + `: ${satNav.statusAsString}</font>`
-                icon.source: "/icons/material/vario.svg"
-                icon.color: Material.primary
+
+            WordWrappingItemDelegate {
                 Layout.fillWidth: true
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    stackView.push("VarioManager.qml")
-                    drawer.close()
-                }
+                icon.source: "/icons/material/ic_info_outline.svg"
+                text: qsTr("How to connect your flight simulator…")
+                onClicked: stackView.push("Manual.qml", {"fileName": "02-steps/simulator.html"})
+            }
+
+            Item { // Spacer
+                height: 3
             }
 
         } // ColumnLayout
-    } // Scrollview
+    }
 
 } // Page

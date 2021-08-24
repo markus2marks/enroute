@@ -19,18 +19,23 @@
  ***************************************************************************/
 
 
+#include "Global.h"
 #include "MobileAdaptor.h"
+#include "navigation/FlightRoute.h"
+#include "traffic/TrafficDataProvider.h"
+#include "traffic/TrafficDataSource_File.h"
 
 #include <QDateTime>
+#include <QDebug>
 #include <QDesktopServices>
 #include <QFile>
 #include <QMimeDatabase>
 #include <QUrl>
 
 #if defined(Q_OS_ANDROID)
+#include <QAndroidJniEnvironment>
 #include <QtAndroid>
 #include <QtAndroidExtras/QAndroidJniObject>
-#include <QAndroidJniEnvironment>
 #else
 #include <QFileDialog>
 #include <QProcess>
@@ -45,14 +50,17 @@ void MobileAdaptor::importContent()
                                                   QDir::homePath(),
                                                   tr("All files (*)")
                                                   );
-    if (!fileNameX.isEmpty())
+    if (!fileNameX.isEmpty()) {
         processFileOpenRequest(fileNameX);
+    }
 #endif
 }
 
 
-QString MobileAdaptor::exportContent(const QByteArray& content, const QString& mimeType, const QString& fileNameTemplate)
+auto MobileAdaptor::exportContent(const QByteArray& content, const QString& mimeType, const QString& fileNameTemplate) -> QString
 {
+    //#warning Need to handle user abort!
+
     Q_UNUSED(content)
     Q_UNUSED(mimeType)
     Q_UNUSED(fileNameTemplate)
@@ -63,8 +71,9 @@ QString MobileAdaptor::exportContent(const QByteArray& content, const QString& m
 #if defined(Q_OS_ANDROID)
     auto tmpPath = contentToTempFile(content, fileNameTemplate+"-%1"+mime.preferredSuffix());
     bool success = outgoingIntent("sendFile", tmpPath, mimeType);
-    if (success)
+    if (success) {
         return QString();
+    }
     return tr("No suitable file sharing app could be found.");
 #else
     auto fileNameX = QFileDialog::getSaveFileName(nullptr,
@@ -72,20 +81,24 @@ QString MobileAdaptor::exportContent(const QByteArray& content, const QString& m
                                                   QDir::homePath()+"/"+fileNameTemplate+"."+mime.preferredSuffix(),
                                                   tr("%1 (*.%2);;All files (*)").arg(mime.comment(), mime.preferredSuffix())
                                                   );
-    if (fileNameX.isEmpty())
-        return QString();
+    if (fileNameX.isEmpty()) {
+        return "abort";
+    }
     QFile file(fileNameX);
-    if (!file.open(QIODevice::WriteOnly))
+    if (!file.open(QIODevice::WriteOnly)) {
         return tr("Unable to open file <strong>%1</strong>.").arg(fileNameX);
+    }
 
-    if (file.write(content) != content.size())
+    if (file.write(content) != content.size()) {
         return tr("Unable to write to file <strong>%1</strong>.").arg(fileNameX);
+    }
     file.close();
     return QString();
 #endif
 }
 
-QString MobileAdaptor::viewContent(const QByteArray& content, const QString& mimeType, const QString& fileNameTemplate)
+
+auto MobileAdaptor::viewContent(const QByteArray& content, const QString& mimeType, const QString& fileNameTemplate) -> QString
 {
     Q_UNUSED(content)
     Q_UNUSED(mimeType)
@@ -94,22 +107,24 @@ QString MobileAdaptor::viewContent(const QByteArray& content, const QString& mim
     QString tmpPath = contentToTempFile(content, fileNameTemplate);
 #if defined(Q_OS_ANDROID)
     bool success = outgoingIntent("viewFile", tmpPath, mimeType);
-    if (success)
+    if (success) {
         return QString();
+    }
     return tr("No suitable app for viewing this data could be found.");
 #else
     bool success = QDesktopServices::openUrl(QUrl("file://" + tmpPath, QUrl::TolerantMode));
-    if (success)
+    if (success) {
         return QString();
+    }
     return tr("Unable to open data in other app.");
 #endif
 }
 
 
-QString MobileAdaptor::contentToTempFile(const QByteArray& content, const QString& fileNameTemplate)
+auto MobileAdaptor::contentToTempFile(const QByteArray& content, const QString& fileNameTemplate) -> QString
 {
     QDateTime now = QDateTime::currentDateTimeUtc();
-    QString fname = fileNameTemplate.arg(now.toString("yyyy-MM-dd_hh.mm.ss"));
+    QString fname = fileNameTemplate.arg(now.toString(QStringLiteral("yyyy-MM-dd_hh.mm.ss")));
 
     // in Qt, resources are not stored absolute file paths, so in order to
     // share the content we save it to disk. We save these temporary files
@@ -139,21 +154,23 @@ void MobileAdaptor::startReceiveOpenFileRequests()
 
     if (activity.isValid()) {
         QAndroidJniObject jniTempDir = QAndroidJniObject::fromString(fileExchangeDirectoryName);
-        if (!jniTempDir.isValid())
+        if (!jniTempDir.isValid()) {
             return;
+        }
         activity.callMethod<void>("checkPendingIntents", "(Ljava/lang/String;)V", jniTempDir.object<jstring>());
     }
 #endif
 
-    if (!pendingReceiveOpenFileRequest.isEmpty())
+    if (!pendingReceiveOpenFileRequest.isEmpty()) {
         processFileOpenRequest(pendingReceiveOpenFileRequest);
+    }
     pendingReceiveOpenFileRequest = QString();
 }
 
 
 void MobileAdaptor::processFileOpenRequest(const QByteArray &path)
 {
-    processFileOpenRequest(QString::fromUtf8(path));
+    processFileOpenRequest(QString::fromUtf8(path).simplified());
 }
 
 
@@ -165,45 +182,65 @@ void MobileAdaptor::processFileOpenRequest(const QString &path)
     }
 
     QString myPath;
-    if (path.startsWith("file:")) {
+    if (path.startsWith(u"file:")) {
         QUrl url(path.trimmed());
         myPath = url.toLocalFile();
-    } else
+    } else {
         myPath = path;
+    }
 
     QMimeDatabase db;
     auto mimeType = db.mimeTypeForFile(myPath);
-    if ((mimeType.inherits("application/xml"))
-            || (mimeType.name() == "application/x-gpx+xml")) {
+
+    /*
+     * Check for various possible file formats/contents
+     */
+
+    // Flight Route in GPX format
+    if ((mimeType.inherits(QStringLiteral("application/xml")))
+            || (mimeType.name() == u"application/x-gpx+xml")) {
         // We assume that the file contains a flight route in GPX format
         emit openFileRequest(myPath, FlightRoute_GPX);
         return;
     }
-    if ((mimeType.name() == "text/plain")
-            || (mimeType.name() == "application/geo+json")) {
+
+    // Flight Route in GeoJSON format
+    if ((mimeType.name() == u"application/geo+json")
+            || myPath.endsWith(u".geojson", Qt::CaseInsensitive)) {
         // We assume that the file contains a flight route in GeoJSON format
         emit openFileRequest(myPath, FlightRoute_GeoJSON);
         return;
     }
+
+    // Flight Route in GeoJSON format, without proper file name suffix
+    Navigation::FlightRoute testRoute;
+    auto errorMessage = testRoute.loadFromGeoJSON(myPath);
+    if (errorMessage.isEmpty()) {
+        // Ok, now that does look like a GeoJSON file to me.
+        emit openFileRequest(myPath, FlightRoute_GeoJSON);
+        return;
+    }
+
+#if !defined(Q_OS_ANDROID)
+    // FLARM Simulator file
+    if (myPath.endsWith(u".txt", Qt::CaseInsensitive)) {
+        auto *source = new Traffic::TrafficDataSource_File(myPath);
+        Global::trafficDataProvider()->addDataSource(source); // Will take ownership of source
+        source->connectToTrafficReceiver();
+        return;
+    }
+#endif
+
     emit openFileRequest(myPath, UnknownFunction);
 }
 
 
 #if defined(Q_OS_ANDROID)
-MobileAdaptor* MobileAdaptor::getInstance()
+auto MobileAdaptor::outgoingIntent(const QString& methodName, const QString& filePath, const QString& mimeType) -> bool
 {
-    if (!mInstance) {
-        mInstance = new MobileAdaptor;
-    }
-
-    return mInstance;
-}
-
-
-bool MobileAdaptor::outgoingIntent(const QString& methodName, const QString& filePath, const QString& mimeType)
-{
-    if (filePath == nullptr)
+    if (filePath == nullptr) {
         return false;
+    }
 
     QAndroidJniObject jsPath = QAndroidJniObject::fromString(filePath);
     QAndroidJniObject jsMimeType = QAndroidJniObject::fromString(mimeType);
@@ -213,20 +250,19 @@ bool MobileAdaptor::outgoingIntent(const QString& methodName, const QString& fil
                 "(Ljava/lang/String;Ljava/lang/String;)Z",
                 jsPath.object<jstring>(),
                 jsMimeType.object<jstring>());
-    return ok;
+    return ok != 0U;
 }
 
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_de_akaflieg_1freiburg_enroute_ShareActivity_setFileReceived(JNIEnv* env, jobject, jstring jfname)
+JNIEXPORT void JNICALL Java_de_akaflieg_1freiburg_enroute_ShareActivity_setFileReceived(JNIEnv* env, jobject /*unused*/, jstring jfname)
 {
     const char* fname = env->GetStringUTFChars(jfname, nullptr);
-    MobileAdaptor::getInstance()->processFileOpenRequest(QString::fromUtf8(fname));
+    Global::mobileAdaptor()->processFileOpenRequest(QString::fromUtf8(fname));
     env->ReleaseStringUTFChars(jfname, fname);
 }
 
 
 }
 #endif
-

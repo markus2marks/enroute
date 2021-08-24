@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,11 +18,15 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+import QtGraphicalEffects 1.15
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
 import enroute 1.0
+
+import "../items"
 
 /* This is a dialog with detailed information about a weather station. To use this dialog, all you have to do is to set a WeatherStation in the property "weatherStation" and call open(). */
 
@@ -31,6 +35,7 @@ Dialog {
     id: weatherReportDialog
 
     property WeatherStation weatherStation
+    onWeatherStationChanged: sv.ScrollBar.vertical.position = 0.0 // Reset scroll bar if station changes
 
     // Size is chosen so that the dialog does not cover the parent in full
     width: Math.min(view.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
@@ -39,8 +44,8 @@ Dialog {
     // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
     // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
     parent: Overlay.overlay
-    x: (parent.width-width)/2.0
-    y: (parent.height-height)/2.0
+    x: (view.width-width)/2.0
+    y: (view.height-height)/2.0
 
     modal: true
     standardButtons: Dialog.Close
@@ -53,10 +58,7 @@ Dialog {
             id: headX
             Layout.fillWidth: true
 
-            Image {
-                source: (weatherStation !== null) ? weatherStation.icon : "/icons/waypoints/WP.svg"
-                sourceSize.width: 25
-            }
+            Icon { source: (weatherStation !== null) ? weatherStation.icon : "/icons/waypoints/WP.svg" }
 
             Label {
                 text: (weatherStation !== null) ? weatherStation.extendedName : ""
@@ -69,8 +71,8 @@ Dialog {
         }
 
         Label { // Second header line with distance and QUJ
-            text: (weatherStation !== null) ? weatherStation.wayTo(satNav.coordinate, globalSettings.useMetricUnits) : ""
-            visible: satNav.status === SatNav.OK
+            text: (weatherStation !== null) ? weatherStation.wayTo(positionProvider.positionInfo.coordinate(), global.settings().useMetricUnits) : ""
+            visible: positionProvider.receivingPositionInfo
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignRight
             wrapMode: Text.WordWrap
@@ -85,12 +87,10 @@ Dialog {
             contentHeight: co.height
             contentWidth: weatherReportDialog.availableWidth
 
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
             // The visibility behavior of the vertical scroll bar is a little complex.
             // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
-            ScrollBar.vertical.policy: (height < co.implicitHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-            ScrollBar.vertical.interactive: false
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: (height < contentHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
             clip: true
 
@@ -107,8 +107,10 @@ Dialog {
 
                 Label { // raw METAR text
                     visible: (weatherStation !== null) && weatherStation.hasMETAR
-                    text: (weatherStation !== null) ? weatherStation.metar.rawText : ""
+                    text: (weatherStation !== null) && weatherStation.hasMETAR ? weatherStation.metar.rawText : ""
                     Layout.fillWidth: true
+                    Layout.leftMargin: 4
+                    Layout.rightMargin: 4
                     wrapMode: Text.WordWrap
 
                     bottomPadding: 0.2*Qt.application.font.pixelSize
@@ -116,19 +118,24 @@ Dialog {
                     leftPadding: 0.2*Qt.application.font.pixelSize
                     rightPadding: 0.2*Qt.application.font.pixelSize
 
+                    leftInset: -4
+                    rightInset: -4
+
                     // Background color according to METAR/FAA flight category
                     background: Rectangle {
                         border.color: "black"
                         color: (weatherStation !== null) && weatherStation.hasMETAR ? weatherStation.metar.flightCategoryColor : "transparent"
                         opacity: 0.2
+                        radius: 4
                     }
                 }
 
                 Label { // decoded METAR text
                     visible: (weatherStation !== null) && weatherStation.hasMETAR
-                    text: (weatherStation !== null) ? weatherStation.metar.decodedText : ""
+                    text: (weatherStation !== null) && weatherStation.hasMETAR ? weatherStation.metar.decodedText : ""
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
+                    textFormat: Text.RichText // OK
                 }
 
                 Label { // title: "TAF"
@@ -142,6 +149,8 @@ Dialog {
                     visible: (weatherStation !== null) && weatherStation.hasTAF
                     text: (weatherStation !== null) && weatherStation.hasTAF ? weatherStation.taf.rawText : ""
                     Layout.fillWidth: true
+                    Layout.leftMargin: 4
+                    Layout.rightMargin: 4
                     wrapMode: Text.WordWrap
 
                     bottomPadding: 0.2*Qt.application.font.pixelSize
@@ -149,8 +158,14 @@ Dialog {
                     leftPadding: 0.2*Qt.application.font.pixelSize
                     rightPadding: 0.2*Qt.application.font.pixelSize
 
+                    leftInset: -4
+                    rightInset: -4
+
                     background: Rectangle {
                         border.color: "black"
+                        color: Material.foreground
+                        opacity: 0.2
+                        radius: 4
                     }
                 }
 
@@ -159,6 +174,7 @@ Dialog {
                     text: (weatherStation !== null) && weatherStation.hasTAF ? weatherStation.taf.decodedText : ""
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
+                    textFormat: Text.RichText // OK
                 }
 
             }

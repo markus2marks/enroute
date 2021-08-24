@@ -8,8 +8,8 @@
 #ifndef SRC_FLARM_H_
 #define SRC_FLARM_H_
 
-#include <QSerialPort>
-#include <QSerialPortInfo>
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
 #include <QtCore>
 
 class Flarm : public QObject

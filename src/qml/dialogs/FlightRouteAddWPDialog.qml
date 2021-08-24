@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -41,16 +41,15 @@ Dialog {
     Component {
         id: waypointDelegate
 
-        ItemDelegate {
+        WordWrappingItemDelegate {
             text: model.modelData.twoLineTitle
             icon.source: model.modelData.icon
-            icon.color: "transparent"
 
-            width: parent.width
+            width: wpList.width
 
             onClicked: {
-                mobileAdaptor.vibrateBrief()
-                flightRoute.append(model.modelData)
+                global.mobileAdaptor().vibrateBrief()
+                global.navigator().flightRoute.append(model.modelData)
                 close()
             }
         }
@@ -64,9 +63,9 @@ Dialog {
             Layout.fillWidth: true
 
             text: qsTr("Choose a waypoint from the list below.")
-            color: Material.primary
+            color: Material.accent
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         TextField {
@@ -80,8 +79,8 @@ Dialog {
 
             onAccepted: {
                 if (wpList.model.length > 0) {
-                    mobileAdaptor.vibrateBrief()
-                    flightRoute.append(wpList.model[0])
+                    global.mobileAdaptor().vibrateBrief()
+                    global.navigator().flightRoute.append(wpList.model[0])
                     close()
                 }
             }
@@ -95,7 +94,8 @@ Dialog {
 
             clip: true
 
-            model: geoMapProvider.filteredWaypointObjects(textInput.displayText)
+
+            model: global.geoMapProvider().filteredWaypointObjects(textInput.displayText)
             delegate: waypointDelegate
             ScrollIndicator.vertical: ScrollIndicator {}
 
@@ -105,7 +105,7 @@ Dialog {
 
                 visible: (wpList.count === 0)
                 horizontalAlignment: Text.AlignHCenter
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
                 wrapMode: Text.Wrap
                 text: (textInput.text === "")
                       ? qsTr("<h3>Sorry!</h3><p>No waypoints available. Please make sure that an aviation map is installed.</p>")

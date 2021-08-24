@@ -19,25 +19,31 @@
  ***************************************************************************/
 
 #include "Clock.h"
-#include "SatNav.h"
+#include "positioning/PositionProvider.h"
 
+#include <QDate>
 #include <QGuiApplication>
 #include <QTimer>
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 
-// Static instance of this class
-Q_GLOBAL_STATIC(Clock, clockStatic);
+// Static instance of this class. Do not analyze, because of many unwanted warnings.
+#ifndef __clang_analyzer__
+QPointer<Clock> clockStatic {};
+#endif
 
 
 Clock::Clock(QObject *parent) : QObject(parent)
 {
     // We need to update the time regularly. I do not use a simple timer here that emits "timeChanged" once per minute, because I
     // want the signal to be emitted right after the full minute. So, I use a timer that once a minute set a single-shot time
-    // that is set to fire up 500ms after the full minute. This design will also work reliably if "timer" get out of synce,
+    // that is set to fire up 500ms after the full minute. This design will also work reliably if "timer" get out of sync,
     // for instance because the app was sleeping for a while.
-    auto timer = new QTimer(this);
+    auto *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &Clock::setSingleShotTimer);
-    timer->setInterval(60*1000);
+    timer->setInterval(1min);
     timer->start();
 
     // Start the single shot timer once manually
@@ -48,79 +54,88 @@ Clock::Clock(QObject *parent) : QObject(parent)
 }
 
 
-QString Clock::describeTimeDifference(QDateTime pointInTime)
+auto Clock::describeTimeDifference(const QDateTime& pointInTime) -> QString
 {
     auto minutes = qRound(QDateTime::currentDateTime().secsTo(pointInTime)/60.0);
 
     bool past = minutes < 0;
     minutes = qAbs(minutes);
 
-    if (minutes == 0)
+    if (minutes == 0) {
         return tr("just now");
+    }
 
     auto hours = minutes/60;
     minutes = minutes%60;
 
     QString result = "";
-    if ((hours != 0) && (minutes == 0))
+    if ((hours != 0) && (minutes == 0)) {
         result = tr("%1h").arg(hours);
-    else if ((hours == 0) && (minutes != 0))
+    } else if ((hours == 0) && (minutes != 0)) {
         result = tr("%1min").arg(minutes);
-    else
+    } else {
         result = tr("%1h and %2min").arg(hours).arg(minutes);
+    }
 
-    if (past)
+    if (past) {
         result = tr("%1 ago").arg(result);
-    else
+    } else {
         result = tr("in %1").arg(result);
+    }
 
     return result.simplified();
 }
 
 
-QString Clock::describePointInTime(QDateTime pointInTime)
+auto Clock::describePointInTime(QDateTime pointInTime) -> QString
 {
     pointInTime = pointInTime.toUTC();
 
+    auto currentDateLocal = QDate::currentDate();
+    auto pointInTimeDateLocal = pointInTime.toLocalTime().date();
+
     // Obtain current position
-    QGeoCoordinate position;
-    auto _satNav = SatNav::globalInstance();
-    if (_satNav)
-        position = _satNav->lastValidCoordinate();
-
-    if (position.isValid()) {
-        auto lastMidnight = QDateTime::currentDateTimeUtc();
-        lastMidnight.setTime( QTime::fromMSecsSinceStartOfDay(4.0*position.longitude()*60.0*1000.0) );
-        if (lastMidnight > QDateTime::currentDateTime())
-            lastMidnight = lastMidnight.addDays(-1);
-
-        if ((pointInTime < lastMidnight) && (pointInTime > lastMidnight.addDays(-1)))
-            return tr("yesterday %1").arg(pointInTime.toString("H:mm"));
-        if ((pointInTime > lastMidnight) && (pointInTime < lastMidnight.addDays(1)))
-            return pointInTime.toString("H:mm");
-        if ((pointInTime > lastMidnight.addDays(1)) && (pointInTime < lastMidnight.addDays(2)))
-            return tr("tomorrow %1").arg(pointInTime.toString("H:mm"));
+    auto dayDelta = currentDateLocal.daysTo(pointInTimeDateLocal);
+    switch(dayDelta) {
+    case -1:
+        return tr("yesterday %1").arg(pointInTime.toString("H:mm"));
+    case 0:
+        return pointInTime.toString("H:mm");
+    case 1:
+        return tr("tomorrow %1").arg(pointInTime.toString("H:mm"));
+    default:
+        return pointInTime.toString("d. MMM, H:mm");
     }
 
     return pointInTime.toString("d. MMM, H:mm");
 }
 
 
-Clock *Clock::globalInstance()
+auto Clock::globalInstance() -> Clock *
 {
+#ifndef __clang_analyzer__
+    if (clockStatic.isNull()) {
+        clockStatic = new Clock();
+    }
     return clockStatic;
+#else
+    return nullptr;
+#endif
 }
 
 
 void Clock::setSingleShotTimer()
 {
-    QTime current = QTime::currentTime();
+    QTime current = QDateTime::currentDateTime().time();
     int msecsToNextMinute = 60*1000 - (current.msecsSinceStartOfDay() % (60*1000));
     QTimer::singleShot(msecsToNextMinute+500, this, &Clock::timeChanged);
+    if (current.msecsSinceStartOfDay() < 1000*60) {
+        emit dateChanged();
+    }
 }
 
 
-QString Clock::timeAsUTCString() const
+auto Clock::timeAsUTCString() -> QString
 {
     return QDateTime::currentDateTimeUtc().toString("H:mm");
 }

@@ -24,54 +24,36 @@ import QtQuick.Controls.Material 2.15
 
 ToolBar {
 
+    Material.foreground: "white"
+    height: 60
+
     ToolButton {
         id: backButton
 
         anchors.left: parent.left
-        anchors.leftMargin: drawer.dragMargin
+        anchors.verticalCenter: parent.verticalCenter
 
         icon.source: "/icons/material/ic_arrow_back.svg"
 
         onClicked: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             stackView.pop()
         }
-
-        // Oddly, this seems necessary, or else the color will change
-        // on language changes
-        Component.onCompleted: icon.color = Material.foreground
-    } // ToolButton
+    }
 
     Label {
-        anchors.left: backButton.right
-        anchors.right: backButton2.left
-        anchors.bottom: parent.bottom
-        anchors.top: parent.top
+        id: lbl
+
+        anchors.verticalCenter: parent.verticalCenter
+
+        anchors.left: parent.left
+        anchors.leftMargin: 72
+        anchors.right: parent.right
 
         text: stackView.currentItem.title
         elide: Label.ElideRight
-        font.bold: true
-        horizontalAlignment: Qt.AlignHCenter
+        font.pixelSize: 20
         verticalAlignment: Qt.AlignVCenter
-
-        // Oddly, this seems necessary, or else the color will change
-        // on language changes
-        Component.onCompleted: color = Material.foreground
-    } // Label
-
-    ToolButton {
-        // Invisible element for horizontal centering of the label
-        id: backButton2
-
-        anchors.right: parent.right
-        anchors.rightMargin: drawer.dragMargin
-
-        icon.source: "/icons/material/ic_arrow_back.svg"
-        visible: false
-
-        // Oddly, this seems necessary, or else the color will change
-        // on language changes
-        Component.onCompleted: icon.color = Material.foreground
-    } // ToolButton
+    }
 
 } // ToolBar

@@ -20,29 +20,54 @@
 
 #include "Aircraft.h"
 
+#include <QPointer>
 #include <QtGlobal>
+
+// Static instance of this class. Do not analyze, because of many unwanted warnings.
+#ifndef __clang_analyzer__
+QPointer<Aircraft> aircraftStatic {};
+#endif
+
 
 Aircraft::Aircraft(QObject *parent) : QObject(parent) {
     _cruiseSpeedInKT = settings.value("Aircraft/cruiseSpeedInKTS", 0.0).toDouble();
-    if ((_cruiseSpeedInKT < minAircraftSpeedInKT) || (_cruiseSpeedInKT > maxAircraftSpeedInKT))
+    if ((_cruiseSpeedInKT < minAircraftSpeedInKT) || (_cruiseSpeedInKT > maxAircraftSpeedInKT)) {
         _cruiseSpeedInKT = qQNaN();
+    }
 
     _descentSpeedInKT = settings.value("Aircraft/descentSpeedInKTS", 0.0).toDouble();
-    if ((_descentSpeedInKT < minAircraftSpeedInKT) || (_descentSpeedInKT > maxAircraftSpeedInKT))
+    if ((_descentSpeedInKT < minAircraftSpeedInKT) || (_descentSpeedInKT > maxAircraftSpeedInKT)) {
         _descentSpeedInKT = qQNaN();
+    }
 
     _fuelConsumptionInLPH = settings.value("Aircraft/fuelConsumptionInLPH", 0.0).toDouble();
-    if ((_fuelConsumptionInLPH < minFuelConsuption) || (_fuelConsumptionInLPH > maxFuelConsuption))
+    if ((_fuelConsumptionInLPH < minFuelConsuption) || (_fuelConsumptionInLPH > maxFuelConsuption)) {
         _fuelConsumptionInLPH = qQNaN();
+    }
 }
 
-double Aircraft::cruiseSpeedInKT() const {
+
+auto Aircraft::globalInstance() -> Aircraft*
+{
+#ifndef __clang_analyzer__
+    if (aircraftStatic.isNull()) {
+        aircraftStatic = new Aircraft();
+    }
+    return aircraftStatic;
+#else
+    return nullptr;
+#endif
+}
+
+
+auto Aircraft::cruiseSpeedInKT() const -> double {
     return _cruiseSpeedInKT;
 }
 
 void Aircraft::setCruiseSpeedInKT(double speedInKT) {
-    if ((speedInKT < minAircraftSpeedInKT) || (speedInKT > maxAircraftSpeedInKT))
+    if ((speedInKT < minAircraftSpeedInKT) || (speedInKT > maxAircraftSpeedInKT)) {
         speedInKT = qQNaN();
+    }
 
     if (!qFuzzyCompare(speedInKT, _cruiseSpeedInKT)) {
         _cruiseSpeedInKT = speedInKT;
@@ -51,23 +76,24 @@ void Aircraft::setCruiseSpeedInKT(double speedInKT) {
     }
 }
 
-double Aircraft::cruiseSpeedInKMH() const {
-    auto speed = AviationUnits::Speed::fromKT(_cruiseSpeedInKT);
+auto Aircraft::cruiseSpeedInKMH() const -> double {
+    auto speed = Units::Speed::fromKN(_cruiseSpeedInKT);
     return speed.toKMH();
 }
 
 void Aircraft::setCruiseSpeedInKMH(double speedInKMH) {
-    auto speed = AviationUnits::Speed::fromKMH(speedInKMH);
-    setCruiseSpeedInKT(speed.toKT());
+    auto speed = Units::Speed::fromKMH(speedInKMH);
+    setCruiseSpeedInKT(speed.toKN());
 }
 
-double Aircraft::descentSpeedInKT() const {
+auto Aircraft::descentSpeedInKT() const -> double {
     return _descentSpeedInKT;
 }
 
 void Aircraft::setDescentSpeedInKT(double speedInKT) {
-    if ((speedInKT < minAircraftSpeedInKT) || (speedInKT > maxAircraftSpeedInKT))
+    if ((speedInKT < minAircraftSpeedInKT) || (speedInKT > maxAircraftSpeedInKT)) {
         speedInKT = qQNaN();
+    }
 
     if (!qFuzzyCompare(speedInKT, _descentSpeedInKT)) {
         _descentSpeedInKT = speedInKT;
@@ -76,19 +102,20 @@ void Aircraft::setDescentSpeedInKT(double speedInKT) {
     }
 }
 
-double Aircraft::descentSpeedInKMH() const {
-    auto speed = AviationUnits::Speed::fromKT(_descentSpeedInKT);
+auto Aircraft::descentSpeedInKMH() const -> double {
+    auto speed = Units::Speed::fromKN(_descentSpeedInKT);
     return speed.toKMH();
 }
 
 void Aircraft::setDescentSpeedInKMH(double speedInKMH) {
-    auto speed = AviationUnits::Speed::fromKMH(speedInKMH);
-    setDescentSpeedInKT(speed.toKT());
+    auto speed = Units::Speed::fromKMH(speedInKMH);
+    setDescentSpeedInKT(speed.toKN());
 }
 
 void Aircraft::setFuelConsumptionInLPH(double fuelConsumptionInLPH) {
-    if ((fuelConsumptionInLPH < minFuelConsuption) || (fuelConsumptionInLPH > maxFuelConsuption))
+    if ((fuelConsumptionInLPH < minFuelConsuption) || (fuelConsumptionInLPH > maxFuelConsuption)) {
         fuelConsumptionInLPH = qQNaN();
+    }
 
     if (!qFuzzyCompare(fuelConsumptionInLPH, _fuelConsumptionInLPH)) {
         _fuelConsumptionInLPH = fuelConsumptionInLPH;

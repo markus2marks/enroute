@@ -10,15 +10,15 @@
 
 Flarm::Flarm()
 {
-	m_serialPort = new QSerialPort(this);
-	QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
-	QList<QSerialPortInfo>::iterator info;
-	qInfo()<< "Flarm init \n";
-	for(info = ports.begin(); info != ports.end(); info++)
-	{
-		qInfo()<< "Port: " << info->portName() << "\n";
-	}
-	connect(m_serialPort, &QSerialPort::readyRead, this, &Flarm::handleReadyRead);
+	//m_serialPort = new QSerialPort(this);
+	//QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
+	//QList<QSerialPortInfo>::iterator info;
+	//qInfo()<< "Flarm init \n";
+	//for(info = ports.begin(); info != ports.end(); info++)
+	//{
+	//	qInfo()<< "Port: " << info->portName() << "\n";
+	//}
+	//connect(m_serialPort, &QSerialPort::readyRead, this, &Flarm::handleReadyRead);
 }
 
 Flarm::~Flarm()

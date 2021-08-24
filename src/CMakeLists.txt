@@ -12,6 +12,7 @@
 find_path(Qt5_TRANSLATION_DIR qtbase_de.qm
     HINTS ${Qt5Core_DIR}/../../../translations
     HINTS /usr/share/qt5/translations
+    HINTS /usr/share/qt/translations
     HINTS /usr/translations
     REQUIRED
     )
@@ -45,98 +46,163 @@ configure_file(${CMAKE_SOURCE_DIR}/generatedSources/flightMap/flightMap-fonts.qr
 configure_file(icons.qrc.in icons.qrc)
 configure_file(qml.qrc.in qml.qrc)
 configure_file(ressources.qrc.in ressources.qrc)
+configure_file(${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/knotifications5/enroute\ flight\ navigation.notifyrc.in enroute\ flight\ navigation.notifyrc)
 
 
 #
 # Set up sources
 #
 
-# We use this macro here to avoid creating extremely large C++ files with binary content
-#qt5_add_big_resources(BIGRESOURCES ${CMAKE_CURRENT_BINARY_DIR}/flightMapFonts.qrc)
-
 set(SOURCES
     # Ressources
     ${CMAKE_CURRENT_BINARY_DIR}/flightMap.qrc
     ${CMAKE_CURRENT_BINARY_DIR}/icons.qrc
-    ${CMAKE_CURRENT_BINARY_DIR}/ressources.qrc
-    ${CMAKE_CURRENT_BINARY_DIR}/flightMapFonts.qrc
 
     # Translations
     enroute_de.qm
     enroute_fr.qm
-    
+    enroute_it.qm
+    enroute_pl.qm
+
     # Other files
+    AndroidManifest.xml.in
     flightMap.qrc.in
     icons.qrc.in
     qml.qrc.in
+    README.md
     ressources.qrc.in
-    AndroidManifest.xml.in
 
     # Header files
     Aircraft.h
-    Airspace.h
     Clock.h
-    Downloadable.h
-    DownloadableGroup.h
-    DownloadableGroupWatcher.h
-    FlightRoute.h
-    GeoMapProvider.h
-    GlobalSettings.h
+    DemoRunner.h
+    geomaps/Airspace.h
+    geomaps/Downloadable.h
+    geomaps/DownloadableGroup.h
+    geomaps/DownloadableGroupWatcher.h
+    geomaps/GeoMapProvider.h
+    geomaps/MapManager.h
+    geomaps/TileHandler.h
+    geomaps/TileServer.h
+    geomaps/Waypoint.h
+    Global.h
     Librarian.h
-    Meteorologist.h
-    Meteorologist_Decoder.h
-    Meteorologist_METAR.h
-    Meteorologist_TAF.h
-    Meteorologist_WeatherStation.h
     MobileAdaptor.h
-    SatNav.h
-    ScaleQuickItem.h
-    Waypoint.h
-	variometer/Flarm.h
-	variometer/Variometer.h
-	variometer/UdpConnection.h
-	variometer/DataSwitch.h
-	variometer/KalmanFilter.h
-	
+    navigation/FlightRoute.h
+    navigation/FlightRoute_Leg.h
+    navigation/Navigator.h
+    positioning/Geoid.h
+    positioning/PositionInfo.h
+    positioning/PositionInfoSource_Abstract.h
+    positioning/PositionInfoSource_Satellite.h
+    positioning/PositionProvider.h
+    Settings.h
+    traffic/PasswordDB.h
+    traffic/TrafficDataSource_Abstract.h
+    traffic/TrafficDataSource_AbstractSocket.h
+    traffic/TrafficDataSource_File.h
+    traffic/TrafficDataSource_Simulate.h
+    traffic/TrafficDataSource_Tcp.h
+    traffic/TrafficDataSource_Udp.h
+    traffic/TrafficDataProvider.h
+    traffic/TrafficFactor_Abstract.h
+    traffic/TrafficFactor_DistanceOnly.h
+    traffic/TrafficFactor_WithPosition.h
+    traffic/Warning.h
+    ui/ScaleQuickItem.h
+    units/Angle.h
+    units/Distance.h
+    units/Speed.h
+    units/Time.h
+    weather/Decoder.h
+    weather/METAR.h
+    weather/Station.h
+    weather/TAF.h
+    weather/WeatherDataProvider.h
+    weather/Wind.h
+    variometer/Flarm.h
+    variometer/Variometer.h
+    variometer/UdpConnection.h
+    variometer/DataSwitch.h
+    variometer/KalmanFilter.h
     # C++ files
     Aircraft.cpp
-    Airspace.cpp
-    AviationUnits.cpp
     Clock.cpp
-    Downloadable.cpp
-    DownloadableGroup.cpp
-    DownloadableGroupWatcher.cpp
-    FlightRoute.cpp
-    FlightRoute_GPX.cpp
-    FlightRoute_Leg.cpp
-    Geoid.cpp
-    GeoMapProvider.cpp
-    GlobalSettings.cpp
+    DemoRunner.cpp
+    geomaps/Airspace.cpp
+    geomaps/Downloadable.cpp
+    geomaps/DownloadableGroup.cpp
+    geomaps/DownloadableGroupWatcher.cpp
+    geomaps/GeoMapProvider.cpp
+    geomaps/MapManager.cpp
+    geomaps/TileHandler.cpp
+    geomaps/TileServer.cpp
+    geomaps/Waypoint.cpp
+    Global.cpp
     Librarian.cpp
     main.cpp
-    MapManager.cpp
-    Meteorologist.cpp
-    Meteorologist_Decoder.cpp
-    Meteorologist_METAR.cpp
-    Meteorologist_TAF.cpp
-    Meteorologist_WeatherStation.cpp
     MobileAdaptor.cpp
     MobileAdaptor_share.cpp
-    SatNav.cpp
-    ScaleQuickItem.cpp
-    TileHandler.cpp
-    TileServer.cpp
-    Waypoint.cpp
-    Wind.cpp
+    navigation/FlightRoute.cpp
+    navigation/FlightRoute_GPX.cpp
+    navigation/FlightRoute_Leg.cpp
+    navigation/Navigator.cpp
+    positioning/Geoid.cpp
+    positioning/PositionInfo.cpp
+    positioning/PositionInfoSource_Abstract.cpp
+    positioning/PositionInfoSource_Satellite.cpp
+    positioning/PositionProvider.cpp
+    Settings.cpp
+    traffic/PasswordDB.cpp
+    traffic/TrafficDataSource_Abstract.cpp
+    traffic/TrafficDataSource_Abstract_FLARM.cpp
+    traffic/TrafficDataSource_Abstract_GDL90.cpp
+    traffic/TrafficDataSource_Abstract_XGPS.cpp
+    traffic/TrafficDataSource_AbstractSocket.cpp
+    traffic/TrafficDataSource_File.cpp
+    traffic/TrafficDataSource_Simulate.cpp
+    traffic/TrafficDataSource_Tcp.cpp
+    traffic/TrafficDataSource_Udp.cpp
+    traffic/TrafficDataProvider.cpp
+    traffic/TrafficFactor_Abstract.cpp
+    traffic/TrafficFactor_DistanceOnly.cpp
+    traffic/TrafficFactor_WithPosition.cpp
+    traffic/Warning.cpp
+    ui/ScaleQuickItem.cpp
+    units/Angle.cpp
+    units/Distance.cpp
+    units/Speed.cpp
+    units/Time.cpp
     variometer/Flarm.cpp
     variometer/Variometer.cpp
     variometer/UdpConnection.cpp
     variometer/DataSwitch.cpp
     variometer/KalmanFilter.cpp
-    variometer/Logger.cpp
-    variometer/DiagSensorboard.cpp
+    weather/Decoder.cpp
+    weather/METAR.cpp
+    weather/Station.cpp
+    weather/TAF.cpp
+    weather/WeatherDataProvider.cpp
+    weather/Wind.cpp
+
+    ${HEADERS}
     )
 
+#
+# Compile definitions
+#
+
+add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050F00)
+
+
+#
+# We use this macro here to avoid creating extremely large C++ files with binary content
+#
+
+qt_add_big_resources(SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/flightMapFonts.qrc
+    ${CMAKE_CURRENT_BINARY_DIR}/ressources.qrc
+    )
 
 #
 # Generate android executable
@@ -145,7 +211,10 @@ if( ANDROID )
     qtquick_compiler_add_resources(QTQUICKCOMPILEDRESOURCES ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc)
     list(APPEND SOURCES
         ${QTQUICKCOMPILEDRESOURCES}
+        android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java
         android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java
+        android/src/de/akaflieg_freiburg/enroute/ShareActivity.java
+        android/src/de/akaflieg_freiburg/enroute/ShareUtils.java
         )
 
     # Configure files
@@ -165,6 +234,9 @@ if( ANDROID )
     configure_file(android/src/de/akaflieg_freiburg/enroute/ShareUtils.java android/src/de/akaflieg_freiburg/enroute/ShareUtils.java COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/file/drawable-hdpi/ic_file_download_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_file_download.png COPYONLY)
 
+    # Copy manual into Android assets directory
+    file(COPY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION android/assets)
+
     # Generate android extra sources. This includes icons, but also a few other files
     set(ANDROID_EXTRA_SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxxhdpi/icon.png
@@ -178,7 +250,7 @@ if( ANDROID )
     add_custom_command(
         OUTPUT ${ANDROID_EXTRA_SOURCES}
         DEPENDS ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/android android
+        COMMAND cp -prd ${CMAKE_CURRENT_SOURCE_DIR}/android .
         COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xxxhdpi
         COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxxhdpi/icon.png -h 384 -w 384
         COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xxhdpi
@@ -194,6 +266,9 @@ if( ANDROID )
 
     # The android target require a few additional variables
     set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/android" CACHE INTERNAL "")
+
+    # Compile definitions
+    add_compile_definitions(MANUAL_LOCATION="/android_asset/manual")
 
     # The android target depends on our own copy of openssl
     set(ANDROID_EXTRA_LIBS
@@ -212,8 +287,8 @@ if( ANDROID )
     add_library(${PROJECT_NAME} SHARED ${SOURCES} ${ANDROID_EXTRA_SOURCES})
 
     # Add libraries and include paths
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::AndroidExtras Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg qhttpengine sunset)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::AndroidExtras Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg Qt5::WebView qhttpengine sunset)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
 endif()
 
 
@@ -226,16 +301,25 @@ if (NOT ANDROID)
         ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc
         )
 
+    # Compile definitions
+    add_compile_definitions(MANUAL_LOCATION="${CMAKE_INSTALL_FULL_DOCDIR}/manual")
+
     # Add executable and libraries
     add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg Qt5::SerialPort qhttpengine kdsingleapplication sunset)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg Qt5::WebView KF5::Notifications qhttpengine kdsingleapplication sunset)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
+    target_precompile_headers(${PROJECT_NAME} PRIVATE
+        <QObject>
+        <QPointer>
+        )
 
     # Install
     install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/enroute\ flight\ navigation.notifyrc DESTINATION ${KNOTIFYRC_INSTALL_DIR})
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 
-# Enforde C++17 and no extensions  
+# Enforce C++17 and no extensions
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 

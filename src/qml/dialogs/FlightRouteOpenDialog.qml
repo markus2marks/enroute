@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -34,6 +34,14 @@ Dialog {
     // Size is chosen so that the dialog does not cover the parent in full
     width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
     height: parent.height-2*Qt.application.font.pixelSize
+
+    // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+    // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
+    parent: Overlay.overlay
+    x: (parent.width-width)/2.0
+    y: (parent.height-height)/2.0
+
+
     implicitHeight: height
 
     standardButtons: DialogButtonBox.Cancel
@@ -45,16 +53,15 @@ Dialog {
             id: idel
             text: modelData
             icon.source: "/icons/material/ic_directions.svg"
-            icon.color: "transparent"
 
             anchors.left: parent.left
             anchors.right: parent.right
 
             onClicked: {
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 finalFileName = modelData
                 dlg.close()
-                if (flightRoute.routeObjects.length > 0)
+                if (global.navigator().flightRoute.size > 0)
                     overwriteDialog.open()
                 else
                     openFromLibrary()
@@ -70,9 +77,9 @@ Dialog {
             Layout.fillWidth: true
 
             text: qsTr("Choose a flight route from the list below.")
-            color: Material.primary
+            color: Material.accent
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         TextField {
@@ -89,10 +96,10 @@ Dialog {
                 if (lView.model.length === 0)
                     return
 
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 finalFileName = lView.model[0]
                 dlg.close()
-                if (flightRoute.routeObjects.length > 0)
+                if (global.navigator().flightRoute.size > 0)
                     overwriteDialog.open()
                 else
                     openFromLibrary()
@@ -115,7 +122,7 @@ Dialog {
     } // ColumnLayout
 
     onRejected: {
-        mobileAdaptor.vibrateBrief()
+        global.mobileAdaptor().vibrateBrief()
         close()
     }
 
@@ -123,7 +130,7 @@ Dialog {
     property string finalFileName;
 
     function openFromLibrary() {
-        var errorString = flightRoute.loadFromGeoJSON(librarian.flightRouteFullPath(finalFileName))
+        var errorString = global.navigator().flightRoute.loadFromGeoJSON(librarian.flightRouteFullPath(finalFileName))
         if (errorString !== "") {
             lbl.text = errorString
             fileError.open()
@@ -148,31 +155,23 @@ Dialog {
             id: sv
             anchors.fill: parent
 
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            contentHeight: lbl.height
+            contentWidth: fileError.availableWidth
 
             // The visibility behavior of the vertical scroll bar is a little complex.
             // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
-            ScrollBar.vertical.policy: (height < lbl.implicitHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-            ScrollBar.vertical.interactive: false
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: (height < contentHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
             clip: true
 
-            // The Label that we really want to show is wrapped into an Item. This allows
-            // to set implicitHeight, and thus compute the implicitHeight of the Dialog
-            // without binding loops
-            Item {
-                implicitHeight: lbl.implicitHeight
+            Label {
+                id: lbl
                 width: dlg.availableWidth
-
-                Label {
-                    id: lbl
-                    width: dlg.availableWidth
-                    textFormat: Text.RichText
-                    horizontalAlignment: Text.AlignJustify
-                    wrapMode: Text.Wrap
-                    onLinkActivated: Qt.openUrlExternally(link)
-                } // Label
-            } // Item
+                textFormat: Text.StyledText
+                wrapMode: Text.Wrap
+                onLinkActivated: Qt.openUrlExternally(link)
+            } // Label
         } // ScrollView
 
     }
@@ -194,18 +193,18 @@ Dialog {
 
             text: qsTr("Loading the route <strong>%1</strong> will overwrite the current route. Once overwritten, the current flight route cannot be restored.").arg(finalFileName)
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.No | Dialog.Yes
         modal: true
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             dlg.openFromLibrary()
         }
         onRejected: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             close()
             dlg.open()
         }

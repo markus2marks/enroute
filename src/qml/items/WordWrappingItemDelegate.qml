@@ -30,11 +30,9 @@ ItemDelegate {
     contentItem: RowLayout {
         height: Math.max(a.height, b.height)
 
-        Image { // Icon
+        Icon { // Icon
             id: a
             source: itemDelegate.icon.source
-            sourceSize.width: 25
-
         }
 
         Item { // Spacer
