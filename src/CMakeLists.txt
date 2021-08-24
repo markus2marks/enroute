@@ -103,6 +103,7 @@ set(SOURCES
     traffic/TrafficDataSource_File.h
     traffic/TrafficDataSource_Simulate.h
     traffic/TrafficDataSource_Tcp.h
+    traffic/TrafficDataSource_Serial.h
     traffic/TrafficDataSource_Udp.h
     traffic/TrafficDataProvider.h
     traffic/TrafficFactor_Abstract.h
@@ -120,7 +121,6 @@ set(SOURCES
     weather/TAF.h
     weather/WeatherDataProvider.h
     weather/Wind.h
-    variometer/Flarm.h
     variometer/Variometer.h
     variometer/UdpConnection.h
     variometer/DataSwitch.h
@@ -163,6 +163,7 @@ set(SOURCES
     traffic/TrafficDataSource_Simulate.cpp
     traffic/TrafficDataSource_Tcp.cpp
     traffic/TrafficDataSource_Udp.cpp
+    traffic/TrafficDataSource_Serial.cpp
     traffic/TrafficDataProvider.cpp
     traffic/TrafficFactor_Abstract.cpp
     traffic/TrafficFactor_DistanceOnly.cpp
@@ -173,7 +174,6 @@ set(SOURCES
     units/Distance.cpp
     units/Speed.cpp
     units/Time.cpp
-    variometer/Flarm.cpp
     variometer/Variometer.cpp
     variometer/UdpConnection.cpp
     variometer/DataSwitch.cpp
@@ -306,7 +306,7 @@ if (NOT ANDROID)
 
     # Add executable and libraries
     add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg Qt5::WebView KF5::Notifications qhttpengine kdsingleapplication sunset)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::SerialPort Qt5::Sql Qt5::Svg Qt5::WebView KF5::Notifications qhttpengine kdsingleapplication sunset)
     target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
     target_precompile_headers(${PROJECT_NAME} PRIVATE
         <QObject>

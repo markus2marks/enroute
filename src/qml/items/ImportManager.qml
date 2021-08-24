@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2020 by Stefan Kebekus                                  *
+ *   Copyright (C) 2020-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -31,7 +31,7 @@ Item {
     property int fileFunction: MobileAdaptor.UnknownFunction
 
     Connections {
-        target: mobileAdaptor
+        target: global.mobileAdaptor()
         function onOpenFileRequest(fileName, fileFunction) {
             view.raise()
             view.requestActivate()
@@ -45,24 +45,28 @@ Item {
 
             importManager.filePath = fileName
             importManager.fileFunction = fileFunction
-            if (flightRoute.routeObjects.length > 0)
+            if (global.navigator().flightRoute.size > 0)
                 importDialog.open()
             else
                 importDialog.onAccepted()
       }
     } // Connections
 
+
     Dialog {
         id: importDialog
-        anchors.centerIn: parent
+
+        // Size is chosen so that the dialog does not cover the parent in full
+        width: Math.min(view.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
+        height: Math.min(view.height-Qt.application.font.pixelSize, implicitHeight)
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Import Flight Route?")
-
-        // Width is chosen so that the dialog does not cover the parent in full, height is automatic
-        // Size is chosen so that the dialog does not cover the parent in full
-        width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
-        height: Math.min(parent.height-Qt.application.font.pixelSize, implicitHeight)
 
         Label {
             id: lbl
@@ -71,21 +75,22 @@ Item {
 
             text: qsTr("This will overwrite the current route. Once overwritten, the current flight route cannot be restored.")
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.No | Dialog.Yes
         modal: true
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
 
             var errorString = ""
 
             if (importManager.fileFunction === MobileAdaptor.FlightRoute_GeoJSON)
-                errorString = flightRoute.loadFromGeoJSON(importManager.filePath)
-            if (importManager.fileFunction === MobileAdaptor.FlightRoute_GPX)
-                errorString = flightRoute.loadFromGpx(importManager.filePath, geoMapProvider)
+                errorString = global.navigator().flightRoute.loadFromGeoJSON(importManager.filePath)
+            if (importManager.fileFunction === MobileAdaptor.FlightRoute_GPX) {
+                errorString = global.navigator().flightRoute.loadFromGpx(importManager.filePath, global.geoMapProvider())
+            }
 
             if (errorString !== "") {
                 errLbl.text = errorString
@@ -96,23 +101,28 @@ Item {
                 stackView.pop()
                 stackView.push("../pages/FlightRouteEditor.qml")
             }
+            toast.doToast( qsTr("Flight route imported") )
         }
 
     } // importDialog
 
     Dialog {
         id: errorDialog
-        anchors.centerIn: parent
+
+        // Size is chosen so that the dialog does not cover the parent in full
+        width: Math.min(view.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
+        height: Math.min(view.height-Qt.application.font.pixelSize, implicitHeight)
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
+
         standardButtons: Dialog.Cancel
         modal: true
 
         title: qsTr("Error importing flight route")
-
-        // Width is chosen so that the dialog does not cover the parent in full, height is automatic
-        // Size is chosen so that the dialog does not cover the parent in full
-        width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
-        height: Math.min(parent.height-Qt.application.font.pixelSize, implicitHeight)
 
         Label {
             id: errLbl
@@ -120,7 +130,7 @@ Item {
             width: importDialog.availableWidth
 
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
     } // errorDialog

@@ -44,7 +44,7 @@ ApplicationWindow {
 
     Drawer {
         id: drawer
-        width: col.implicitWidth
+
         height: view.height
 		
 		
@@ -120,7 +120,6 @@ ApplicationWindow {
                     id: menuItemRoute
                     text: qsTr("Route")
                     icon.source: "/icons/material/ic_directions.svg"
-                    icon.color: Material.primary
                     Layout.fillWidth: true
 		     KeyNavigation.down: menuItemNearby
                     onClicked: {
@@ -136,9 +135,8 @@ ApplicationWindow {
 
                     text: qsTr("Nearby Waypoints")
                     icon.source: "/icons/material/ic_my_location.svg"
-                    icon.color: Material.primary
                     Layout.fillWidth: true
-		     KeyNavigation.down: weatherItem
+		    KeyNavigation.down: weatherItem
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -152,7 +150,6 @@ ApplicationWindow {
 
                     text: qsTr("Weather")
                     icon.source: "/icons/material/ic_cloud_queue.svg"
-                    icon.color: Material.primary
                     Layout.fillWidth: true
                     KeyNavigation.down: menuItemSettings
                     onClicked: {
@@ -220,10 +217,8 @@ ApplicationWindow {
 
                     text: qsTr("Settings")
                     icon.source: "/icons/material/ic_settings.svg"
-                    icon.color: Material.primary
                     Layout.fillWidth: true
-		     KeyNavigation.down: menuItemInformation
-					
+
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -239,12 +234,10 @@ ApplicationWindow {
                 }
 
                 ItemDelegate { // Info
-                	id: menuItemInformation
+                    id: menuItemInformation
                     text: qsTr("Information")
                     icon.source: "/icons/material/ic_info_outline.svg"
-                    icon.color: Material.primary
                     Layout.fillWidth: true
-                    visible: !satNav.isInFlight
 
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
@@ -645,6 +638,25 @@ ApplicationWindow {
     Shortcut {
         sequence: StandardKey.Close
         onActivated: Qt.quit()
+    }
+
+    Connections {
+        target: global.trafficDataProvider()
+
+        function onPasswordRequest(ssid) {
+            dialogLoader.active = false
+            dialogLoader.dialogArgs = ssid
+            dialogLoader.source = "dialogs/PasswordDialog.qml"
+            dialogLoader.active = true
+        }
+
+        function onPasswordStorageRequest(ssid, password) {
+            dialogLoader.active = false
+            dialogLoader.dialogArgs = ssid
+            dialogLoader.text = password
+            dialogLoader.source = "dialogs/PasswordStorageDialog.qml"
+            dialogLoader.active = true
+        }
     }
 
     // Enroute closed unexpectedly if...

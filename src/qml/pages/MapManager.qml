@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,6 +23,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
+import "../dialogs"
 import "../items"
 
 Page {
@@ -37,7 +38,7 @@ Page {
             text: section
             font.pixelSize: Qt.application.font.pixelSize*1.2
             font.bold: true
-            color: Material.primary
+            color: Material.accent
         }
     }
 
@@ -54,10 +55,10 @@ Page {
                 var nFilesTotal;
                 var mapTypeString;
                 if (sv.currentIndex == 0) {  // swipe view shows aviation maps
-                    nFilesTotal = mapManager.aviationMaps.numberOfFilesTotal();
+                    nFilesTotal = global.mapManager().aviationMaps.numberOfFilesTotal();
                     mapTypeString = qsTr("aviation maps")
                 } else {  // swipe view shows base maps
-                    nFilesTotal = mapManager.baseMaps.numberOfFilesTotal();
+                    nFilesTotal = global.mapManager().baseMaps.numberOfFilesTotal();
                     mapTypeString = qsTr("base maps")
                 }
 
@@ -66,8 +67,8 @@ Page {
                 if (nFilesTotal > 7) {
                     dialogLoader.active = false;
                     dialogLoader.dialogArgs = {onAcceptedCallback: model.modelData.startFileDownload,
-                                               nFilesTotal: nFilesTotal,
-                                               mapTypeString: mapTypeString};
+                        nFilesTotal: nFilesTotal,
+                        mapTypeString: mapTypeString};
                     dialogLoader.source = "../dialogs/TooManyDownloadsDialog.qml";
                     dialogLoader.active = true;
                 } else {
@@ -90,11 +91,11 @@ Page {
                 ItemDelegate {
                     text: model.modelData.objectName + `<br><font color="#606060" size="2">${model.modelData.infoText}</font>`
                     icon.source: model.modelData.updatable ? "/icons/material/ic_new_releases.svg" : "/icons/material/ic_map.svg"
-                    icon.color: model.modelData.hasFile ? Material.primary : "#9E9E9E"
                     Layout.fillWidth: true
+                    enabled: !model.modelData.hasFile
                     onClicked: {
                         if (!model.modelData.downloading && (!model.modelData.hasFile || model.modelData.updatable)) {
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             startFileDownload()
                         }
                     }
@@ -105,7 +106,7 @@ Page {
                     icon.source: "/icons/material/ic_file_download.svg"
                     visible: !model.modelData.hasFile && !model.modelData.downloading
                     onClicked: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         startFileDownload()
                     }
                 }
@@ -115,7 +116,7 @@ Page {
                     icon.source: "/icons/material/ic_refresh.svg"
                     visible: model.modelData.updatable
                     onClicked: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         startFileDownload()
                     }
                 }
@@ -125,7 +126,7 @@ Page {
                     icon.source: "/icons/material/ic_cancel.svg"
                     visible: model.modelData.downloading
                     onClicked: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         model.modelData.stopFileDownload()
                     }
                 }
@@ -136,7 +137,7 @@ Page {
 
                     visible: model.modelData.hasFile & !model.modelData.downloading
                     onClicked: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         removeMenu.popup()
                     }
 
@@ -144,12 +145,24 @@ Page {
                         id: removeMenu
 
                         Action {
-                            id: updateAction
+                            id: infoAction
+
+                            text: qsTr("Map Info")
+
+                            onTriggered: {
+                                global.mobileAdaptor().vibrateBrief()
+                                infoDialog.title = qsTr("Map Info: ") + model.modelData.objectName
+                                infoDialog.text = global.geoMapProvider().describeMapFile(model.modelData.fileName)
+                                infoDialog.open()
+                            }
+                        }
+                        Action {
+                            id: removeAction
 
                             text: qsTr("Uninstall")
 
                             onTriggered: {
-                                mobileAdaptor.vibrateBrief()
+                                global.mobileAdaptor().vibrateBrief()
                                 model.modelData.deleteFile()
                             }
                         }
@@ -160,7 +173,7 @@ Page {
 
             Connections {
                 target: model.modelData
-                function onError (message) {
+                function onError(objectName, message) {
                     dialogLoader.active = false
                     dialogLoader.title = qsTr("Download Error")
                     dialogLoader.text = qsTr("<p>Failed to download <strong>%1</strong>.</p><p>Reason: %2.</p>").arg(objectName).arg(message)
@@ -176,74 +189,86 @@ Page {
 
     header: ToolBar {
 
+        Material.foreground: "white"
+        height: 60
+
         ToolButton {
             id: backButton
 
             anchors.left: parent.left
-            anchors.leftMargin: drawer.dragMargin
+            anchors.verticalCenter: parent.verticalCenter
 
             icon.source: "/icons/material/ic_arrow_back.svg"
+
             onClicked: {
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 stackView.pop()
             }
-        } // ToolButton
+        }
 
         Label {
-            anchors.left: backButton.right
+            id: lbl
+
+            anchors.verticalCenter: parent.verticalCenter
+
+            anchors.left: parent.left
+            anchors.leftMargin: 72
             anchors.right: headerMenuToolButton.left
-            anchors.bottom: parent.bottom
-            anchors.top: parent.top
 
             text: stackView.currentItem.title
             elide: Label.ElideRight
-            font.bold: true
-            horizontalAlignment: Qt.AlignHCenter
+            font.pixelSize: 20
             verticalAlignment: Qt.AlignVCenter
         }
 
         ToolButton {
+            id: headerMenuToolButton
+
+            anchors.verticalCenter: parent.verticalCenter
+
             anchors.right: parent.right
 
-            id: headerMenuToolButton
             icon.source: "/icons/material/ic_more_vert.svg"
+            icon.color: "white"
+
             onClicked: {
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 headerMenuX.popup()
             }
 
-            AutoSizingMenu {
-                id: headerMenuX
+        }
 
-                MenuItem {
-                    id: updateMenu
+        AutoSizingMenu {
+            id: headerMenuX
 
-                    text: qsTr("Update list of maps")
+            MenuItem {
+                id: updateMenu
 
-                    onTriggered: {
-                        mobileAdaptor.vibrateBrief()
-                        highlighted = false
-                        mapManager.updateGeoMapList()
-                    }
+                text: qsTr("Update list of maps")
+
+                onTriggered: {
+                    global.mobileAdaptor().vibrateBrief()
+                    highlighted = false
+                    global.mapManager().updateGeoMapList()
                 }
+            }
 
-                MenuItem {
-                    id: downloadUpdatesMenu
+            MenuItem {
+                id: downloadUpdatesMenu
 
-                    text: qsTr("Download all updates…")
-                    enabled: mapManager.geoMaps.updatable
+                text: qsTr("Download all updates…")
+                enabled: global.mapManager().geoMaps.updatable
 
-                    onTriggered: {
-                        mobileAdaptor.vibrateBrief()
-                        highlighted = false
-                        mapManager.geoMaps.updateAll()
-                    }
+                onTriggered: {
+                    global.mobileAdaptor().vibrateBrief()
+                    highlighted = false
+                    global.mapManager().geoMaps.updateAll()
                 }
+            }
 
-            } // AutoSizingMenu
-        } // ToolButton
+        }
 
-    } // ToolBar
+    }
 
 
     TabBar {
@@ -261,7 +286,7 @@ Page {
             text: qsTr("Base Maps")
         }
         Material.elevation: 3
-    } // TabBar
+    }
 
     ColumnLayout {
         anchors.top: bar.bottom
@@ -280,12 +305,43 @@ Page {
 
             ListView {
                 clip: true
-                model: mapManager.aviationMaps.downloadablesAsObjectList
+                model: global.mapManager().aviationMaps.downloadablesAsObjectList
                 delegate: mapItem
                 ScrollIndicator.vertical: ScrollIndicator {}
 
                 section.property: "modelData.section"
                 section.delegate: sectionHeading
+
+                footer: ColumnLayout {
+                    width: parent.width
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: "gray"
+                    }
+
+                    WordWrappingItemDelegate {
+                        Layout.fillWidth: true
+                        icon.source: "/icons/material/ic_info_outline.svg"
+                        text: qsTr("How to request additional aviation maps…")
+                        onClicked: ltd.open()
+
+                        LongTextDialog {
+                            id: ltd
+                            standardButtons: Dialog.Ok
+
+                            title: qsTr("Request additional aviation maps")
+                            text: librarian.getStringFromRessource(":text/aviationMapMissing.html")
+                        }
+
+                    }
+
+                    Item { // Spacer
+                        height: 3
+                    }
+
+                }
 
                 // Refresh list of maps on overscroll
                 property int refreshFlick: 0
@@ -294,8 +350,8 @@ Page {
                 }
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
-                        mobileAdaptor.vibrateBrief()
-                        mapManager.updateGeoMapList()
+                        global.mobileAdaptor().vibrateBrief()
+                        global.mapManager().updateGeoMapList()
                     }
                 }
             } // ListView
@@ -304,7 +360,7 @@ Page {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 clip: true
-                model: mapManager.baseMaps.downloadablesAsObjectList
+                model: global.mapManager().baseMaps.downloadablesAsObjectList
                 delegate: mapItem
                 ScrollIndicator.vertical: ScrollIndicator {}
 
@@ -318,15 +374,15 @@ Page {
                 }
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
-                        mobileAdaptor.vibrateBrief()
-                        mapManager.updateGeoMapList()
+                        global.mobileAdaptor().vibrateBrief()
+                        global.mapManager().updateGeoMapList()
                     }
                 }
             } // ListView
 
         } // SwipeView
 
-    } // ColumnLayout
+    }
 
 
     Rectangle {
@@ -338,7 +394,7 @@ Page {
         anchors.bottom: parent.bottom
 
         color: "white"
-        visible: !mapManager.downloadingGeoMapList && !mapManager.hasGeoMapList
+        visible: !global.mapManager().downloadingGeoMapList && !global.mapManager().hasGeoMapList
 
         Label {
             anchors.left: parent.left
@@ -347,10 +403,9 @@ Page {
             anchors.topMargin: Qt.application.font.pixelSize*2
 
             horizontalAlignment: Text.AlignHCenter
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
             wrapMode: Text.Wrap
             text: qsTr("<h3>Sorry!</h3><p>The list of available maps has not yet been downloaded from the server. You can restart the download manually using the item 'Update' from the menu.  To find the menu, look for the symbol '&#8942;' at the top right corner of the screen.</p>")
-            onLinkActivated: Qt.openUrlExternally(link)
         }
     }
 
@@ -363,7 +418,7 @@ Page {
         anchors.bottom: parent.bottom
 
         color: "white"
-        visible: mapManager.downloadingGeoMapList
+        visible: global.mapManager().downloadingGeoMapList
 
         Label {
             id: downloadIndicatorLabel
@@ -374,10 +429,9 @@ Page {
             anchors.topMargin: Qt.application.font.pixelSize*2
 
             horizontalAlignment: Text.AlignHCenter
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
             wrapMode: Text.Wrap
             text: qsTr("<h3>Download in progress…</h3><p>Please stand by while we download the list of available maps from the server…</p>")
-            onLinkActivated: Qt.openUrlExternally(link)
         } // downloadIndicatorLabel
 
         BusyIndicator {
@@ -390,9 +444,9 @@ Page {
         // Without this, the downaloadIndication would not be visible on very quick downloads, leaving the user
         // without any feedback if the download did actually take place.
         Connections {
-            target: mapManager
+            target: global.mapManager()
             function onDownloadingGeoMapListChanged () {
-                if (mapManager.downloadingGeoMapList) {
+                if (global.mapManager().downloadingGeoMapList) {
                     downloadIndicator.visible = true
                     downloadIndicator.opacity = 1.0
                 } else
@@ -405,13 +459,13 @@ Page {
             NumberAnimation { target: downloadIndicator; property: "opacity"; to:0.0; duration: 400 }
             NumberAnimation { target: downloadIndicator; property: "visible"; to:1.0; duration: 20}
         }
-    } // downloadIndicator - Rectangle
+    }
 
     footer: Pane {
         width: parent.width
 
         Material.elevation: 3
-        visible: !mapManager.geoMaps.downloading && mapManager.geoMaps.updatable
+        visible: !global.mapManager().geoMaps.downloading && global.mapManager().geoMaps.updatable
 
         ToolButton {
             id: downloadUpdatesActionButton
@@ -420,15 +474,15 @@ Page {
             icon.source: "/icons/material/ic_file_download.svg"
 
             onClicked: {
-                mobileAdaptor.vibrateBrief()
-                mapManager.geoMaps.updateAll()
+                global.mobileAdaptor().vibrateBrief()
+                global.mapManager().geoMaps.updateAll()
             }
         }
-    } // Pane (footer)
+    }
 
     // Show error when list of maps cannot be downloaded
     Connections {
-        target: mapManager
+        target: global.mapManager()
         function onError (message) {
             dialogLoader.active = false
             dialogLoader.title = qsTr("Download Error")
@@ -438,4 +492,11 @@ Page {
         }
     }
 
+
+    LongTextDialog {
+        id: infoDialog
+
+        text: ""
+        standardButtons: Dialog.Ok
+    }
 } // Page
