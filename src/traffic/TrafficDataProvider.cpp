@@ -27,6 +27,7 @@
 #include "traffic/TrafficDataSource_File.h"
 #include "traffic/TrafficDataSource_Tcp.h"
 #include "traffic/TrafficDataSource_Udp.h"
+#include "traffic/TrafficDataSource_Serial.h"
 
 using namespace std::chrono_literals;
 
@@ -59,11 +60,11 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
     foreFlightBroadcastTimer.start();
 
     // Real data sources in order of preference, preferred sources first
-    addDataSource( new Traffic::TrafficDataSource_Tcp("192.168.1.1", 2000, this));
-    addDataSource( new Traffic::TrafficDataSource_Tcp("192.168.10.1", 2000, this) );
-    addDataSource( new Traffic::TrafficDataSource_Udp(4000, this) );
-    addDataSource( new Traffic::TrafficDataSource_Udp(49002, this));
-
+//    addDataSource( new Traffic::TrafficDataSource_Tcp("192.168.1.1", 2000, this));
+//    addDataSource( new Traffic::TrafficDataSource_Tcp("192.168.10.1", 2000, this) );
+//    addDataSource( new Traffic::TrafficDataSource_Udp(4000, this) );
+//    addDataSource( new Traffic::TrafficDataSource_Udp(49002, this));
+    addDataSource( new Traffic::TrafficDataSource_Serial(this));
     // Bindings for status string
     connect(this, &Traffic::TrafficDataProvider::positionInfoChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
     connect(this, &Traffic::TrafficDataProvider::pressureAltitudeChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
@@ -83,14 +84,19 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
 
 void Traffic::TrafficDataProvider::addDataSource(Traffic::TrafficDataSource_Abstract* source)
 {
+
     Q_ASSERT( source != nullptr );
 
     source->setParent(this);
     m_dataSources << source;
     connect(source, &Traffic::TrafficDataSource_Abstract::connectivityStatusChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
     connect(source, &Traffic::TrafficDataSource_Abstract::errorStringChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
+    connect(source, &Traffic::TrafficDataSource_Abstract::passwordRequest, this, &Traffic::TrafficDataProvider::passwordRequest);
+    connect(source, &Traffic::TrafficDataSource_Abstract::passwordStorageRequest, this, &Traffic::TrafficDataProvider::passwordStorageRequest);
     connect(source, &Traffic::TrafficDataSource_Abstract::receivingHeartbeatChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
     connect(source, &Traffic::TrafficDataSource_Abstract::receivingHeartbeatChanged, this, &Traffic::TrafficDataProvider::onSourceHeartbeatChanged);
+    connect(source, &Traffic::TrafficDataSource_Abstract::trafficReceiverRuntimeErrorChanged, this, &Traffic::TrafficDataProvider::onTrafficReceiverRuntimeError);
+    connect(source, &Traffic::TrafficDataSource_Abstract::trafficReceiverSelfTestErrorChanged, this, &Traffic::TrafficDataProvider::onTrafficReceiverSelfTestError);
 
 }
 
@@ -276,9 +282,67 @@ void Traffic::TrafficDataProvider::onTrafficFactorWithPosition(const Traffic::Tr
 }
 
 
+void Traffic::TrafficDataProvider::onTrafficReceiverRuntimeError(const QString& msg)
+{
+    Q_UNUSED(msg);
+
+    QString result;
+    foreach(auto dataSource, m_dataSources) {
+        if (dataSource.isNull()) {
+            continue;
+        }
+        result = dataSource->trafficReceiverRuntimeError();
+        if (!result.isEmpty()) {
+            break;
+        }
+    }
+
+    if (m_trafficReceiverRuntimeError == result) {
+        return;
+    }
+    m_trafficReceiverRuntimeError = result;
+    emit trafficReceiverRuntimeErrorChanged(result);
+}
+
+
+void Traffic::TrafficDataProvider::onTrafficReceiverSelfTestError(const QString& msg)
+{
+    Q_UNUSED(msg);
+
+    QString result;
+    foreach(auto dataSource, m_dataSources) {
+        if (dataSource.isNull()) {
+            continue;
+        }
+        result = dataSource->trafficReceiverSelfTestError();
+        if (!result.isEmpty()) {
+            break;
+        }
+    }
+
+    if (m_trafficReceiverSelfTestError == result) {
+        return;
+    }
+    m_trafficReceiverSelfTestError = result;
+    emit trafficReceiverSelfTestErrorChanged(result);
+}
+
+
 void Traffic::TrafficDataProvider::resetWarning()
 {
     setWarning( Traffic::Warning() );
+}
+
+
+void Traffic::TrafficDataProvider::setPassword(const QString& SSID, const QString &password)
+{
+    foreach(auto dataSource, m_dataSources) {
+        if (dataSource.isNull()) {
+            continue;
+        }
+        dataSource->setPassword(SSID, password);
+    }
+
 }
 
 

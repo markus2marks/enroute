@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2021 by Stefan Kebekus                                  *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,25 +18,20 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-import QtQuick 2.15
-import QtQuick.Controls 2.15
+#include "platform/Notifier.h"
 
-LongTextDialog {
-    id: mud
 
-    title: qsTr("Updates available")
-    text: qsTr("<p>One or several of your installed maps or databases can be updated. The estimated download size is %1.</p>").arg(global.dataManager().geoMaps.updateSize)
+auto Platform::Notifier::title(Platform::Notifier::Notifications notification) -> QString
+{
+    switch (notification) {
+    case DownloadInfo:
+        return tr("Downloading map data…");
+    case TrafficReceiverRuntimeError:
+        return tr("Traffic data receiver problem");
+    case TrafficReceiverSelfTestError:
+        return tr("Traffic data receiver self test error");
+    }
 
-    footer: DialogButtonBox {
-        ToolButton {
-            text: qsTr("Update now")
-            DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-        }
-        ToolButton {
-            text: qsTr("Later")
-            DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
-        }
-
-        onAccepted: global.dataManager().geoMaps.updateAll()
-    } // DialogButtonBox
+    return {};
 }
+

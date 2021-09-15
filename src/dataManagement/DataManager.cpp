@@ -22,7 +22,10 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QSettings>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QStandardPaths>
 
 #include <chrono>
@@ -30,11 +33,11 @@
 
 using namespace std::chrono_literals;
 
+#include "DataManager.h"
 #include "Global.h"
-#include "MapManager.h"
 
 
-GeoMaps::MapManager::MapManager(QObject *parent) :
+DataManagement::DataManager::DataManager(QObject *parent) :
     QObject(parent),
     _maps_json(QUrl("https://cplx.vm.uni-freiburg.de/storage/enroute-GeoJSONv002/maps.json"),
                QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)+"/maps.json", this)
@@ -56,31 +59,31 @@ GeoMaps::MapManager::MapManager(QObject *parent) :
     }
 
     // Construct the Dowloadable object "_maps_json". Let it point to the remote file "maps.json" and wire it up.
-    connect(&_maps_json, &Downloadable::downloadingChanged, this, &MapManager::downloadingGeoMapListChanged);
-    connect(&_maps_json, &Downloadable::fileContentChanged, this, &MapManager::readGeoMapListFromJSONFile);
-    connect(&_maps_json, &Downloadable::fileContentChanged, this, &MapManager::setTimeOfLastUpdateToNow);
-    connect(&_maps_json, &Downloadable::error, this, &MapManager::errorReceiver);
+    connect(&_maps_json, &DataManagement::Downloadable::downloadingChanged, this, &DataManager::downloadingGeoMapListChanged);
+    connect(&_maps_json, &DataManagement::Downloadable::fileContentChanged, this, &DataManager::readGeoMapListFromJSONFile);
+    connect(&_maps_json, &DataManagement::Downloadable::fileContentChanged, this, &DataManager::setTimeOfLastUpdateToNow);
+    connect(&_maps_json, &DataManagement::Downloadable::error, this, &DataManager::errorReceiver);
 
     // Wire up the DownloadableGroup _geoMaps
-    connect(&_geoMaps, &DownloadableGroup::downloadablesChanged, this, &MapManager::geoMapListChanged);
-    connect(&_geoMaps, &DownloadableGroup::filesChanged, this, &MapManager::localFileOfGeoMapChanged);
+    connect(&_geoMaps, &DataManagement::DownloadableGroup::downloadablesChanged, this, &DataManager::geoMapListChanged);
+    connect(&_geoMaps, &DataManagement::DownloadableGroup::filesChanged, this, &DataManager::localFileOfGeoMapChanged);
 
     // Wire up the automatic update timer and check if automatic updates are
     // due. The method "autoUpdateGeoMapList" will also set a reasonable timeout
     // value for the timer and start it.
-    connect(&_autoUpdateTimer, &QTimer::timeout, this, &MapManager::autoUpdateGeoMapList);
-    QTimer::singleShot(0, this, &GeoMaps::MapManager::autoUpdateGeoMapList); // Cannot call autoUpdateGeoMapList immediately, or else Global::allocateInternal will crash
+    connect(&_autoUpdateTimer, &QTimer::timeout, this, &DataManager::autoUpdateGeoMapList);
+    QTimer::singleShot(0, this, &DataManagement::DataManager::autoUpdateGeoMapList); // Cannot call autoUpdateGeoMapList immediately, or else Global::allocateInternal will crash
 
     // If there is a downloaded maps.json file, we read it. Otherwise, we start a download.
     if (_maps_json.hasFile()) {
         readGeoMapListFromJSONFile();
     } else {
-        QTimer::singleShot(0, &_maps_json, &GeoMaps::Downloadable::startFileDownload);
+        QTimer::singleShot(0, &_maps_json, &DataManagement::Downloadable::startFileDownload);
     }
 }
 
 
-GeoMaps::MapManager::~MapManager()
+DataManagement::DataManager::~DataManager()
 {
 
     // It might be possible for whatever reason that our download directory
@@ -112,19 +115,93 @@ GeoMaps::MapManager::~MapManager()
         delete geoMapPtr;
 }
 
-void GeoMaps::MapManager::updateGeoMapList()
+
+
+auto DataManagement::DataManager::describeMapFile(const QString& fileName) -> QString
 {
-    QTimer::singleShot(0, &_maps_json, &Downloadable::startFileDownload);
+    QFileInfo fi(fileName);
+    if (!fi.exists()) {
+        return tr("No information available.");
+    }
+    QString result = QStringLiteral("<table><tr><td><strong>%1 :&nbsp;&nbsp;</strong></td><td>%2</td></tr><tr><td><strong>%3 :&nbsp;&nbsp;</strong></td><td>%4</td></tr></table>")
+                         .arg(tr("Installed"),
+                              fi.lastModified().toUTC().toString(),
+                              tr("File Size"),
+                              QLocale::system().formattedDataSize(fi.size(), 1, QLocale::DataSizeSIFormat));
+
+    // Extract infomation from GeoJSON
+    if (fileName.endsWith(u".geojson")) {
+        QLockFile lockFile(fileName+".lock");
+        lockFile.lock();
+        QFile file(fileName);
+        file.open(QIODevice::ReadOnly);
+        auto document = QJsonDocument::fromJson(file.readAll());
+        file.close();
+        lockFile.unlock();
+        QString concatInfoString = document.object()[QStringLiteral("info")].toString();
+        if (!concatInfoString.isEmpty()) {
+            result += "<p>"+tr("The map data was compiled from the following sources.")+"</p><ul>";
+            auto infoStrings = concatInfoString.split(QStringLiteral(";"));
+            foreach(auto infoString, infoStrings)
+                result += "<li>"+infoString+"</li>";
+            result += u"</ul>";
+        }
+    }
+
+    // Extract infomation from MBTILES
+    if (fileName.endsWith(u".mbtiles")) {
+        // Open database
+        auto databaseConnectionName = "GeoMapProvider::describeMapFile "+fileName;
+        auto db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), databaseConnectionName);
+        db.setDatabaseName(fileName);
+        db.open();
+        if (!db.isOpenError()) {
+            // Read metadata from database
+            QSqlQuery query(db);
+            QString intResult;
+            if (query.exec(QStringLiteral("select name, value from metadata;"))) {
+                while(query.next()) {
+                    QString key = query.value(0).toString();
+                    if (key == u"json") {
+                        continue;
+                    }
+                    intResult += QStringLiteral("<tr><td><strong>%1 :&nbsp;&nbsp;</strong></td><td>%2</td></tr>")
+                                     .arg(key, query.value(1).toString());
+                }
+            }
+            if (!intResult.isEmpty()) {
+                result += QStringLiteral("<h4>%1</h4><table>%2</table>").arg(tr("Internal Map Data"), intResult);
+            }
+            db.close();
+        }
+    }
+
+    // Extract infomation from text file - this is simply the first line
+    if (fileName.endsWith(u".txt")) {
+        // Open file and read first line
+        QFile dataFile(fileName);
+        dataFile.open(QIODevice::ReadOnly);
+        auto description = dataFile.readLine();
+        result += QString("<p>%1</p>").arg( QString::fromLatin1(description));
+    }
+
+    return result;
 }
 
 
-void GeoMaps::MapManager::errorReceiver(const QString& /*unused*/, QString message)
+void DataManagement::DataManager::updateGeoMapList()
+{
+    QTimer::singleShot(0, &_maps_json, &DataManagement::Downloadable::startFileDownload);
+}
+
+
+void DataManagement::DataManager::errorReceiver(const QString& /*unused*/, QString message)
 {
     emit error(std::move(message));
 }
 
 
-void GeoMaps::MapManager::localFileOfGeoMapChanged()
+void DataManagement::DataManager::localFileOfGeoMapChanged()
 {
     // Ok, a local file changed. First, we check if this means that the local file
     // of an unsupported map (=map with invalid URL) is gone. These maps are then
@@ -147,14 +224,14 @@ void GeoMaps::MapManager::localFileOfGeoMapChanged()
 }
 
 
-void GeoMaps::MapManager::readGeoMapListFromJSONFile()
+void DataManagement::DataManager::readGeoMapListFromJSONFile()
 {
     if (!_maps_json.hasFile()) {
         return;
     }
 
     // List of maps as we have them now
-    QVector<QPointer<Downloadable>> oldMaps = _geoMaps.downloadables();
+    QVector<QPointer<DataManagement::Downloadable>> oldMaps = _geoMaps.downloadables();
 
     // To begin, we handle the maps described in the maps.json file. If these maps
     // were already present in the old list, we re-use them. Otherwise, we create
@@ -177,7 +254,7 @@ void GeoMaps::MapManager::readGeoMapListFromJSONFile()
         auto fileSize = obj.value("size").toInt();
 
         // If a map with the given name already exists, update that element, delete its entry in oldMaps
-        Downloadable *mapPtr = nullptr;
+        DataManagement::Downloadable *mapPtr = nullptr;
         foreach(auto geoMapPtr, oldMaps) {
             if (geoMapPtr->objectName() == mapName.section("/", -1 , -1)) {
                 mapPtr = geoMapPtr;
@@ -195,7 +272,7 @@ void GeoMaps::MapManager::readGeoMapListFromJSONFile()
             auto localFileName = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/aviation_maps/"+mapFileName;
 
             // Construct a new downloadable object.
-            auto *downloadable = new Downloadable(QUrl(mapUrlName), localFileName, this);
+            auto *downloadable = new DataManagement::Downloadable(QUrl(mapUrlName), localFileName, this);
             downloadable->setObjectName(mapName.section("/", -1, -1));
             downloadable->setSection(mapName.section("/", -2, -2));
             downloadable->setRemoteFileDate(fileModificationDateTime);
@@ -206,6 +283,9 @@ void GeoMaps::MapManager::readGeoMapListFromJSONFile()
             }
             if (localFileName.endsWith("mbtiles")) {
                 _baseMaps.addToGroup(downloadable);
+            }
+            if (localFileName.endsWith("txt")) {
+                _databases.addToGroup(downloadable);
             }
         }
 
@@ -231,7 +311,7 @@ void GeoMaps::MapManager::readGeoMapListFromJSONFile()
         objectName = objectName.remove(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
                                        "/aviation_maps/").section('.', 0, 0);
 
-        auto *downloadable = new Downloadable(QUrl(), path, this);
+        auto *downloadable = new DataManagement::Downloadable(QUrl(), path, this);
         downloadable->setSection("Unsupported Maps");
         downloadable->setObjectName(objectName);
         _geoMaps.addToGroup(downloadable);
@@ -239,11 +319,11 @@ void GeoMaps::MapManager::readGeoMapListFromJSONFile()
 }
 
 
-void GeoMaps::MapManager::setTimeOfLastUpdateToNow()
+void DataManagement::DataManager::setTimeOfLastUpdateToNow()
 {
     // Save timestamp, so that we know when an automatic update is due
     QSettings settings;
-    settings.setValue("MapManager/MapListTimeStamp", QDateTime::currentDateTimeUtc());
+    settings.setValue("DataManager/MapListTimeStamp", QDateTime::currentDateTimeUtc());
 
     // Now that we downloaded successfully, we need to check for updates only once
     // a day
@@ -251,12 +331,12 @@ void GeoMaps::MapManager::setTimeOfLastUpdateToNow()
 }
 
 
-void GeoMaps::MapManager::autoUpdateGeoMapList()
+void DataManagement::DataManager::autoUpdateGeoMapList()
 {
     // If the last update is more than one day ago, automatically initiate an
     // update, so that maps stay at least roughly current.
     QSettings settings;
-    QDateTime lastUpdate = settings.value("MapManager/MapListTimeStamp", QDateTime()).toDateTime();
+    QDateTime lastUpdate = settings.value("DataManager/MapListTimeStamp", QDateTime()).toDateTime();
 
     if (!lastUpdate.isValid() || (qAbs(lastUpdate.daysTo(QDateTime::currentDateTime()) > 6)) ) {
         // Updates are due. Check again in one hour if the update went well or if we need to try again.
@@ -270,7 +350,7 @@ void GeoMaps::MapManager::autoUpdateGeoMapList()
 }
 
 
-auto GeoMaps::MapManager::unattachedFiles() const -> QList<QString>
+auto DataManagement::DataManager::unattachedFiles() const -> QList<QString>
 {
     QList<QString> result;
 

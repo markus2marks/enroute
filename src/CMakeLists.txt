@@ -75,13 +75,13 @@ set(SOURCES
     # Header files
     Aircraft.h
     Clock.h
+    dataManagement/DataManager.h
+    dataManagement/Downloadable.h
+    dataManagement/DownloadableGroup.h
+    dataManagement/DownloadableGroupWatcher.h
     DemoRunner.h
     geomaps/Airspace.h
-    geomaps/Downloadable.h
-    geomaps/DownloadableGroup.h
-    geomaps/DownloadableGroupWatcher.h
     geomaps/GeoMapProvider.h
-    geomaps/MapManager.h
     geomaps/TileHandler.h
     geomaps/TileServer.h
     geomaps/Waypoint.h
@@ -91,12 +91,14 @@ set(SOURCES
     navigation/FlightRoute.h
     navigation/FlightRoute_Leg.h
     navigation/Navigator.h
+    platform/Notifier.h
     positioning/Geoid.h
     positioning/PositionInfo.h
     positioning/PositionInfoSource_Abstract.h
     positioning/PositionInfoSource_Satellite.h
     positioning/PositionProvider.h
     Settings.h
+    traffic/FlarmnetDB.h
     traffic/PasswordDB.h
     traffic/TrafficDataSource_Abstract.h
     traffic/TrafficDataSource_AbstractSocket.h
@@ -121,6 +123,7 @@ set(SOURCES
     weather/TAF.h
     weather/WeatherDataProvider.h
     weather/Wind.h
+
     variometer/Variometer.h
     variometer/UdpConnection.h
     variometer/DataSwitch.h
@@ -128,13 +131,13 @@ set(SOURCES
     # C++ files
     Aircraft.cpp
     Clock.cpp
+    dataManagement/DataManager.cpp
+    dataManagement/Downloadable.cpp
+    dataManagement/DownloadableGroup.cpp
+    dataManagement/DownloadableGroupWatcher.cpp
     DemoRunner.cpp
     geomaps/Airspace.cpp
-    geomaps/Downloadable.cpp
-    geomaps/DownloadableGroup.cpp
-    geomaps/DownloadableGroupWatcher.cpp
     geomaps/GeoMapProvider.cpp
-    geomaps/MapManager.cpp
     geomaps/TileHandler.cpp
     geomaps/TileServer.cpp
     geomaps/Waypoint.cpp
@@ -147,12 +150,14 @@ set(SOURCES
     navigation/FlightRoute_GPX.cpp
     navigation/FlightRoute_Leg.cpp
     navigation/Navigator.cpp
+    platform/Notifier.cpp
     positioning/Geoid.cpp
     positioning/PositionInfo.cpp
     positioning/PositionInfoSource_Abstract.cpp
     positioning/PositionInfoSource_Satellite.cpp
     positioning/PositionProvider.cpp
     Settings.cpp
+    traffic/FlarmnetDB.cpp
     traffic/PasswordDB.cpp
     traffic/TrafficDataSource_Abstract.cpp
     traffic/TrafficDataSource_Abstract_FLARM.cpp
@@ -211,8 +216,11 @@ if( ANDROID )
     qtquick_compiler_add_resources(QTQUICKCOMPILEDRESOURCES ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc)
     list(APPEND SOURCES
         ${QTQUICKCOMPILEDRESOURCES}
+        MobileAdaptor_Android.cpp
+        platform/Notifier_Android.cpp
         android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java
         android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java
+        android/src/de/akaflieg_freiburg/enroute/Notifier.java
         android/src/de/akaflieg_freiburg/enroute/ShareActivity.java
         android/src/de/akaflieg_freiburg/enroute/ShareUtils.java
         )
@@ -232,7 +240,10 @@ if( ANDROID )
     configure_file(android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java COPYONLY)
     configure_file(android/src/de/akaflieg_freiburg/enroute/ShareActivity.java android/src/de/akaflieg_freiburg/enroute/ShareActivity.java COPYONLY)
     configure_file(android/src/de/akaflieg_freiburg/enroute/ShareUtils.java android/src/de/akaflieg_freiburg/enroute/ShareUtils.java COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/action/drawable-hdpi/ic_info_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_info.png COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/file/drawable-hdpi/ic_file_download_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_file_download.png COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/alert/drawable-hdpi/ic_error_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_error.png COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/alert/drawable-hdpi/ic_warning_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_warning.png COPYONLY)
 
     # Copy manual into Android assets directory
     file(COPY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION android/assets)
@@ -298,6 +309,8 @@ endif()
 
 if (NOT ANDROID)
     list(APPEND SOURCES
+        MobileAdaptor_Linux.cpp
+        platform/Notifier_Linux.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc
         )
 

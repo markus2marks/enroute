@@ -27,9 +27,12 @@ class MobileAdaptor;
 class QNetworkAccessManager;
 class Settings;
 
+namespace DataManagement {
+class DataManager;
+}
+
 namespace GeoMaps {
 class GeoMapProvider;
-class MapManager;
 };
 
 namespace Navigation {
@@ -37,7 +40,13 @@ class Navigator;
 }
 
 namespace Traffic {
+class FlarmnetDB;
+class PasswordDB;
 class TrafficDataProvider;
+}
+
+namespace Platform {
+class Notifier;
 }
 
 
@@ -81,17 +90,23 @@ public:
      */
     ~Global() = default;
 
+    /*! \brief Pointer to appplication-wide static FlarmnetDB instance
+     *
+     * @returns Pointer to appplication-wide static instance.
+     */
+    Q_INVOKABLE static Traffic::FlarmnetDB* flarmnetDB();
+
     /*! \brief Pointer to appplication-wide static GeoMaps::GeoMapProvider instance
      *
      * @returns Pointer to appplication-wide static instance.
      */
     Q_INVOKABLE static GeoMaps::GeoMapProvider* geoMapProvider();
 
-    /*! \brief Pointer to appplication-wide static GeoMaps::MapManager instance
+    /*! \brief Pointer to appplication-wide static GeoMaps::DataManager instance
      *
      * @returns Pointer to appplication-wide static instance.
      */
-    Q_INVOKABLE static GeoMaps::MapManager* mapManager();
+    Q_INVOKABLE static DataManagement::DataManager* dataManager();
 
     /*! \brief Pointer to appplication-wide static MobileAdaptor instance
      *
@@ -104,6 +119,18 @@ public:
      * @returns Pointer to appplication-wide static instance.
      */
     Q_INVOKABLE static Navigation::Navigator* navigator();
+
+    /*! \brief Pointer to appplication-wide static PasswordDB instance
+     *
+     * @returns Pointer to appplication-wide static instance.
+     */
+    Q_INVOKABLE static Traffic::PasswordDB* passwordDB();
+
+    /*! \brief Pointer to appplication-wide static notification manager instance
+     *
+     * @returns Pointer to appplication-wide static instance.
+     */
+    Q_INVOKABLE static Platform::Notifier* notifier();
 
     /*! \brief Pointer to appplication-wide static QNetworkAccessManager instance
      *

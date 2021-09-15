@@ -42,7 +42,7 @@ public:
      *
      * @param parent The standard QObject parent pointer
      */
-    explicit TrafficDataSource_Serial(QString hostName, quint16 port, QObject *parent = nullptr);
+    explicit TrafficDataSource_Serial(QObject *parent = nullptr);
 
     // Standard destructor
     ~TrafficDataSource_Serial() override;

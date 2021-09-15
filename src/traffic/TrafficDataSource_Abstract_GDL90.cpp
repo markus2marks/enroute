@@ -18,6 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <array>
+
 #include "positioning/Geoid.h"
 #include "positioning/PositionProvider.h"
 #include "traffic/TrafficDataSource_Abstract.h"
@@ -230,6 +232,24 @@ void Traffic::TrafficDataSource_Abstract::processGDLMessage(const QByteArray& ra
 
     // Heartbeat message
     if (messageID == 0) {
+        if (message.length() < 3) {
+            return;
+        }
+
+        // Handle runtime errors
+        QStringList results;
+        auto status = static_cast<quint8>(message.at(0));
+        if ((status & 1<<7) == 0) {
+            results += tr("No GPS reception");
+        }
+        if ((status & 1<<6) != 0) {
+            results += tr("Maintenance required");
+        }
+        if ((status & 1<<3) != 0) {
+            results += tr("GPS Battery low voltage");
+        }
+        setTrafficReceiverRuntimeError(results.join(" • "));
+
         setReceivingHeartbeat(true);
         return;
     }

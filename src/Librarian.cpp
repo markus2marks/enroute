@@ -284,9 +284,9 @@ auto Librarian::getStringFromRessource(const QString &name) -> QString
     }
 
     if (name == ":text/whatsnew.html") {
-        return tr("<p><strong>The manual is now built into the app.</strong> To try it out, Open the main menu and choose the item 'Manual'.</p>")
-               + tr("<p><strong>We need help with the Italian translation.</strong> If you would like to help, if you speak Italian and if know how to use the GIT revision control system, then please contact us.</p>")
-               + tr("<p><strong>Google now counts more than 10.000 active installations of this app.</strong> Thanks to everybody who made this success possible!</p>");
+        return tr("<p><strong>Enroute Flight Navigation</strong> now uses the Flarmnet database to identify traffic.</p>")
+               + tr("<p>The traffic receiver status is now shown prominently on the front page.</p>")
+               + tr("<p><strong>Innovation Award 2021</strong> The readers of the German aviation magazine 'Aerokurier' have named <strong>Enroute Flight Navigation</strong> as one of the top three innovations of the year in the category 'Avionics'. Thanks to everybody who made this success possible!</p>");
     }
 
     QFile file(name);

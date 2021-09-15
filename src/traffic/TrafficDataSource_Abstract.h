@@ -127,16 +127,43 @@ public:
      */
     virtual QString sourceName() const = 0;
 
-signals:
-    /*! \brief Pressure altitude
+    /*! \brief String describing the last traffic data receiver runtime error
      *
-     *  If this class received pressure altitude information from a connected
-     *  traffic receiver, this information is emitted here. Pressure altitude is
-     *  the altitude shown by your altimeter if the altimeter is set to 1013.2
-     *  hPa.
+     *  This property holds a translated, human-readable string that describes
+     *  the last error reported by the traffic receiver, or an empty string when
+     *  there is not error.  The string is cleared when a new connection attempt
+     *  is started.
      */
-    void pressureAltitudeUpdated(Units::Distance);
+    Q_PROPERTY(QString trafficReceiverRuntimeError READ trafficReceiverRuntimeError WRITE setTrafficReceiverRuntimeError NOTIFY trafficReceiverRuntimeErrorChanged)
 
+    /*! \brief Getter function for the property with the same name
+     *
+     * @returns Property errorString
+     */
+    QString trafficReceiverRuntimeError()
+    {
+        return m_trafficReceiverRuntimeError;
+    }
+
+    /*! \brief String describing the last traffic data receiver self-test error
+     *
+     *  This property holds a translated, human-readable string that describes
+     *  the last error reported by the traffic receiver self-test, or an empty string when
+     *  there is not error.  The string is cleared when a new connection attempt
+     *  is started.
+     */
+    Q_PROPERTY(QString trafficReceiverSelfTestError READ trafficReceiverSelfTestError WRITE setTrafficReceiverSelfTestError NOTIFY trafficReceiverSelfTestErrorChanged)
+
+    /*! \brief Getter function for the property with the same name
+     *
+     * @returns Property errorString
+     */
+    QString trafficReceiverSelfTestError()
+    {
+        return m_trafficReceiverSelfTestError;
+    }
+
+signals:
     /*! \brief Notifier signal */
     void connectivityStatusChanged(QString newStatus);
 
@@ -159,21 +186,34 @@ signals:
      *
      *  \param factor Traffic factor.
      */
-    void factorWithPosition(const Traffic::TrafficFactor_WithPosition &factor);
+    void factorWithPosition(const Traffic::TrafficFactor_WithPosition& factor);
 
-    /*! \brief Traffic factor with position
+    /* \brief Password request
      *
-     *  This signal is emitted when the traffic receiver issues a traffic
-     *  warning. An invalid warning (i.e. a warning with alarm level = -1) is
-     *  emitted to indicate that the last warning is no longer active and should
-     *  be disregarded.
+     *  This signal is emitted whenever the traffic receiver asks for a password.
+     *  Note that this is not the WiFi-Password.
      *
-     *  \param warning Traffic warning.
+     *  @param SSID Name of the WiFi network that is currently in use.
      */
-    void warning(const Traffic::Warning& warning);
+    void passwordRequest(const QString& SSID);
 
-    /*! \brief Notifier signal */
-    void receivingHeartbeatChanged(bool);
+    /* \brief Password storage request
+     *
+     *  This signal is emitted whenever the traffic receiver has successfully connected
+     *  using a password that was not yet in the database.
+     *
+     *  @param SSID Name of the WiFi network that is was used in use.
+     */
+    void passwordStorageRequest(const QString& SSID, const QString& password);
+
+    /*! \brief Pressure altitude
+     *
+     *  If this class received pressure altitude information from a connected
+     *  traffic receiver, this information is emitted here. Pressure altitude is
+     *  the altitude shown by your altimeter if the altimeter is set to 1013.2
+     *  hPa.
+     */
+    void pressureAltitudeUpdated(Units::Distance);
 
     /*! \brief Position info
      *
@@ -181,6 +221,15 @@ signals:
      *  receiver, this information is emitted here.
      */
     void positionUpdated(Positioning::PositionInfo pInfo);
+
+    /*! \brief Notifier signal */
+    void receivingHeartbeatChanged(bool);
+
+    /*! \brief Notifier signal */
+    void trafficReceiverRuntimeErrorChanged(const QString& message);
+
+    /*! \brief Notifier signal */
+    void trafficReceiverSelfTestErrorChanged(const QString& message);
 
     /*! \brief Traffic receiver hardware version
      *
@@ -200,16 +249,6 @@ signals:
      */
     void trafficReceiverObVersion(QString result);
 
-    /*! \brief Result of traffic receiver self test
-     *
-     *  If this class receives self-test information from a connected traffic
-     *  receiver, this information is emitted here.
-     *
-     *  @param result Result of self-test as a human-readable, translated error
-     *  message
-     */
-    void trafficReceiverSelfTest(QString result);
-
     /*! \brief Traffic receiver software version
      *
      *  If this class receives information about the software version of a
@@ -219,6 +258,16 @@ signals:
      */
     void trafficReceiverSwVersion(QString result);
 
+    /*! \brief Traffic warning
+     *
+     *  This signal is emitted when the traffic receiver issues a traffic
+     *  warning. An invalid warning (i.e. a warning with alarm level = -1) is
+     *  emitted to indicate that the last warning is no longer active and should
+     *  be disregarded.
+     *
+     *  \param warning Traffic warning.
+     */
+    void warning(const Traffic::Warning& warning);
 
 public slots:
     /*! \brief Start attempt to connect to traffic receiver
@@ -238,6 +287,19 @@ public slots:
      */
     virtual void disconnectFromTrafficReceiver() = 0;
 
+    /*! \brief Set password
+     *
+     *  If the implementation of the traffic data source supports passwords, this
+     *  method checks if the traffic data source is waiting for a password with key
+     *  SSID. If so, it will send the password to the traffic data receiver.
+     *  If the implementation of the traffic data source does not support passwords,
+     *  this method does nothing.
+     */
+    virtual void setPassword(const QString& SSID, const QString& password)
+    {
+        Q_UNUSED(SSID)
+        Q_UNUSED(password)
+    }
 
 protected:
     /*! \brief Process one FLARM/NMEA sentence
@@ -304,11 +366,24 @@ protected:
      */
     void setReceivingHeartbeat(bool newReceivingHeartbeat);
 
+    /*! \brief Setter function for the property with the same name
+     *
+     *  @param newErrorString Property errorString
+     */
+    void setTrafficReceiverRuntimeError(const QString& newErrorString);
+
+    /*! \brief Setter function for the property with the same name
+     *
+     *  @param newErrorString Property errorString
+     */
+    void setTrafficReceiverSelfTestError(const QString& newErrorString);
 
 private:
     // Property caches
     QString m_connectivityStatus {};
     QString m_errorString {};
+    QString m_trafficReceiverRuntimeError {};
+    QString m_trafficReceiverSelfTestError {};
 
     // True altitude of own aircraft. We store these values because the
     // necessary information to compile a PositionInfo class does not always

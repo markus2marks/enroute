@@ -10,7 +10,7 @@
 
 // Member functions
 
-Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QString hostName, quint16 port, QObject *parent) :
+Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QObject *parent) :
     Traffic::TrafficDataSource_AbstractSocket(parent)
 {
 
@@ -38,14 +38,13 @@ Traffic::TrafficDataSource_Serial::~TrafficDataSource_Serial()
 
 void Traffic::TrafficDataSource_Serial::connectToTrafficReceiver()
 {
-
-
+	m_serialPort->open(QIODevice::ReadWrite);
 }
 
 
 void Traffic::TrafficDataSource_Serial::disconnectFromTrafficReceiver()
 {
-
+	m_serialPort->close();
 }
 
 

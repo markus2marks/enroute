@@ -26,18 +26,24 @@
 #include "Global.h"
 #include "MobileAdaptor.h"
 #include "Settings.h"
+#include "dataManagement/DataManager.h"
 #include "geomaps/GeoMapProvider.h"
-#include "geomaps/MapManager.h"
 #include "navigation/Navigator.h"
+#include "platform/Notifier.h"
+#include "traffic/FlarmnetDB.h"
+#include "traffic/PasswordDB.h"
 #include "traffic/TrafficDataProvider.h"
 
 bool isConstructing {false};
 
+QPointer<Traffic::FlarmnetDB> g_flarmnetDB {};
 QPointer<GeoMaps::GeoMapProvider> g_geoMapProvider {};
-QPointer<GeoMaps::MapManager> g_mapManager {};
+QPointer<DataManagement::DataManager> g_mapManager {};
 QPointer<MobileAdaptor> g_mobileAdaptor {};
 QPointer<Navigation::Navigator> g_navigator {};
+QPointer<Platform::Notifier> g_notifier {};
 QPointer<QNetworkAccessManager> g_networkAccessManager {};
+QPointer<Traffic::PasswordDB> g_passwordDB {};
 QPointer<Settings> g_settings {};
 QPointer<Traffic::TrafficDataProvider> g_trafficDataProvider {};
 
@@ -63,15 +69,21 @@ Global::Global(QObject *parent) : QObject(parent)
 }
 
 
+auto Global::flarmnetDB() -> Traffic::FlarmnetDB*
+{
+    return allocateInternal<Traffic::FlarmnetDB>(g_flarmnetDB);
+}
+
+
 auto Global::geoMapProvider() -> GeoMaps::GeoMapProvider*
 {
     return allocateInternal<GeoMaps::GeoMapProvider>(g_geoMapProvider);
 }
 
 
-auto Global::mapManager() -> GeoMaps::MapManager*
+auto Global::dataManager() -> DataManagement::DataManager*
 {
-    return allocateInternal<GeoMaps::MapManager>(g_mapManager);
+    return allocateInternal<DataManagement::DataManager>(g_mapManager);
 }
 
 
@@ -93,11 +105,22 @@ auto Global::networkAccessManager() -> QNetworkAccessManager*
 }
 
 
+auto Global::notifier() -> Platform::Notifier*
+{
+    return allocateInternal<Platform::Notifier>(g_notifier);
+}
+
+
+auto Global::passwordDB() -> Traffic::PasswordDB*
+{
+    return allocateInternal<Traffic::PasswordDB>(g_passwordDB);
+}
+
+
 auto Global::settings() -> Settings*
 {
     return allocateInternal<Settings>(g_settings);
 }
-
 
 auto Global::trafficDataProvider() -> Traffic::TrafficDataProvider*
 {

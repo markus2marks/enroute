@@ -117,69 +117,6 @@ auto GeoMaps::GeoMapProvider::closestWaypoint(QGeoCoordinate position, const QGe
 }
 
 
-auto GeoMaps::GeoMapProvider::describeMapFile(const QString& fileName) -> QString
-{
-    QFileInfo fi(fileName);
-    if (!fi.exists()) {
-        return tr("No information available.");
-    }
-    QString result = QStringLiteral("<table><tr><td><strong>%1 :&nbsp;&nbsp;</strong></td><td>%2</td></tr><tr><td><strong>%3 :&nbsp;&nbsp;</strong></td><td>%4</td></tr></table>")
-            .arg(tr("Installed"),
-                 fi.lastModified().toUTC().toString(),
-                 tr("File Size"),
-                 QLocale::system().formattedDataSize(fi.size(), 1, QLocale::DataSizeSIFormat));
-
-    // Extract infomation from GeoJSON
-    if (fileName.endsWith(u".geojson")) {
-        QLockFile lockFile(fileName+".lock");
-        lockFile.lock();
-        QFile file(fileName);
-        file.open(QIODevice::ReadOnly);
-        auto document = QJsonDocument::fromJson(file.readAll());
-        file.close();
-        lockFile.unlock();
-        QString concatInfoString = document.object()[QStringLiteral("info")].toString();
-        if (!concatInfoString.isEmpty()) {
-            result += "<p>"+tr("The map data was compiled from the following sources.")+"</p><ul>";
-            auto infoStrings = concatInfoString.split(QStringLiteral(";"));
-            foreach(auto infoString, infoStrings)
-                result += "<li>"+infoString+"</li>";
-            result += u"</ul>";
-        }
-    }
-
-    // Extract infomation from MBTILES
-    if (fileName.endsWith(u".mbtiles")) {
-        // Open database
-        auto databaseConnectionName = "GeoMapProvider::describeMapFile "+fileName;
-        auto db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), databaseConnectionName);
-        db.setDatabaseName(fileName);
-        db.open();
-        if (!db.isOpenError()) {
-            // Read metadata from database
-            QSqlQuery query(db);
-            QString intResult;
-            if (query.exec(QStringLiteral("select name, value from metadata;"))) {
-                while(query.next()) {
-                    QString key = query.value(0).toString();
-                    if (key == u"json") {
-                        continue;
-                    }
-                    intResult += QStringLiteral("<tr><td><strong>%1 :&nbsp;&nbsp;</strong></td><td>%2</td></tr>")
-                            .arg(key, query.value(1).toString());
-                }
-            }
-            if (!intResult.isEmpty()) {
-                result += QStringLiteral("<h4>%1</h4><table>%2</table>").arg(tr("Internal Map Data"), intResult);
-            }
-            db.close();
-        }
-    }
-
-    return result;
-}
-
-
 auto GeoMaps::GeoMapProvider::filteredWaypointObjects(const QString &filter) -> QVariantList
 {
     auto wps = waypoints();
@@ -286,7 +223,7 @@ void GeoMaps::GeoMapProvider::aviationMapsChanged()
     // Generate new GeoJSON array and new list of waypoints
     //
     QStringList JSONFileNames;
-    foreach(auto geoMapPtr, Global::mapManager()->aviationMaps()->downloadables()) {
+    foreach(auto geoMapPtr, Global::dataManager()->aviationMaps()->downloadables()) {
         // Ignore everything but geojson files
         if (!geoMapPtr->fileName().endsWith(u".geojson", Qt::CaseInsensitive)) {
             continue;
@@ -310,7 +247,7 @@ void GeoMaps::GeoMapProvider::baseMapsChanged()
 
     // Serve new tile set under new name
     _currentPath = QString::number(QRandomGenerator::global()->bounded(static_cast<quint32>(1000000000)));
-    _tileServer.addMbtilesFileSet(Global::mapManager()->baseMaps()->downloadablesWithFile(), _currentPath);
+    _tileServer.addMbtilesFileSet(Global::dataManager()->baseMaps()->downloadablesWithFile(), _currentPath);
 
     // Generate new mapbox style file
     _styleFile = new QTemporaryFile(this);
@@ -414,8 +351,8 @@ void GeoMaps::GeoMapProvider::fillAviationDataCache(const QStringList& JSONFileN
 void GeoMaps::GeoMapProvider::deferredInitialization()
 {
     // Connect the WeatherProvider, so aviation maps will be generated
-    connect(Global::mapManager()->aviationMaps(), &DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::aviationMapsChanged);
-    connect(Global::mapManager()->baseMaps(), &DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::baseMapsChanged);
+    connect(Global::dataManager()->aviationMaps(), &DataManagement::DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::aviationMapsChanged);
+    connect(Global::dataManager()->baseMaps(), &DataManagement::DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::baseMapsChanged);
     connect(Global::settings(), &Settings::hideUpperAirspacesChanged, this, &GeoMaps::GeoMapProvider::aviationMapsChanged);
     connect(Global::settings(), &Settings::hideGlidingSectorsChanged, this, &GeoMaps::GeoMapProvider::aviationMapsChanged);
 

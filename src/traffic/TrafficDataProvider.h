@@ -137,6 +137,42 @@ public:
         return m_trafficObjectWithoutPosition;
     }
 
+    /*! \brief String describing the current traffic data receiver errors
+     *
+     *  This property holds a translated, human-readable string that describes
+     *  the current errors reported by the traffic receiver, or an empty string when
+     *  there is no error.  The string is cleared when a new connection attempt
+     *  is started.
+     */
+    Q_PROPERTY(QString trafficReceiverRuntimeError READ trafficReceiverRuntimeError NOTIFY trafficReceiverRuntimeErrorChanged)
+
+    /*! \brief Getter function for the property with the same name
+     *
+     * @returns Property trafficReceiverRuntimeError
+     */
+    QString trafficReceiverRuntimeError()
+    {
+        return m_trafficReceiverRuntimeError;
+    }
+
+    /*! \brief String describing the traffic data receiver errors found in self-test
+     *
+     *  This property holds a translated, human-readable string that describes
+     *  the errors reported by the traffic receiver during self-test, or an empty string when
+     *  there is no error.  The string is cleared when a new connection attempt
+     *  is started.
+     */
+    Q_PROPERTY(QString trafficReceiverSelfTestError READ trafficReceiverSelfTestError NOTIFY trafficReceiverSelfTestErrorChanged)
+
+    /*! \brief Getter function for the property with the same name
+     *
+     * @returns Property trafficReceiverSelfTestError
+     */
+    QString trafficReceiverSelfTestError()
+    {
+        return m_trafficReceiverSelfTestError;
+    }
+
     /*! \brief Current traffic warning
      *
      *  This property holds the current traffic warning.  The traffic warning is
@@ -167,8 +203,31 @@ public:
     static constexpr Units::Distance maxHorizontalDistance = Units::Distance::fromNM(20.0);
 
 signals:
+    /*! \brief Password request
+     *
+     *  This signal is emitted whenever one of the traffic data sources requires
+     *  asks for a password. Note that this is not the WiFi-Password.
+     *
+     *  @param SSID Name of the WiFi network that is currently in use.
+     */
+    void passwordRequest(const QString &SSID);
+
+    /*! \brief Password storage request
+     *
+     *  This signal is emitted whenever one of the traffic data sources has verified
+     *  a password that was not yet in the database. The GUI should connect to this
+     *  signal and open a "Store Password …?" dialogn.
+     */
+    void passwordStorageRequest(const QString& SSID, const QString& password);
+
     /*! \brief Notifier signal */
     void receivingHeartbeatChanged(bool);
+
+    /*! \brief Notifier signal */
+    void trafficReceiverRuntimeErrorChanged(QString message);
+
+    /*! \brief Notifier signal */
+    void trafficReceiverSelfTestErrorChanged(QString message);
 
     /*! \brief Notifier signal */
     void warningChanged(const Traffic::Warning&);
@@ -189,6 +248,18 @@ public slots:
      */
     void disconnectFromTrafficReceiver();
 
+    /*! \brief Send password to the traffic data sources
+     *
+     *  This method will send a password/ssid combination to all traffic
+     *  data source. If a source is waiting for a password with the given
+     *  SSID, then it will send the password to the traffic data receiver.
+     *
+     *  @param SSID Network where the receiver should be connected
+     *
+     *  @param password Password that is sent to the receiver
+     */
+    void setPassword(const QString& SSID, const QString &password);
+
 private slots:   
     // Intializations that are moved out of the constructor, in order to avoid
     // nested uses of globalInstance().
@@ -202,10 +273,16 @@ private slots:
     void onSourceHeartbeatChanged();
 
     // Called if one of the sources reports traffic (position unknown)
-    void onTrafficFactorWithPosition(const Traffic::TrafficFactor_WithPosition &factor);
+    void onTrafficFactorWithPosition(const Traffic::TrafficFactor_WithPosition& factor);
 
     // Called if one of the sources reports traffic (position known)
-    void onTrafficFactorWithoutPosition(const Traffic::TrafficFactor_DistanceOnly &factor);
+    void onTrafficFactorWithoutPosition(const Traffic::TrafficFactor_DistanceOnly& factor);
+
+    // Called if one of the sources reports or clears an error string
+    void onTrafficReceiverSelfTestError(const QString& msg);
+
+    // Called if one of the sources reports or clears an error string
+    void onTrafficReceiverRuntimeError(const QString& msg);
 
     // Resetter method
     void resetWarning();
@@ -238,6 +315,8 @@ private:
     // Property cache
     Traffic::Warning m_Warning;
     QTimer m_WarningTimer;
+    QString m_trafficReceiverRuntimeError {};
+    QString m_trafficReceiverSelfTestError {};
 
     // Reconnect
     QTimer reconnectionTimer;

@@ -429,13 +429,13 @@ ApplicationWindow {
                 return
             }
 
-            if (global.mapManager().geoMaps.updatable && !global.navigator().isInFlight) {
+            if (global.dataManager().geoMaps.updatable && !global.navigator().isInFlight) {
                 dialogLoader.active = false
                 dialogLoader.source = "dialogs/UpdateMapDialog.qml"
                 dialogLoader.active = true
                 return
             }
-        } // Component.onCompleted
+        }
 
         Keys.onReleased: {
             if (event.key === Qt.Key_Back) {
@@ -451,7 +451,8 @@ ApplicationWindow {
                 event.accepted = true
             }
         }
-    } //Stackview
+
+    }
 
     DropArea {
         anchors.fill: stackView
@@ -563,6 +564,22 @@ ApplicationWindow {
         onActivated: Qt.quit()
     }
 
+    //
+    // Connections
+    //
+
+    Connections {
+        target: global.dataManager().geoMaps
+
+        function onDownloadingChanged(downloading) {
+            if (downloading) {
+                global.notifier().showNotification(Notifier.DownloadInfo, "", "");
+            } else {
+                global.notifier().hideNotification(Notifier.DownloadInfo);
+            }
+        }
+    }
+
     Connections {
         target: global.trafficDataProvider()
 
@@ -580,6 +597,36 @@ ApplicationWindow {
             dialogLoader.source = "dialogs/PasswordStorageDialog.qml"
             dialogLoader.active = true
         }
+
+        function onTrafficReceiverRuntimeErrorChanged(message) {
+            if (message === "") {
+                global.notifier().hideNotification(Notifier.TrafficReceiverRuntimeError);
+            } else {
+                global.notifier().showNotification(Notifier.TrafficReceiverRuntimeError, message, message);
+            }
+        }
+
+        function onTrafficReceiverSelfTestErrorChanged(message) {
+            if (message === "") {
+                global.notifier().hideNotification(Notifier.TrafficReceiverSelfTestError);
+            } else {
+                global.notifier().showNotification(Notifier.TrafficReceiverSelfTestError, message, message);
+            }
+        }
+    }
+
+    Connections {
+        target: global.notifier()
+
+        function onNotificationClicked(notifyID) {
+            if ((notifyID === 0) && (stackView.currentItem.objectName !== "DataManagerPage")) {
+                stackView.push("pages/DataManager.qml")
+            }
+            if ((notifyID === 1) && (stackView.currentItem.objectName !== "TrafficReceiverPage")) {
+                stackView.push("pages/TrafficReceiver.qml")
+            }
+        }
+
     }
 
     // Enroute closed unexpectedly if...
