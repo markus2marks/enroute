@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -78,7 +78,9 @@ Item {
         }
 
 
+        //
         // PROPERTY "bearing"
+        //
 
         // Initially, set the bearing to the last saved value
         bearing: savedBearing
@@ -146,6 +148,7 @@ Item {
                 omitAnimationForZoomTimer.start()
             }
         }
+
         Timer {
             id: omitAnimationForZoomTimer
             interval: 410  // little more than time for animation
@@ -153,18 +156,22 @@ Item {
         }
 		MapCircle {
 			id:flarm
-		 	border.width:8
+		 	
 	        center {
-	            latitude: satNav.lastValidCoordinate.latitude 
-	            longitude: satNav.lastValidCoordinate.longitude
+	            latitude:  positionProvider.lastValidCoordinate.latitude
+	            longitude: positionProvider.lastValidCoordinate.longitude
 	        }
 	        radius: 5000.0
-	        //color: 'blue'
+	        color: 'transparent'
+	         opacity: 0.05
+        visible: true
     	}
 	
 
 
+        //
         // PROPERTY "zoomLevel"
+        //
 
         // Initially, set the zoom level to the last saved value
         zoomLevel: savedZoomLevel
@@ -311,8 +318,7 @@ Item {
         MapQuickItem {
             id: ownPosition
 
-            anchorPoint.x: imageOP.width/2
-            anchorPoint.y: imageOP.height/2
+
             coordinate: positionProvider.lastValidCoordinate
 
             Connections {
@@ -324,10 +330,19 @@ Item {
             }
 
             sourceItem: Item {
+
+                rotation: flightMap.animatedTrack-flightMap.bearing
+
+                FlightVector {
+                    groundSpeedInMetersPerSecond: positionProvider.positionInfo.groundSpeed().toMPS()
+                    visible: (global.navigator().isInFlight) && (positionProvider.positionInfo.trueTrack().isFinite())
+                }
+
                 Image {
                     id: imageOP
 
-                    rotation: flightMap.animatedTrack-flightMap.bearing
+                    x: -width/2.0
+                    y: -height/2.0
 
                     source: {
                         var pInfo = positionProvider.positionInfo

@@ -121,7 +121,7 @@ ApplicationWindow {
                     text: qsTr("Route")
                     icon.source: "/icons/material/ic_directions.svg"
                     Layout.fillWidth: true
-		     KeyNavigation.down: menuItemNearby
+		            KeyNavigation.down: menuItemNearby
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -136,7 +136,7 @@ ApplicationWindow {
                     text: qsTr("Nearby Waypoints")
                     icon.source: "/icons/material/ic_my_location.svg"
                     Layout.fillWidth: true
-		    KeyNavigation.down: weatherItem
+		            KeyNavigation.down: weatherItem
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -214,7 +214,7 @@ ApplicationWindow {
 
                 ItemDelegate {
                     id: menuItemSettings
-
+ 					KeyNavigation.down: menuItemInformation
                     text: qsTr("Settings")
                     icon.source: "/icons/material/ic_settings.svg"
                     Layout.fillWidth: true
@@ -225,6 +225,13 @@ ApplicationWindow {
                         stackView.push("pages/SettingsPage.qml")
                         drawer.close()
                     }
+                    Keys.onPressed: {
+					    if (event.key == Qt.Key_Return) {
+		    			    stackView.pop()
+                            stackView.push("pages/SettingsPage.qml")
+                            drawer.close()
+		    		    } 
+		    		}
                 }
 
                 Rectangle {
@@ -241,109 +248,26 @@ ApplicationWindow {
 
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
-                        aboutMenu.popup()
+                        //aboutMenu.popup()
+                        stackView.pop()
+                        stackView.push("pages/InfoMenu.qml")
+                        drawer.close()
                     }
-
-                    AutoSizingMenu { // Info Menu
-                        id: aboutMenu
-
-                        ItemDelegate { // Sat Status
-                            text: qsTr("Positioning")
-                                  +`<br><font color="#606060" size="2">`
-                                  + (positionProvider.receivingPositionInfo ? qsTr("Receiving position information.") : qsTr("Not receiving position information."))
-                                  + `</font>`
-                            icon.source: "/icons/material/ic_satellite.svg"
-                            Layout.fillWidth: true
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.pop()
-                                stackView.push("pages/Positioning.qml")
-                                aboutMenu.close()
-                                drawer.close()
-                            }
-                            background: Rectangle {
-                                anchors.fill: parent
-                                color: positionProvider.receivingPositionInfo ? "green" : "red"
-                                opacity: 0.2
-                            }
-                        }
-
-                        ItemDelegate { // FLARM Status
-                            Layout.fillWidth: true
-
-                            text: qsTr("Traffic Receiver")
-                                  + `<br><font color="#606060" size="2">`
-                                  + ((global.trafficDataProvider().receivingHeartbeat) ? qsTr("Receiving traffic data.") : qsTr("Not receiving traffic data."))
-                                  + `</font>`
-                            icon.source: "/icons/material/ic_airplanemode_active.svg"
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.pop()
-                                stackView.push("pages/TrafficReceiver.qml")
-                                aboutMenu.close()
-                                drawer.close()
-                            }
-                            background: Rectangle {
-                                anchors.fill: parent
-                                color: (global.trafficDataProvider().receivingHeartbeat) ? "green" : "red"
-                                opacity: 0.2
-                            }
-                        }
-
-                        Rectangle {
-                            height: 1
-                            Layout.fillWidth: true
-                            color: Material.primary
-                        }
-
-                        ItemDelegate { // About
-                            text: qsTr("About Enroute Flight Navigation")
-                            icon.source: "/icons/material/ic_info_outline.svg"
-
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.pop()
-                                stackView.push("pages/InfoPage.qml")
-                                aboutMenu.close()
-                                drawer.close()
-                            }
-                        }
-
-                        ItemDelegate { // Participate
-                            text: qsTr("Participate")
-                            icon.source: "/icons/nav_participate.svg"
-                            icon.color: Material.primary
-
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.pop()
-                                stackView.push("pages/ParticipatePage.qml")
-                                aboutMenu.close()
-                                drawer.close()
-                            }
-                        }
-
-                        ItemDelegate { // Donate
-                            text: qsTr("Donate")
-                            icon.source: "/icons/material/ic_attach_money.svg"
-
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.pop()
-                                stackView.push("pages/DonatePage.qml")
-                                aboutMenu.close()
-                                drawer.close()
-                            }
-                        }
-                    }
-
+                    Keys.onPressed: {
+					    if (event.key == Qt.Key_Return) {
+		    			    event.accepted = true;
+		    			    //aboutMenu.open()
+		    			     stackView.pop()
+                             stackView.push("pages/InfoMenu.qml")
+                             drawer.close()
+		    		    } 
+		    		}
                 }
 
                 ItemDelegate { // Manual
                     text: qsTr("Manual")
                     icon.source: "/icons/material/ic_book.svg"
                     Layout.fillWidth: true
-                    visible: !satNav.isInFlight
 
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
@@ -451,7 +375,6 @@ ApplicationWindow {
                 ItemDelegate { // Exit
                     text: qsTr("Exit")
                     icon.source: "/icons/material/ic_exit_to_app.svg"
-                    icon.color: Material.primary
                     Layout.fillWidth: true
 
                     onClicked: {

@@ -42,5 +42,6 @@
         <file alias="pages/SettingsPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/SettingsPage.qml</file>
         <file alias="pages/TrafficReceiver.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/TrafficReceiver.qml</file>
         <file alias="pages/WeatherPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/WeatherPage.qml</file>
+        <file alias="pages/InfoMenu.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/InfoMenu.qml</file>
     </qresource>
 </RCC>
