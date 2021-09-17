@@ -16,8 +16,8 @@ Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QObject *parent) :
 
 	m_serialPort = new QSerialPort(this);
 	QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
-	qInfo() << "Flarm init \n";
-	for(uint8_t i = 0;i < ports.size(); i++)
+	qInfo() << "Flarm init \n" << ports.length();
+	/*for(uint8_t i = 0;i < ports.length(); i++)
 	{
 		qInfo()<< "Port: " << ports.takeAt(i).portName() << "\n";
 
@@ -25,14 +25,16 @@ Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QObject *parent) :
 		{
 		    m_serialPort->setPort(ports.takeAt(i));
 		}
-	}
-	m_serialPort->setBaudRate(QSerialPort::Baud9600,QSerialPort::AllDirections);
+	}*/
+m_serialPort->setPort(ports.takeAt(1));
+
+	m_serialPort->setBaudRate(QSerialPort::Baud19200,QSerialPort::AllDirections);
 	m_serialPort->setStopBits(QSerialPort::OneStop);
 	m_serialPort->setParity(QSerialPort::NoParity);
 	m_serialPort->setDataBits(QSerialPort::Data8);
 	m_serialPort->setFlowControl(QSerialPort::NoFlowControl);
-	connect(m_serialPort, &QSerialPort::readyRead, this, &TrafficDataSource_Serial::onReadyRead);
-
+m_serialPort->setReadBufferSize(30);	
+connect(m_serialPort, &QSerialPort::readyRead, this, &TrafficDataSource_Serial::onReadyRead);
 }
 
 
@@ -61,13 +63,15 @@ void Traffic::TrafficDataSource_Serial::onReadyRead()
 {
 
     QString sentence;
+   
     m_readData.append(m_serialPort->readAll());
-    sentence = (QString)m_readData;
-    qInfo() << sentence;
-    while( m_textStream.readLineInto(&sentence) ) {
-        processFLARMSentence(sentence);
+    	
+    if(m_readData.endsWith('\n'))
+    {
+	//qInfo() << m_readData;
+	processFLARMSentence(m_readData);
+        m_readData.clear();
     }
-
 }
 
 

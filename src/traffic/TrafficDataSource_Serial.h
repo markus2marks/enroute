@@ -79,9 +79,8 @@ private slots:
 private:
     quint16 m_port;
     QByteArray m_readData;
-	QTextStream m_standardOutput;
-	QSerialPort *m_serialPort;
-    QTextStream m_textStream;
+    QTextStream m_standardOutput;
+    QSerialPort *m_serialPort;
 };
 
 }
