@@ -64,7 +64,7 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
 //    addDataSource( new Traffic::TrafficDataSource_Tcp("192.168.10.1", 2000, this) );
 //    addDataSource( new Traffic::TrafficDataSource_Udp(4000, this) );
 //    addDataSource( new Traffic::TrafficDataSource_Udp(49002, this));
-    addDataSource( new Traffic::TrafficDataSource_Serial(this));
+    //addDataSource( new Traffic::TrafficDataSource_Serial(this));
     // Bindings for status string
     connect(this, &Traffic::TrafficDataProvider::positionInfoChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
     connect(this, &Traffic::TrafficDataProvider::pressureAltitudeChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
@@ -79,6 +79,19 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
 
     // Try to (re)connect whenever the network situation changes
     QTimer::singleShot(0, this, &Traffic::TrafficDataProvider::deferredInitialization);
+}
+
+
+Traffic::TrafficDataProvider::~TrafficDataProvider()
+{
+    foreach(auto dataSource, m_dataSources) {
+        if (dataSource.isNull()) {
+            continue;
+        }
+        dataSource->disconnect();
+        delete dataSource;
+    }
+    m_dataSources.clear();
 }
 
 
@@ -378,7 +391,7 @@ void Traffic::TrafficDataProvider::updateStatusString()
         if (!m_currentSource.isNull()) {
             result += QString("<p>%1</p><ul style='margin-left:-25px;'>").arg(m_currentSource->sourceName());
         }
-        result += QString("<li>%1</li>").arg(tr("Receiving traffic data."));
+        result += QString("<li>%1</li>").arg(tr("Receiving heartbeat."));
         if (positionInfo().isValid()) {
             result += QString("<li>%1</li>").arg(tr("Receiving position info."));
         }
@@ -390,7 +403,7 @@ void Traffic::TrafficDataProvider::updateStatusString()
         return;
     }
 
-    QString result = "<p>" + tr("Not receiving traffic data.") + "<p><ul style='margin-left:-25px;'>";
+    QString result = "<p>" + tr("Not receiving heartbeat.") + "<p><ul style='margin-left:-25px;'>";
     foreach(auto source, m_dataSources) {
         if (source.isNull()) {
             continue;

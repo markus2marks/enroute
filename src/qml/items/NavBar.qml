@@ -51,7 +51,7 @@ Rectangle {
             id: trueAltitude
 
             Layout.preferredWidth: m_implicitWidth
-            property var m_implicitWidth: Math.max(trueAltitude_1.contentWidth, trueAltitude_2.contentWidth)
+            property real m_implicitWidth: Math.max(trueAltitude_1.contentWidth, trueAltitude_2.contentWidth)
 
             Label {
                 id: trueAltitude_1
@@ -59,7 +59,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignHCenter
 
                 text: {
-                    const talt= positionProvider.positionInfo.trueAltitude();
+                    const talt= global.positionProvider().positionInfo.trueAltitude();
                     return talt.isFinite() ? Math.round(talt.toFeet()) + " ft" : "-"
                 }
                 font.weight: Font.Bold
@@ -83,14 +83,14 @@ Rectangle {
 
             visible: grid.numVisibleItems() >= 5
             Layout.preferredWidth: visible ? m_implicitWidth : 0
-            property var m_implicitWidth: Math.max(flightLevel_1.contentWidth, flightLevel_2.contentWidth)
+            property real m_implicitWidth: Math.max(flightLevel_1.contentWidth, flightLevel_2.contentWidth)
 
             Label {
                 id: flightLevel_1
 
                 Layout.alignment: Qt.AlignHCenter
 
-                text: positionProvider.pressureAltitude.isFinite() ? "FL" + ("000" + Math.round(positionProvider.pressureAltitude.toFeet()/100.0)).slice(-3) : "-"
+                text: global.positionProvider().pressureAltitude.isFinite() ? "FL" + ("000" + Math.round(global.positionProvider().pressureAltitude.toFeet()/100.0)).slice(-3) : "-"
                 font.weight: Font.Bold
                 font.pixelSize: Qt.application.font.pixelSize*1.3
                 color: "white"
@@ -111,7 +111,7 @@ Rectangle {
             id: groundSpeed
 
             Layout.preferredWidth: m_implicitWidth
-            property var m_implicitWidth: Math.max(groundSpeed_1.contentWidth, groundSpeed_2.contentWidth)
+            property real m_implicitWidth: Math.max(groundSpeed_1.contentWidth, groundSpeed_2.contentWidth)
 
             Label {
                 id: groundSpeed_1
@@ -119,7 +119,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignHCenter
 
                 text: {
-                    const gs = positionProvider.positionInfo.groundSpeed();
+                    const gs = global.positionProvider().positionInfo.groundSpeed();
                     if (!gs.isFinite())
                         return "-"
                     return global.settings().useMetricUnits ? Math.round(gs.toKMH()) + " km/h" : Math.round(gs.toKN()) + " kn"
@@ -143,7 +143,7 @@ Rectangle {
             id: trueTrack
 
             Layout.preferredWidth: m_implicitWidth
-            property var m_implicitWidth: Math.max(trueTrack_1.contentWidth, trueTrack_2.contentWidth)
+            property real m_implicitWidth: Math.max(trueTrack_1.contentWidth, trueTrack_2.contentWidth)
 
             Label {
                 id: trueTrack_1
@@ -151,7 +151,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignHCenter
 
                 text: {
-                    var tt = positionProvider.positionInfo.trueTrack();
+                    var tt = global.positionProvider().positionInfo.trueTrack();
                     return tt.isFinite() ? Math.round(tt.toDEG()) + "°" : "-"
                 }
 
@@ -176,13 +176,13 @@ Rectangle {
 
             visible: grid.numVisibleItems() >= 4
             Layout.preferredWidth: m_implicitWidth
-            property var m_implicitWidth: Math.max(utc_1.contentWidth, utc_2.contentWidth)
+            property real m_implicitWidth: Math.max(utc_1.contentWidth, utc_2.contentWidth)
 
             Label {
                 id: utc_1
                 Layout.alignment: Qt.AlignHCenter
 
-                text: clock.timeAsUTCString
+                text: global.navigator().clock.timeAsUTCString
                 font.weight: Font.Bold
                 font.pixelSize: Qt.application.font.pixelSize*1.3
                 color: "white"

@@ -18,6 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <gsl/util>
+
 #include <QDataStream>
 #include <QLockFile>
 #include <QNetworkReply>
@@ -30,10 +32,10 @@
 
 #include "sunset.h"
 
-#include "Clock.h"
 #include "Global.h"
 #include "Settings.h"
 #include "geomaps/GeoMapProvider.h"
+#include "navigation/Clock.h"
 #include "navigation/FlightRoute.h"
 #include "navigation/Navigator.h"
 #include "positioning/PositionProvider.h"
@@ -42,12 +44,6 @@
 #include <chrono>
 
 using namespace std::chrono_literals;
-
-
-// Static instance of this class. Do not analyze, because of many unwanted warnings.
-#ifndef __clang_analyzer__
-QPointer<Weather::WeatherDataProvider> WeatherDataProviderStatic {};
-#endif
 
 
 Weather::WeatherDataProvider::WeatherDataProvider(QObject *parent) : QObject(parent)
@@ -68,28 +64,28 @@ Weather::WeatherDataProvider::WeatherDataProvider(QObject *parent) : QObject(par
     connect(this, &Weather::WeatherDataProvider::weatherStationsChanged, this, &Weather::WeatherDataProvider::QNHInfoChanged);
 
     // Set up connections to other static objects, but do so with a little lag to avoid conflicts in the initialisation
-    QTimer::singleShot(0, this, &Weather::WeatherDataProvider::setupConnections);
+    QTimer::singleShot(0, this, &Weather::WeatherDataProvider::deferredInitialization);
+}
+
+
+void Weather::WeatherDataProvider::deferredInitialization()
+{
+    connect(Global::positionProvider(), &Positioning::PositionProvider::receivingPositionInfoChanged, this, &Weather::WeatherDataProvider::QNHInfoChanged);
+    connect(Global::positionProvider(), &Positioning::PositionProvider::receivingPositionInfoChanged, this, &Weather::WeatherDataProvider::sunInfoChanged);
+
+    connect(Global::navigator()->clock(), &Navigation::Clock::timeChanged, this, &Weather::WeatherDataProvider::QNHInfoChanged);
+    connect(Global::navigator()->clock(), &Navigation::Clock::timeChanged, this, &Weather::WeatherDataProvider::sunInfoChanged);
 
     // Read METAR/TAF from "weather.dat"
     bool success = load();
 
     // Compute time for next update
-    int remainingTime = QDateTime::currentDateTimeUtc().msecsTo( _lastUpdate.addMSecs(updateIntervalNormal_ms) );
+    auto remainingTime = QDateTime::currentDateTimeUtc().msecsTo( _lastUpdate.addMSecs(updateIntervalNormal_ms) );
     if (!success || !_lastUpdate.isValid() || (remainingTime < 0)) {
         update();
     } else {
-        _updateTimer.setInterval(remainingTime);
+        _updateTimer.setInterval( gsl::narrow_cast<int>(remainingTime) );
     }
-}
-
-
-void Weather::WeatherDataProvider::setupConnections() const
-{
-    connect(Positioning::PositionProvider::globalInstance(), &Positioning::PositionProvider::receivingPositionInfoChanged, this, &Weather::WeatherDataProvider::QNHInfoChanged);
-    connect(Positioning::PositionProvider::globalInstance(), &Positioning::PositionProvider::receivingPositionInfoChanged, this, &Weather::WeatherDataProvider::sunInfoChanged);
-
-    connect(Clock::globalInstance(), &Clock::timeChanged, this, &Weather::WeatherDataProvider::QNHInfoChanged);
-    connect(Clock::globalInstance(), &Clock::timeChanged, this, &Weather::WeatherDataProvider::sunInfoChanged);
 }
 
 
@@ -223,19 +219,6 @@ auto Weather::WeatherDataProvider::findOrConstructWeatherStation(const QString &
 }
 
 
-auto Weather::WeatherDataProvider::globalInstance() -> Weather::WeatherDataProvider*
-{
-#ifndef __clang_analyzer__
-    if (WeatherDataProviderStatic.isNull()) {
-        WeatherDataProviderStatic = new Weather::WeatherDataProvider();
-    }
-    return WeatherDataProviderStatic;
-#else
-    return nullptr;
-#endif
-}
-
-
 auto Weather::WeatherDataProvider::load() -> bool
 {
     auto stdFileName = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)+"/weather.dat";
@@ -363,7 +346,7 @@ void Weather::WeatherDataProvider::save()
 auto Weather::WeatherDataProvider::sunInfo() -> QString
 {
     // Paranoid safety checks
-    auto *positionProvider = Positioning::PositionProvider::globalInstance();
+    auto *positionProvider = Global::positionProvider();
     if (positionProvider == nullptr) {
         return QString();
     }
@@ -416,12 +399,12 @@ auto Weather::WeatherDataProvider::sunInfo() -> QString
 
     if (sunrise.isValid() && sunset.isValid() && sunriseTomorrow.isValid()) {
         if (currentTime < sunrise) {
-            return tr("SR %1, %2").arg(Clock::describePointInTime(sunrise), Clock::describeTimeDifference(sunrise));
+            return tr("SR %1, %2").arg(Navigation::Clock::describePointInTime(sunrise), Navigation::Clock::describeTimeDifference(sunrise));
         }
         if (currentTime < sunset.addSecs(40*60)) {
-            return tr("SS %1, %2").arg(Clock::describePointInTime(sunset), Clock::describeTimeDifference(sunset));
+            return tr("SS %1, %2").arg(Navigation::Clock::describePointInTime(sunset), Navigation::Clock::describeTimeDifference(sunset));
         }
-        return tr("SR %1, %2").arg(Clock::describePointInTime(sunriseTomorrow), Clock::describeTimeDifference(sunriseTomorrow));
+        return tr("SR %1, %2").arg(Navigation::Clock::describePointInTime(sunriseTomorrow), Navigation::Clock::describeTimeDifference(sunriseTomorrow));
     }
     return QString();
 }
@@ -430,7 +413,7 @@ auto Weather::WeatherDataProvider::sunInfo() -> QString
 auto Weather::WeatherDataProvider::QNHInfo() const -> QString
 {
     // Paranoid safety checks
-    auto *positionProvider = Positioning::PositionProvider::globalInstance();
+    auto *positionProvider = Global::positionProvider();
     if (positionProvider == nullptr) {
         return QString();
     }
@@ -465,7 +448,7 @@ auto Weather::WeatherDataProvider::QNHInfo() const -> QString
     if (closestReportWithQNH != nullptr) {
         return tr("QNH: %1 hPa in %2, %3").arg(closestReportWithQNH->metar()->QNH())
                 .arg(closestReportWithQNH->ICAOCode(),
-                     Clock::describeTimeDifference(closestReportWithQNH->metar()->observationTime()));
+                     Navigation::Clock::describeTimeDifference(closestReportWithQNH->metar()->observationTime()));
     }
     return QString();
 }

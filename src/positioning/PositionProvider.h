@@ -53,15 +53,6 @@ public:
     /*! \brief Standard deconstructor */
     ~PositionProvider() override;
 
-    /*! \brief Pointer to static instance
-     *
-     *  This method returns a pointer to a static instance of this class. In rare
-     *  situations, during shutdown of the app, a nullptr might be returned.
-     *
-     *  @returns A pointer to a static instance of this class
-     */
-    static PositionProvider *globalInstance();
-
     /*! \brief Last valid coordinate reading
      *
      *  This property holds the last valid coordinate known.  At the first
@@ -108,6 +99,9 @@ private slots:
 
     // Connected to sources, in order to receive new data
     void onPressureAltitudeUpdated();
+
+    // Saves last valid position and track
+    void savePositionAndTrack();
 
     // Setter method for property with the same name
     void setLastValidCoordinate(const QGeoCoordinate &newCoordinate);

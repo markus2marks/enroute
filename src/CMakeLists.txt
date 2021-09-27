@@ -73,8 +73,6 @@ set(SOURCES
     ressources.qrc.in
 
     # Header files
-    Aircraft.h
-    Clock.h
     dataManagement/DataManager.h
     dataManagement/Downloadable.h
     dataManagement/DownloadableGroup.h
@@ -88,6 +86,8 @@ set(SOURCES
     Global.h
     Librarian.h
     MobileAdaptor.h
+    navigation/Aircraft.h
+    navigation/Clock.h
     navigation/FlightRoute.h
     navigation/FlightRoute_Leg.h
     navigation/Navigator.h
@@ -129,8 +129,6 @@ set(SOURCES
     variometer/DataSwitch.h
     variometer/KalmanFilter.h
     # C++ files
-    Aircraft.cpp
-    Clock.cpp
     dataManagement/DataManager.cpp
     dataManagement/Downloadable.cpp
     dataManagement/DownloadableGroup.cpp
@@ -146,6 +144,8 @@ set(SOURCES
     main.cpp
     MobileAdaptor.cpp
     MobileAdaptor_share.cpp
+    navigation/Aircraft.cpp
+    navigation/Clock.cpp
     navigation/FlightRoute.cpp
     navigation/FlightRoute_GPX.cpp
     navigation/FlightRoute_Leg.cpp
@@ -227,19 +227,6 @@ if( ANDROID )
 
     # Configure files
     configure_file(AndroidManifest.xml.in android/AndroidManifest.xml)
-    configure_file(android/build.gradle android/build.gradle COPYONLY)
-    configure_file(android/gradle/wrapper/gradle-wrapper.properties android/gradle/wrapper/gradle-wrapper.properties COPYONLY)
-    configure_file(android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar COPYONLY)
-    configure_file(android/gradlew android/gradlew COPYONLY)
-    configure_file(android/gradlew.bat android/gradlew.bat COPYONLY)
-    configure_file(android/res/drawable/splash.xml android/res/drawable/splash.xml COPYONLY)
-    configure_file(android/res/values/apptheme.xml android/res/values/apptheme.xml COPYONLY)
-    configure_file(android/res/values/apptheme.xml android/res/values/apptheme.xml COPYONLY)
-    configure_file(android/res/xml/filepaths.xml android/res/xml/filepaths.xml COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/ShareActivity.java android/src/de/akaflieg_freiburg/enroute/ShareActivity.java COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/ShareUtils.java android/src/de/akaflieg_freiburg/enroute/ShareUtils.java COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/action/drawable-hdpi/ic_info_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_info.png COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/file/drawable-hdpi/ic_file_download_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_file_download.png COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/alert/drawable-hdpi/ic_error_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_error.png COPYONLY)
@@ -247,33 +234,8 @@ if( ANDROID )
 
     # Copy manual into Android assets directory
     file(COPY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION android/assets)
-
-    # Generate android extra sources. This includes icons, but also a few other files
-    set(ANDROID_EXTRA_SOURCES
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxxhdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxhdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xhdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-hdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-mdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/splash.xml
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/values/apptheme.xml
-        )
-    add_custom_command(
-        OUTPUT ${ANDROID_EXTRA_SOURCES}
-        DEPENDS ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg
-        COMMAND cp -prd ${CMAKE_CURRENT_SOURCE_DIR}/android .
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xxxhdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxxhdpi/icon.png -h 384 -w 384
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xxhdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxhdpi/icon.png -h 288 -w 288
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xhdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xhdpi/icon.png -h 192 -w 192
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-hdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-hdpi/icon.png -h 144 -w 144
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-mdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-mdpi/icon.png -h 96 -w 96
-        COMMENT "Generate android icons"
-        )
+    file(COPY ${CMAKE_SOURCE_DIR}/generatedSources/src/android DESTINATION .)
+    file(COPY ${CMAKE_SOURCE_DIR}/src/android DESTINATION .)
 
     # The android target require a few additional variables
     set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/android" CACHE INTERNAL "")

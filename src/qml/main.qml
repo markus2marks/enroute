@@ -193,8 +193,8 @@ ApplicationWindow {
                         }
 
                         ItemDelegate {
-                            text: qsTr("Maps")
-                                  + (global.mapManager().geoMaps.updatable ? `<br><font color="#606060" size="2">` +qsTr("Updates available") + "</font>" : "")
+                            text: qsTr("Maps and Data")
+                                  + (global.dataManager().geoMaps.updatable ? `<br><font color="#606060" size="2">` +qsTr("Updates available") + "</font>" : "")
                                   + (global.navigator().isInFlight ? `<br><font color="#606060" size="2">` +qsTr("Item not available in flight") + "</font>" : "")
                             icon.source: "/icons/material/ic_map.svg"
                             Layout.fillWidth: true
@@ -202,7 +202,7 @@ ApplicationWindow {
                             enabled: !global.navigator().isInFlight
                             onClicked: {
                                 global.mobileAdaptor().vibrateBrief()
-                                stackView.push("pages/MapManager.qml")
+                                stackView.push("pages/DataManager.qml")
                                 libraryMenu.close()
                                 drawer.close()
                             }
@@ -424,7 +424,7 @@ ApplicationWindow {
             // Start accepting files
             global.mobileAdaptor().startReceiveOpenFileRequests()
 
-            if ((global.settings().lastWhatsNewHash !== librarian.getStringHashFromRessource(":text/whatsnew.html")) && !global.navigator().isInFlight) {
+            if ((global.settings().lastWhatsNewHash !== global.librarian().getStringHashFromRessource(":text/whatsnew.html")) && !global.navigator().isInFlight) {
                 whatsNewDialog.open()
                 return
             }
@@ -550,8 +550,8 @@ ApplicationWindow {
         anchors.centerIn: parent
         
         title: qsTr("What's new …?")
-        text: librarian.getStringFromRessource(":text/whatsnew.html")
-        onOpened: global.settings().lastWhatsNewHash = librarian.getStringHashFromRessource(":text/whatsnew.html")
+        text: global.librarian().getStringFromRessource(":text/whatsnew.html")
+        onOpened: global.settings().lastWhatsNewHash = global.librarian().getStringHashFromRessource(":text/whatsnew.html")
     }
     
     Shortcut {

@@ -28,13 +28,13 @@ Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QObject *parent) :
 	}*/
 m_serialPort->setPort(ports.takeAt(1));
 
-	m_serialPort->setBaudRate(QSerialPort::Baud19200,QSerialPort::AllDirections);
-	m_serialPort->setStopBits(QSerialPort::OneStop);
-	m_serialPort->setParity(QSerialPort::NoParity);
-	m_serialPort->setDataBits(QSerialPort::Data8);
-	m_serialPort->setFlowControl(QSerialPort::NoFlowControl);
-m_serialPort->setReadBufferSize(30);	
-connect(m_serialPort, &QSerialPort::readyRead, this, &TrafficDataSource_Serial::onReadyRead);
+    m_serialPort->setBaudRate(QSerialPort::Baud19200,QSerialPort::AllDirections);
+    m_serialPort->setStopBits(QSerialPort::OneStop);
+    m_serialPort->setParity(QSerialPort::NoParity);
+    m_serialPort->setDataBits(QSerialPort::Data8);
+    m_serialPort->setFlowControl(QSerialPort::NoFlowControl);
+    m_serialPort->setReadBufferSize(30);
+    connect(m_serialPort, &QSerialPort::readyRead, this, &TrafficDataSource_Serial::onReadyRead);
 }
 
 
@@ -61,15 +61,12 @@ void Traffic::TrafficDataSource_Serial::disconnectFromTrafficReceiver()
 
 void Traffic::TrafficDataSource_Serial::onReadyRead()
 {
-
-    QString sentence;
-   
     m_readData.append(m_serialPort->readAll());
     	
     if(m_readData.endsWith('\n'))
     {
-	//qInfo() << m_readData;
-	processFLARMSentence(m_readData);
+        //qInfo() << m_readData;
+        processFLARMSentence(m_readData);
         m_readData.clear();
     }
 }

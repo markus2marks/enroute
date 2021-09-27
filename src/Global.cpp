@@ -24,34 +24,42 @@
 
 #include "DemoRunner.h"
 #include "Global.h"
+#include "Librarian.h"
 #include "MobileAdaptor.h"
 #include "Settings.h"
 #include "dataManagement/DataManager.h"
 #include "geomaps/GeoMapProvider.h"
 #include "navigation/Navigator.h"
 #include "platform/Notifier.h"
+#include "positioning/PositionProvider.h"
 #include "traffic/FlarmnetDB.h"
 #include "traffic/PasswordDB.h"
 #include "traffic/TrafficDataProvider.h"
+#include "weather/WeatherDataProvider.h"
 
 bool isConstructing {false};
+bool isDestructing {false};
 
 QPointer<Traffic::FlarmnetDB> g_flarmnetDB {};
 QPointer<GeoMaps::GeoMapProvider> g_geoMapProvider {};
+QPointer<Librarian> g_librarian {};
 QPointer<DataManagement::DataManager> g_mapManager {};
 QPointer<MobileAdaptor> g_mobileAdaptor {};
 QPointer<Navigation::Navigator> g_navigator {};
 QPointer<Platform::Notifier> g_notifier {};
+QPointer<Positioning::PositionProvider> g_positionProvider {};
 QPointer<QNetworkAccessManager> g_networkAccessManager {};
 QPointer<Traffic::PasswordDB> g_passwordDB {};
 QPointer<Settings> g_settings {};
 QPointer<Traffic::TrafficDataProvider> g_trafficDataProvider {};
+QPointer<Weather::WeatherDataProvider> g_weatherDataProvider {};
 
 
 template<typename T> auto Global::allocateInternal(QPointer<T>& pointer) -> T*
 {
     Q_ASSERT( QCoreApplication::instance() != nullptr );
     Q_ASSERT( !isConstructing );
+    Q_ASSERT( !isDestructing );
 
     if (pointer.isNull()) {
         isConstructing = true;
@@ -66,6 +74,30 @@ template<typename T> auto Global::allocateInternal(QPointer<T>& pointer) -> T*
 
 Global::Global(QObject *parent) : QObject(parent)
 {
+}
+
+
+void Global::destruct()
+{
+    Q_ASSERT( !isConstructing );
+    Q_ASSERT( !isDestructing );
+
+    isDestructing = true;
+
+    delete g_flarmnetDB;
+    delete g_geoMapProvider;
+    delete g_librarian;
+    delete g_mapManager;
+    delete g_mobileAdaptor;
+    delete g_navigator;
+    delete g_networkAccessManager;
+    delete g_passwordDB;
+    delete g_positionProvider;
+    delete g_settings;
+    delete g_trafficDataProvider;
+    delete g_weatherDataProvider;
+
+    isDestructing = false;
 }
 
 
@@ -84,6 +116,12 @@ auto Global::geoMapProvider() -> GeoMaps::GeoMapProvider*
 auto Global::dataManager() -> DataManagement::DataManager*
 {
     return allocateInternal<DataManagement::DataManager>(g_mapManager);
+}
+
+
+auto Global::librarian() -> Librarian*
+{
+    return allocateInternal<Librarian>(g_librarian);
 }
 
 
@@ -117,13 +155,25 @@ auto Global::passwordDB() -> Traffic::PasswordDB*
 }
 
 
+auto Global::positionProvider() -> Positioning::PositionProvider*
+{
+    return allocateInternal<Positioning::PositionProvider>(g_positionProvider);
+}
+
+
 auto Global::settings() -> Settings*
 {
     return allocateInternal<Settings>(g_settings);
 }
 
+
 auto Global::trafficDataProvider() -> Traffic::TrafficDataProvider*
 {
     return allocateInternal<Traffic::TrafficDataProvider>(g_trafficDataProvider);
+}
 
+
+auto Global::weatherDataProvider() -> Weather::WeatherDataProvider*
+{
+    return allocateInternal<Weather::WeatherDataProvider>(g_weatherDataProvider);
 }

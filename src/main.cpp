@@ -36,8 +36,6 @@
 #include <kdsingleapplication.h>
 #endif
 
-#include "Aircraft.h"
-#include "Clock.h"
 #include "DemoRunner.h"
 #include "Global.h"
 #include "Librarian.h"
@@ -46,6 +44,8 @@
 #include "dataManagement/DataManager.h"
 #include "geomaps/Airspace.h"
 #include "geomaps/GeoMapProvider.h"
+#include "navigation/Aircraft.h"
+#include "navigation/Clock.h"
 #include "navigation/Navigator.h"
 #include "platform/Notifier.h"
 #include "positioning/PositionProvider.h"
@@ -81,9 +81,11 @@ auto main(int argc, char *argv[]) -> int
     qRegisterMetaType<MobileAdaptor::FileFunction>("MobileAdaptor::FileFunction");
     qRegisterMetaType<Platform::Notifier::Notifications>("Platform::Notifier::Notifications");
     qmlRegisterUncreatableType<DemoRunner>("enroute", 1, 0, "DemoRunner", "DemoRunner objects cannot be created in QML");
-    qmlRegisterType<Clock>("enroute", 1, 0, "Clock");
+    qmlRegisterType<Navigation::Aircraft>("enroute", 1, 0, "Aircraft");
+    qmlRegisterType<Navigation::Clock>("enroute", 1, 0, "Clock");
     qmlRegisterType<DataManagement::DownloadableGroup>("enroute", 1, 0, "DownloadableGroup");
     qmlRegisterType<DataManagement::DownloadableGroupWatcher>("enroute", 1, 0, "DownloadableGroupWatcher");
+    qmlRegisterUncreatableType<Librarian>("enroute", 1, 0, "Librarian", "Librarian objects cannot be created in QML");
     qmlRegisterUncreatableType<GeoMaps::GeoMapProvider>("enroute", 1, 0, "GeoMapProvider", "GeoMapProvider objects cannot be created in QML");
     qmlRegisterUncreatableType<DataManagement::DataManager>("enroute", 1, 0, "DataManager", "DataManager objects cannot be created in QML");
     qmlRegisterType<Settings>("enroute", 1, 0, "GlobalSettings");
@@ -156,65 +158,26 @@ auto main(int argc, char *argv[]) -> int
     /*
      * Set up ApplicationEngine for QML
      */
-    auto* engine = new QQmlApplicationEngine();
-    QObject* demoRunner = nullptr;
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("manual_location", MANUAL_LOCATION );
+    engine.rootContext()->setContextProperty("global", new Global(&engine) );
+    engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
+
     if (parser.isSet(screenshotOption)) {
-        demoRunner = new DemoRunner(engine);
+        new DemoRunner(&app);
     }
-
-    // Manual location
-    engine->rootContext()->setContextProperty("manual_location", MANUAL_LOCATION );
-
-    // Make global objects available to QML engine
-    engine->rootContext()->setContextProperty("global", new Global(engine) );
-
-    // Make GPS available to QML engine
-    engine->rootContext()->setContextProperty("positionProvider", Positioning::PositionProvider::globalInstance());
-
-    // Attach library info
-    engine->rootContext()->setContextProperty("librarian", Librarian::globalInstance());
-
-    // Attach aircraft info
-    engine->rootContext()->setContextProperty("aircraft", Aircraft::globalInstance());
-
-    // Attach wind info
-    engine->rootContext()->setContextProperty("wind", Weather::Wind::globalInstance());
-
-    // Attach clock
-    engine->rootContext()->setContextProperty("clock", Clock::globalInstance());
-
-    // Attach Weather::WeatherDataProvider
-    engine->rootContext()->setContextProperty("weatherDownloadManager", Weather::WeatherDataProvider::globalInstance());
-
-    // Restore saved settings and make them available to QML
-    QSettings settings;
-    engine->rootContext()->setContextProperty("savedCenter", settings.value("Map/center", QVariant::fromValue(QGeoCoordinate(48.022653, 7.832583))));
-    engine->rootContext()->setContextProperty("savedBearing", settings.value("Map/bearing", 0.0));
-    engine->rootContext()->setContextProperty("savedZoomLevel", settings.value("Map/zoomLevel", 9));
 
     // Load GUI and enter event loop
-    engine->load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
-    QGuiApplication::exec();
-
-    // Save settings
-    // Obtain a pointer to the flightMap
-    QQuickItem *flightMap = nullptr;
-    foreach (auto rootItem, engine->rootObjects()) {
-        flightMap = rootItem->findChild<QQuickItem*>("flightMap");
-        if (flightMap != nullptr) {
-            break;
-        }
-    }
-    if (flightMap != nullptr) {
-        settings.setValue("Map/center", QQmlProperty::read(flightMap, "center"));
-        settings.setValue("Map/bearing", QQmlProperty::read(flightMap, "bearing"));
-        settings.setValue("Map/zoomLevel", QQmlProperty::read(flightMap, "zoomLevel"));
-    }
+    return QGuiApplication::exec();
 
     // Ensure that things get deleted in the right order
-    Global::trafficDataProvider()->disconnectFromTrafficReceiver();
-    delete demoRunner;
-    delete engine;
+//    delete demoRunner;
+//    Global::destruct();
 
-    return 0;
+    // We exit(…) and do not return here. The reason is that the deconstruction of the qApp object
+    // freezes sporadically (for unclear reasons) whenever a connection to a traffic data receiver exists.
+    //
+    // BAD IDEA: exit causes crash reports. Again I do not know why.
+    //
+    //exit(0);
 }

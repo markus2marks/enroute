@@ -24,13 +24,6 @@
 #include <QStandardPaths>
 #include <QtGlobal>
 
-// Static instance of this class. Do not analyze, because of many unwanted warnings.
-#ifndef __clang_analyzer__
-QPointer<QNetworkAccessManager> networkAccessManagerStatic {};
-QPointer<Librarian> librarianStatic {};
-#endif
-
-
 Librarian::Librarian(QObject *parent) : QObject(parent)
 {
     auto libraryPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)+"/flight routes";
@@ -91,7 +84,7 @@ auto Librarian::getStringFromRessource(const QString &name) -> QString
 )html") + tr(R"html(
 <li><strong>German:</strong> Markus Sachs. Markus flies trikes and is an enthusiastic 'Co' on everyting else that flies.</li>
 )html") + tr(R"html(
-<li><strong>Italian:</strong> Ivan Battistella.</li>
+<li><strong>Italian:</strong> Ivan Battistella and Antonio Fardella.  Antonio is a naval aviator with a passion for everything challenging.</li>
 )html") + tr(R"html(
 <li><strong>Polish:</strong> Sławek Mikuła.</li>
 )html") + (R"html(
@@ -159,7 +152,7 @@ auto Librarian::getStringFromRessource(const QString &name) -> QString
 
 <p><strong>Enroute Flight Navigation</strong> is a free nagivation app for VFR pilots, developed as a project of Akaflieg Freiburg.</p>
 
-<ul>
+<ul style="margin-left:-25px;">
   <li>Simple, elegant and functional</li>
   <li>No ads, no commercical "pro" version</li>
   <li>No registration, no membership</li>
@@ -354,19 +347,6 @@ auto Librarian::flightRoutes(const QString &filter) -> QStringList
         fileBaseNames << fileName.section('.', 0, -2);
 
     return permissiveFilter(fileBaseNames, filter);
-}
-
-
-auto Librarian::globalInstance() -> Librarian*
-{
-#ifndef __clang_analyzer__
-    if (librarianStatic.isNull()) {
-        librarianStatic = new Librarian();
-    }
-    return librarianStatic;
-#else
-    return nullptr;
-#endif
 }
 
 

@@ -23,14 +23,15 @@ import QtQuick.Controls 2.15
 import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
+
 import "../items"
 
 Page {
-    id: pg
+     id: page
     title: qsTr("About Enroute Flight Navigation")
 
     header: StandardHeader {}
-
+    focus: true
     TabBar {
         id: bar
         anchors.top: parent.top
@@ -47,7 +48,8 @@ Page {
 
     SwipeView {
         id: sv
-
+ 
+        
         anchors.top: bar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
@@ -57,7 +59,7 @@ Page {
         
         ScrollView {
             clip: true
-
+    
             // The label that we really want to show is wrapped into an Item. This allows
             // to set implicitHeight, and thus compute the implicitHeight of the Dialog
             // without binding loops
@@ -67,7 +69,7 @@ Page {
 
                 Label {
                     id: lbl1
-                    text: "<style>a:link { color: " + Material.accent + "; }</style>"+librarian.getStringFromRessource(":text/info_enroute.html")
+                    text: "<style>a:link { color: " + Material.accent + "; }</style>"+global.librarian().getStringFromRessource(":text/info_enroute.html")
                     textFormat: Text.RichText
                     linkColor: Material.accent
                     width: pg.width
@@ -79,11 +81,6 @@ Page {
                     onLinkActivated: Qt.openUrlExternally(link)
                 }
             }
-        }
-        
-        ScrollView {
-            clip: true
-
             // The label that we really want to show is wrapped into an Item. This allows
             // to set implicitHeight, and thus compute the implicitHeight of the Dialog
             // without binding loops
@@ -93,7 +90,7 @@ Page {
 
                 Label {
                     id: lbl2
-                    text: "<style>a:link { color: " + Material.accent + "; }</style>"+librarian.getStringFromRessource(":text/authors.html")
+                    text: "<style>a:link { color: " + Material.accent + "; }</style>"+global.librarian().getStringFromRessource(":text/authors.html")
                     textFormat: Text.RichText // Link OK
                     width: pg.width
                     wrapMode: Text.Wrap
@@ -103,10 +100,6 @@ Page {
                     onLinkActivated: Qt.openUrlExternally(link)
                 }
             }
-        }
-
-        ScrollView {
-            clip: true
 
             // The label that we really want to show is wrapped into an Item. This allows
             // to set implicitHeight, and thus compute the implicitHeight of the Dialog
@@ -117,7 +110,7 @@ Page {
 
                 Label {
                     id: lbl3
-                    text: "<style>a:link { color: " + Material.accent + "; }</style>"+librarian.getStringFromRessource(":text/info_license.html")
+                    text: "<style>a:link { color: " + Material.accent + "; }</style>"+global.librarian().getStringFromRessource(":text/info_license.html")
                     textFormat: Text.RichText
                     linkColor: Material.accent
                     width: pg.width
@@ -128,7 +121,23 @@ Page {
                     onLinkActivated: Qt.openUrlExternally(link)
                 }
             }
+            
         }
-
     } // StackView
+    Keys.onPressed: 
+    {
+        event.accepted = true;
+            if (event.key == Qt.Key_Return) {
+     
+                //aboutMenu.open()
+                stackView.pop()
+                  stackView.push("InfoMenu.qml")
+                  page.close()
+            }
+            else if (event.key == Qt.Key_Left) {
+                drawer.open()
+                  stackView.push("InfoMenu.qml")
+                  page.close()
+            }
+    } 
 } // Page

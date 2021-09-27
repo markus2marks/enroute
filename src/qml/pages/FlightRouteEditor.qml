@@ -480,18 +480,18 @@ Page {
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
-                        bottom: wind.minWindDirection
-                        top: wind.maxWindDirection
+                        bottom: global.navigator().wind.minWindDirection
+                        top: global.navigator().wind.maxWindDirection
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
-                        wind.windDirectionInDEG = text
+                        global.navigator().wind.windDirectionInDEG = text
                         windSpeed.focus = true
                     }
                     color: (acceptableInput ? Material.foreground : "red")
                     KeyNavigation.tab: windSpeed
-                    text: isFinite(wind.windDirectionInDEG) ? wind.windDirectionInDEG : ""
+                    text: isFinite(global.navigator().wind.windDirectionInDEG) ? global.navigator().wind.windDirectionInDEG : ""
                     placeholderText: qsTr("undefined")
                 }
                 Label {
@@ -503,7 +503,7 @@ Page {
                     Layout.alignment: Qt.AlignVCenter
                     enabled: windDirection.text !== ""
                     onClicked: {
-                        wind.windDirectionInDEG = -1
+                        global.navigator().wind.windDirectionInDEG = -1
                         windDirection.clear()
                     }
                 }
@@ -518,17 +518,17 @@ Page {
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
-                        bottom: global.settings().useMetricUnits ? wind.minWindSpeedInKMH : wind.minWindSpeedInKT
-                        top: global.settings().useMetricUnits ? wind.maxWindSpeedInKMH : wind.maxWindSpeedInKT
+                        bottom: global.settings().useMetricUnits ? global.navigator().wind.minWindSpeedInKMH : global.navigator().wind.minWindSpeedInKT
+                        top: global.settings().useMetricUnits ? global.navigator().wind.maxWindSpeedInKMH : global.navigator().wind.maxWindSpeedInKT
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
-                        global.settings().useMetricUnits ? wind.windSpeedInKMH = text : wind.windSpeedInKT = text
+                        global.settings().useMetricUnits ? global.navigator().wind.windSpeedInKMH = text : global.navigator().wind.windSpeedInKT = text
                         focus = false
                     }
                     color: (acceptableInput ? Material.foreground : "red")
-                    text: isFinite(wind.windSpeedInKT) ? Math.round(global.settings().useMetricUnits ? wind.windSpeedInKMH : wind.windSpeedInKT) : ""
+                    text: isFinite(global.navigator().wind.windSpeedInKT) ? Math.round(global.settings().useMetricUnits ? global.navigator().wind.windSpeedInKMH : global.navigator().wind.windSpeedInKT) : ""
                     placeholderText: qsTr("undefined")
                 }
                 Label {
@@ -540,7 +540,7 @@ Page {
                     Layout.alignment: Qt.AlignVCenter
                     enabled: windSpeed.text !== ""
                     onClicked: {
-                        wind.windSpeedInKT = -1
+                        global.navigator().wind.windSpeedInKT = -1
                         windSpeed.clear()
                     }
                 }
@@ -583,21 +583,21 @@ Page {
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
-                        bottom: global.settings().useMetricUnits ? aircraft.minAircraftSpeedInKMH : aircraft.minAircraftSpeedInKT
-                        top: global.settings().useMetricUnits ? aircraft.maxAircraftSpeedInKMH : aircraft.maxAircraftSpeedInKT
+                        bottom: global.settings().useMetricUnits ? global.navigator().aircraft.minAircraftSpeedInKMH : global.navigator().aircraft.minAircraftSpeedInKT
+                        top: global.settings().useMetricUnits ? global.navigator().aircraft.maxAircraftSpeedInKMH : global.navigator().aircraft.maxAircraftSpeedInKT
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
-                        global.settings().useMetricUnits ? aircraft.cruiseSpeedInKMH = text : aircraft.cruiseSpeedInKT = text
+                        global.settings().useMetricUnits ? global.navigator().aircraft.cruiseSpeedInKMH = text : global.navigator().aircraft.cruiseSpeedInKT = text
                         descentSpeed.focus = true
                     }
                     color: (acceptableInput ? Material.foreground : "red")
                     KeyNavigation.tab: descentSpeed
                     KeyNavigation.backtab: windSpeed
-                    text: isFinite(aircraft.cruiseSpeedInKT) ? Math.round(global.settings().useMetricUnits ?
-                                                                              aircraft.cruiseSpeedInKMH.toString() :
-                                                                              aircraft.cruiseSpeedInKT.toString() ) : ""
+                    text: isFinite(global.navigator().aircraft.cruiseSpeedInKT) ? Math.round(global.settings().useMetricUnits ?
+                                                                                       global.navigator().aircraft.cruiseSpeedInKMH.toString() :
+                                                                                       global.navigator().aircraft.cruiseSpeedInKT.toString() ) : ""
                     placeholderText: qsTr("undefined")
                 }
                 Label {
@@ -609,7 +609,7 @@ Page {
                     Layout.alignment: Qt.AlignVCenter
                     enabled: cruiseSpeed.text !== ""
                     onClicked: {
-                        aircraft.cruiseSpeedInKT = -1
+                        global.navigator().aircraft.cruiseSpeedInKT = -1
                         cruiseSpeed.clear()
                     }
                 }
@@ -624,21 +624,21 @@ Page {
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
-                        bottom: global.settings().useMetricUnits ? aircraft.minAircraftSpeedInKMH : aircraft.minAircraftSpeedInKT
-                        top: global.settings().useMetricUnits ? aircraft.maxAircraftSpeedInKMH : aircraft.maxAircraftSpeedInKT
+                        bottom: global.settings().useMetricUnits ? global.navigator().aircraft.minAircraftSpeedInKMH : global.navigator().aircraft.minAircraftSpeedInKT
+                        top: global.settings().useMetricUnits ? global.navigator().aircraft.maxAircraftSpeedInKMH : global.navigator().aircraft.maxAircraftSpeedInKT
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
-                        global.settings().useMetricUnits ? aircraft.descentSpeedInKMH = text : aircraft.descentSpeedInKT = text
+                        global.settings().useMetricUnits ? global.navigator().aircraft.descentSpeedInKMH = text : global.navigator().aircraft.descentSpeedInKT = text
                         fuelConsumption.focus = true
                     }
                     color: (acceptableInput ? Material.foreground : "red")
                     KeyNavigation.tab: fuelConsumption
                     KeyNavigation.backtab: cruiseSpeed
-                    text: isFinite(aircraft.descentSpeedInKT) ? Math.round(global.settings().useMetricUnits ?
-                                                                               aircraft.descentSpeedInKMH.toString() :
-                                                                               aircraft.descentSpeedInKT.toString() ) : ""
+                    text: isFinite(global.navigator().aircraft.descentSpeedInKT) ? Math.round(global.settings().useMetricUnits ?
+                                                                                        global.navigator().aircraft.descentSpeedInKMH.toString() :
+                                                                                        global.navigator().aircraft.descentSpeedInKT.toString() ) : ""
                     placeholderText: qsTr("undefined")
                 }
                 Label {
@@ -650,7 +650,7 @@ Page {
                     Layout.alignment: Qt.AlignVCenter
                     enabled: descentSpeed.text !== ""
                     onClicked: {
-                        aircraft.descentSpeedInKT = -1
+                        global.navigator().aircraft.descentSpeedInKT = -1
                         descentSpeed.clear()
                     }
                 }
@@ -674,19 +674,19 @@ Page {
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
-                        bottom: aircraft.minFuelConsuption
-                        top: aircraft.maxFuelConsuption
+                        bottom: global.navigator().aircraft.minFuelConsuption
+                        top: global.navigator().aircraft.maxFuelConsuption
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
                         focus = false
-                        aircraft.fuelConsumptionInLPH = text
+                        global.navigator().aircraft.fuelConsumptionInLPH = text
                     }
                     color: (acceptableInput ? Material.foreground : "red")
                     KeyNavigation.tab: windDirection
                     KeyNavigation.backtab: descentSpeed
-                    text: isFinite(aircraft.fuelConsumptionInLPH) ? aircraft.fuelConsumptionInLPH.toString() : ""
+                    text: isFinite(global.navigator().aircraft.fuelConsumptionInLPH) ? global.navigator().aircraft.fuelConsumptionInLPH.toString() : ""
                     placeholderText: qsTr("undefined")
                 }
                 Label {

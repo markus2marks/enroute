@@ -358,7 +358,8 @@ void Traffic::TrafficDataSource_Abstract::processFLARMSentence(QString sentence)
 
         // Construct a traffic object
         m_factor.setAlarmLevel(alarmLevel);
-        m_factor.setCallSign( Global::flarmnetDB()->getRegistration(targetID) );
+        #warning Fix this!
+        m_factor.setCallSign( Global::flarmnetDB()->getRegistration(targetID.left(6)) );
         m_factor.setHDist(hDist);
         m_factor.setID(targetID);
         m_factor.setPositionInfo(pInfo);

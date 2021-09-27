@@ -100,11 +100,11 @@ Page {
 
                 MenuItem {
                     text: qsTr("Update METAR/TAF data")
-                    enabled: (!weatherDownloadManager.downloading) && (global.settings().acceptedWeatherTerms)
+                    enabled: (!global.weatherDataProvider().downloading) && (global.settings().acceptedWeatherTerms)
                     onTriggered: {
                         global.mobileAdaptor().vibrateBrief()
-                        if (!weatherDownloadManager.downloading)
-                            weatherDownloadManager.update(false)
+                        if (!global.weatherDataProvider().downloading)
+                            global.weatherDataProvider().update(false)
                     }
                 } // MenuItem
 

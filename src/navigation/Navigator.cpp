@@ -18,6 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <QQmlEngine>
+
 #include "Global.h"
 #include "Settings.h"
 #include "navigation/Navigator.h"
@@ -26,9 +28,26 @@
 
 Navigation::Navigator::Navigator(QObject *parent) : QObject(parent)
 {
-    m_flightRoute = new FlightRoute(this);
-
     QTimer::singleShot(0, this, &Navigation::Navigator::deferredInitialization);
+}
+
+
+auto Navigation::Navigator::aircraft() -> Navigation::Aircraft*
+{
+    if (m_aircraft.isNull()) {
+        m_aircraft = new Navigation::Aircraft(this);
+        QQmlEngine::setObjectOwnership(m_aircraft, QQmlEngine::CppOwnership);
+    }
+    return m_aircraft;
+}
+
+
+auto Navigation::Navigator::clock() -> Navigation::Clock*
+{
+    if (m_clock.isNull()) {
+        m_clock = new Navigation::Clock(this);
+    }
+    return m_clock;
 }
 
 
@@ -54,7 +73,16 @@ auto Navigation::Navigator::describeWay(const QGeoCoordinate &from, const QGeoCo
 
 void Navigation::Navigator::deferredInitialization() const
 {
-    connect(Positioning::PositionProvider::globalInstance(), &Positioning::PositionProvider::positionInfoChanged, this, &Navigation::Navigator::onPositionUpdated);
+    connect(Global::positionProvider(), &Positioning::PositionProvider::positionInfoChanged, this, &Navigation::Navigator::onPositionUpdated);
+}
+
+
+auto Navigation::Navigator::flightRoute() -> FlightRoute*
+{
+    if (m_flightRoute.isNull()) {
+        m_flightRoute = new FlightRoute(this);
+    }
+    return m_flightRoute;
 }
 
 
@@ -93,4 +121,14 @@ void Navigation::Navigator::setIsInFlight(bool newIsInFlight)
     }
     m_isInFlight = newIsInFlight;
     emit isInFlightChanged();
+}
+
+
+auto Navigation::Navigator::wind() -> Weather::Wind*
+{
+    if (m_wind.isNull()) {
+        m_wind = new Weather::Wind(this);
+        QQmlEngine::setObjectOwnership(m_wind, QQmlEngine::CppOwnership);
+    }
+    return m_wind;
 }

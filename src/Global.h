@@ -23,6 +23,7 @@
 #include <QObject>
 
 class DemoRunner;
+class Librarian;
 class MobileAdaptor;
 class QNetworkAccessManager;
 class Settings;
@@ -47,6 +48,14 @@ class TrafficDataProvider;
 
 namespace Platform {
 class Notifier;
+}
+
+namespace Positioning {
+class PositionProvider;
+}
+
+namespace Weather {
+class WeatherDataProvider;
 }
 
 
@@ -76,7 +85,7 @@ class Global : public QObject
 {
     Q_OBJECT
 
-public:
+        public:
     /*! \brief Standard constructor
      *
      * @param parent The standard QObject parent pointer
@@ -90,6 +99,20 @@ public:
      */
     ~Global() = default;
 
+    /*! \brief Delete all global objects
+     *
+     * The title says it all: this method deletes all objects that have been
+     * constructed in the past.
+     */
+    static void destruct();
+
+
+    /*! \brief Pointer to appplication-wide static GeoMaps::DataManager instance
+     *
+     * @returns Pointer to appplication-wide static instance.
+     */
+    Q_INVOKABLE static DataManagement::DataManager* dataManager();
+
     /*! \brief Pointer to appplication-wide static FlarmnetDB instance
      *
      * @returns Pointer to appplication-wide static instance.
@@ -102,11 +125,11 @@ public:
      */
     Q_INVOKABLE static GeoMaps::GeoMapProvider* geoMapProvider();
 
-    /*! \brief Pointer to appplication-wide static GeoMaps::DataManager instance
+    /*! \brief Pointer to appplication-wide static librarian instance
      *
      * @returns Pointer to appplication-wide static instance.
      */
-    Q_INVOKABLE static DataManagement::DataManager* dataManager();
+    Q_INVOKABLE static Librarian* librarian();
 
     /*! \brief Pointer to appplication-wide static MobileAdaptor instance
      *
@@ -125,6 +148,12 @@ public:
      * @returns Pointer to appplication-wide static instance.
      */
     Q_INVOKABLE static Traffic::PasswordDB* passwordDB();
+
+    /*! \brief Pointer to appplication-wide static PositionProvider instance
+     *
+     * @returns Pointer to appplication-wide static instance.
+     */
+    Q_INVOKABLE static Positioning::PositionProvider* positionProvider();
 
     /*! \brief Pointer to appplication-wide static notification manager instance
      *
@@ -149,6 +178,12 @@ public:
      * @returns Pointer to appplication-wide static instance.
      */
     Q_INVOKABLE static Traffic::TrafficDataProvider* trafficDataProvider();
+
+    /*! \brief Pointer to appplication-wide static WeatherDataProvider instance
+     *
+     * @returns Pointer to appplication-wide static instance.
+     */
+    Q_INVOKABLE static Weather::WeatherDataProvider* weatherDataProvider();
 
 private:
     Q_DISABLE_COPY_MOVE(Global)

@@ -25,12 +25,6 @@
 #include "traffic/TrafficDataProvider.h"
 
 
-// Static instance of this class. Do not analyze, because of many unwanted warnings.
-#ifndef __clang_analyzer__
-QPointer<Positioning::PositionProvider> positionProviderStatic {};
-#endif
-
-
 Positioning::PositionProvider::PositionProvider(QObject *parent) : PositionInfoSource_Abstract(parent)
 {
     // Restore the last valid coordiante and track
@@ -55,6 +49,13 @@ Positioning::PositionProvider::PositionProvider(QObject *parent) : PositionInfoS
     // Wire up traffic data provider source
     QTimer::singleShot(0, this, &Positioning::PositionProvider::deferredInitialization);
 
+    // Save position at regular intervals
+    auto* saveTimer = new QTimer(this);
+    saveTimer->setInterval(1min + 57s);
+    saveTimer->setSingleShot(false);
+    connect(saveTimer, &QTimer::timeout, this, &Positioning::PositionProvider::savePositionAndTrack);
+    saveTimer->start();
+
     // Update properties
     updateStatusString();
 }
@@ -62,14 +63,7 @@ Positioning::PositionProvider::PositionProvider(QObject *parent) : PositionInfoS
 
 Positioning::PositionProvider::~PositionProvider()
 {
-    // Save the last valid coordinate
-    QSettings settings;
-    settings.setValue(QStringLiteral("PositionProvider/lastValidLatitude"), m_lastValidCoordinate.latitude());
-    settings.setValue(QStringLiteral("PositionProvider/lastValidLongitude"), m_lastValidCoordinate.longitude());
-    settings.setValue(QStringLiteral("PositionProvider/lastValidAltitude"), m_lastValidCoordinate.altitude());
-
-    // Save the last valid track
-    settings.setValue(QStringLiteral("PositionProvider/lastValidTrack"), m_lastValidTT.toDEG());
+    savePositionAndTrack();
 }
 
 
@@ -79,19 +73,6 @@ void Positioning::PositionProvider::deferredInitialization() const
     connect(Global::trafficDataProvider(), &Traffic::TrafficDataProvider::positionInfoChanged, this, &PositionProvider::onPositionUpdated);
     connect(Global::trafficDataProvider(), &Traffic::TrafficDataProvider::pressureAltitudeChanged, this, &PositionProvider::onPressureAltitudeUpdated);
 
-}
-
-
-auto Positioning::PositionProvider::globalInstance() -> PositionProvider *
-{
-#ifndef __clang_analyzer__
-    if (positionProviderStatic.isNull()) {
-        positionProviderStatic = new PositionProvider();
-    }
-    return positionProviderStatic;
-#else
-    return nullptr;
-#endif
 }
 
 
@@ -149,6 +130,19 @@ void Positioning::PositionProvider::onPressureAltitudeUpdated()
 }
 
 
+void Positioning::PositionProvider::savePositionAndTrack()
+{
+    // Save the last valid coordinate
+    QSettings settings;
+    settings.setValue(QStringLiteral("PositionProvider/lastValidLatitude"), m_lastValidCoordinate.latitude());
+    settings.setValue(QStringLiteral("PositionProvider/lastValidLongitude"), m_lastValidCoordinate.longitude());
+    settings.setValue(QStringLiteral("PositionProvider/lastValidAltitude"), m_lastValidCoordinate.altitude());
+
+    // Save the last valid track
+    settings.setValue(QStringLiteral("PositionProvider/lastValidTrack"), m_lastValidTT.toDEG());
+}
+
+
 void Positioning::PositionProvider::setLastValidCoordinate(const QGeoCoordinate &newCoordinate)
 {
     if (!newCoordinate.isValid()) {
@@ -177,7 +171,7 @@ void Positioning::PositionProvider::setLastValidTT(Units::Angle newTT)
 
 auto Positioning::PositionProvider::lastValidCoordinate() -> QGeoCoordinate
 {
-    auto *positionProvider = globalInstance();
+    auto *positionProvider = Global::positionProvider();
     if (positionProvider == nullptr) {
         return {};
     }
@@ -187,7 +181,7 @@ auto Positioning::PositionProvider::lastValidCoordinate() -> QGeoCoordinate
 
 auto Positioning::PositionProvider::lastValidTT() -> Units::Angle
 {
-    auto *positionProvider = globalInstance();
+    auto *positionProvider = Global::positionProvider();
     if (positionProvider == nullptr) {
         return {};
     }

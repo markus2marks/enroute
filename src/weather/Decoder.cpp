@@ -28,9 +28,10 @@
 #include <QTimeZone>
 #include <gsl/gsl>
 
-#include "Clock.h"
 #include "Global.h"
 #include "Settings.h"
+#include "navigation/Clock.h"
+#include "navigation/Navigator.h"
 #include "weather/Decoder.h"
 
 
@@ -38,7 +39,7 @@ Weather::Decoder::Decoder(QObject *parent)
     : QObject(parent)
 {
     // Re-parse the text whenever the date changes
-    connect(Clock::globalInstance(), &Clock::dateChanged, this, &Weather::Decoder::parse);
+    connect(Global::navigator()->clock(), &Navigation::Clock::dateChanged, this, &Weather::Decoder::parse);
 
     // Re-parse whenever the preferred unit system changes
     connect(Global::settings(), &Settings::useMetricUnitsChanged, this, &Weather::Decoder::parse);
@@ -301,7 +302,7 @@ auto Weather::Decoder::explainMetafTime(metaf::MetafTime metafTime) -> QString
     auto metafQDate = QDate(gsl::narrow_cast<int>(metafDate.year), gsl::narrow_cast<int>(metafDate.month), gsl::narrow_cast<int>(metafDate.day) );
 
     auto metafQDateTime = QDateTime(metafQDate, metafQTime, QTimeZone::utc());
-    return Clock::describePointInTime(metafQDateTime);
+    return Navigation::Clock::describePointInTime(metafQDateTime);
 }
 
 auto Weather::Decoder::explainPrecipitation(metaf::Precipitation precipitation) -> QString
@@ -2310,7 +2311,7 @@ auto Weather::Decoder::visitMiscGroup(const MiscGroup & group,  ReportPart /*rep
 
     switch (group.type()) {
     case metaf::MiscGroup::Type::SUNSHINE_DURATION_MINUTES:
-        if (const auto duration = group.data(); *duration) {
+        if (const auto duration = group.data(); duration) {
             return tr("Duration of sunshine that occurred the previous calendar day is %1 minutes.").arg(qRound(*duration));
         }
         return tr("No sunshine occurred the previous calendar day");
