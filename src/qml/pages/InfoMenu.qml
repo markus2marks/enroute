@@ -11,6 +11,7 @@ Page { // Info Menu
     title: qsTr("Informations")
     Layout.fillWidth : true
     header: StandardHeader {}
+    focus: true
     ScrollView {
         id: view
         anchors.fill: parent
@@ -112,5 +113,13 @@ Page { // Info Menu
             }
        }      
     }
+    Keys.onPressed: 
+    {
+        event.accepted = true;
+        if (event.key == Qt.Key_Left) {
+            //stackView.push("InfoMenu.qml")
+            stackView.pop()
+        }
+    } 
 }
                     

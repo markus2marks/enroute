@@ -31,11 +31,12 @@ import "../items"
 
 Page {
     id: page
-	property var movingmap: false
-	property var volume: false
-	
+    property var movingmap: false
+    property var volume: false
+
+ 
     title: qsTr("Moving Map")
-	focus: true
+    focus: true
     Loader {
         id: mapLoader
 
@@ -74,263 +75,275 @@ Page {
         }
     }
     //zoom in and out for remote control
-	Keys.onPressed: {
-		event.accepted = true;
-		if(movingmap == true)
-		{
-			//stay in moving map modus
-			timer.restart();
-			if (event.key == Qt.Key_Up) {
-				mapLoader.item.map.pan(0,-50);
-			}
-			if (event.key == Qt.Key_Down) {
-				mapLoader.item.map.pan(0,50);
-			}
-			if (event.key == Qt.Key_Right) {
-				mapLoader.item.map.pan(50,0);
-			}
-			if (event.key == Qt.Key_Left) {
-				mapLoader.item.map.pan(-50,0);
-			}
-		}
-		else if(volume == true)
-		{
-			
-		}
-		else
-		{
-			//Menu open with remote control
-			if (event.key == Qt.Key_Left) {
-	            drawer.open()
-	        }
-			
-			if (event.key == Qt.Key_Up) {
-			    mapLoader.item.map.zoomLevel += 0.5
-			}
-			
-			if (event.key == Qt.Key_Down) {
-			    mapLoader.item.map.zoomLevel -= 0.5
-			}
-			
-			if (event.key == Qt.Key_Return) {
-			   	if(qickmenu.visible != true)
-			   	{
-					qickmenu.open();
-				}
-				else
-				{
-					qickmenu.close();
-				}
-			}
-		}
-			
-	}
-	
-	function closeSession()  {
-	 	if(movingmap == true)
-	 	{
-	 		movingmap = false;
-	 		stackView.focus = true;
-	 		page.focus = true;
-	 	}
-	 	else if(volume == true)
-	 	{
-	 		popupvolumecontrol.visible = false;
-	 		page.focus = true;
-	 		stackView.focus = true;
-	 		volume = false;
-	 	}
-	 }
-	
-	
-	Popup {
-		id: qickmenu
-		width: 200
-		height: 162
-		x: (parent.width / 2) - 100
-		y: (parent.height / 2) - 140
-		focus: true
-		
-
-		
-		contentItem: ListView
-		{
-			anchors.fill: parent
-			anchors.margins: 1
-			headerPositioning : ListView.OverlayFooter
-			keyNavigationEnabled : true
-			focus: true
-	  		clip: true
-			header: Label
-				{
-					id:quickmenulabel
-					width: ListView.view.width
-					z:2
-					//text:"Quick Menu"
-					//font.pointSize: 16
-					//color: "white"
-					//horizontalAlignment : Text.AlignHCenter
-				    //verticalAlignment : Text.AlignVCenter
-				    //Layout.alignment :  Qt.AlignHCenter		
-				    
-				    Layout.fillWidth: true
-				
-				    text: "<strong>Quick Menu</strong>"
-				    color: "white"
-				    padding: Qt.application.font.pixelSize
-					 
-					background: Rectangle {
-						color:  Material.primary
-					}				
-	                      				
-			}//header
-			
-		    model: ListModel 
-		    {
-			    ListElement {
-			        name: "Volume"
-			    }
-			    ListElement {
-			        name: "Moving Map"
-			    }
-			    ListElement {
-			        name: "Mc Ready"
-			    }
-			}
-		
-		    delegate: ItemDelegate {	    	
-		  	 	
-		  	 	Layout.alignment : Qt.AlignHCenter 
-		  	 	id: wrapper
-		        Text 
-		        { 
-		        	text: name
-		        	color: wrapper.ListView.isCurrentItem ? Material.primary : "black"
-
-		        	font.pointSize: 14
-		        	horizontalAlignment : Text.AlignHCenter
-		        	verticalAlignment : Text.AlignVCenter
-		        	anchors.fill: parent
-		        }
-		       	background: Rectangle {
-				    implicitWidth: 202
-				    implicitHeight: 40
-				    gradient: Gradient {
-				         GradientStop { position: 0 ; color:  "#FFFFFF" }
-				         GradientStop { position: 1 ; color:  "#EEEEEE" }
-				    }
-				}
-				Keys.onPressed: {
-					if (event.key == Qt.Key_Return) {
-		    			event.accepted = true;
-		    			qickmenu.close();
-		    			timer.start();
-		    			if(modelData == "Volume")
-		    			{
-		    				popupvolumecontrol.visible = true
-		    				popupvolumecontrol.focus = true
-		    				page.volume = true
-		   				}
-		   				if(modelData == "Moving Map")
-		    			{
-		    				 
-		    				 page.movingmap = true
-		    			}
-					}
-				}
-		    }
-		    highlight: Rectangle {
-		        width: parent.width
-		        color: "#AAAAAA"
-		         
-		    }
-		
-		    
-		}
-
-		
-		background: Rectangle {
-		   
-		    color: "transparent"
-			  border.color:"black"
-			  border.width: 1
-		}
+    Keys.onPressed: {
+        event.accepted = true;
+        if(movingmap == true)
+        {
+            //stay in moving map modus
+            timer.restart();
+            if (event.key == Qt.Key_Up) {
+                mapLoader.item.map.pan(0,-50);
+            }
+            if (event.key == Qt.Key_Down) {
+                mapLoader.item.map.pan(0,50);
+            }
+            if (event.key == Qt.Key_Right) {
+                mapLoader.item.map.pan(50,0);
+            }
+            if (event.key == Qt.Key_Left) {
+                mapLoader.item.map.pan(-50,0);
+        }
+    }
+    else if(volume == true)
+    {
+   
+    }
+    else
+    {
+        //Menu open with remote control
+        if (event.key == Qt.Key_Left) 
+        {
+            drawer.open()
+        }
+   
+        if (event.key == Qt.Key_Up) 
+        {
+            mapLoader.item.map.zoomLevel += 0.5
+        }
+   
+        if (event.key == Qt.Key_Down) 
+        {
+            mapLoader.item.map.zoomLevel -= 0.5
+        }
+   
+        if (event.key == Qt.Key_Return) 
+        {
+            if(qickmenu.visible != true)
+            {
+                qickmenu.open();
+            }
+            else
+            {
+                qickmenu.close();
+            }
+        }
+    }   
+}
+ 
+function closeSession()  {
+    if(movingmap == true)
+    {
+        movingmap = false;
+        stackView.focus = true;
+        page.focus = true;
+    }
+    else if(volume == true)
+    {
+        popupvolumecontrol.visible = false;
+        page.focus = true;
+        stackView.focus = true;
+        volume = false;
+    }
+}
+ 
+ 
+Popup 
+{
+    id: qickmenu
+    width: 200
+    height: 162
+    x: (parent.width / 2) - 100
+    y: (parent.height / 2) - 140
+    focus: true
+    
+    contentItem: ListView
+    {
+        anchors.fill: parent
+        anchors.margins: 1
+        headerPositioning : ListView.OverlayFooter
+        keyNavigationEnabled : true
+        focus: true
+        clip: true
+        header: Label
+        {
+            id:quickmenulabel
+            width: ListView.view.width
+            z:2
+            //text:"Quick Menu"
+            //font.pointSize: 16
+            //color: "white"
+            //horizontalAlignment : Text.AlignHCenter
+            //verticalAlignment : Text.AlignVCenter
+            //Layout.alignment :  Qt.AlignHCenter  
         
-	} 
-	
-	Popup {  
-		id: icon
-	}
-	
-		
-	Popup {    
-		id: popupvolumecontrol
-		x: (parent.width / 2) - 150
-		y: (parent.height / 2) - 40
-		
-		width: 300
-		height: 40
-		focus: true
-    	contentItem:  Slider {
-	    	id: volumecontrol
-		    from: 1
-		    value: 25
-		    to: 100
-		    stepSize : 5
-		    focus: true
-		    width: 200
-	
-		   // visible: false
-		    
-		    //x: (parent.width / 2) 
-	        //y: (parent.height / 2) 
-		   // orientation : Qt.Vertical
-		    
-		    background: Rectangle {
-		        x: volumecontrol.leftPadding
-		        y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
-		        implicitWidth: 200
-		        implicitHeight: 4
-		        width: volumecontrol.availableWidth
-		        height: implicitHeight
-		        radius: 2
-		        color: "#bdbebf"
-		
-		        Rectangle {
-		            width: volumecontrol.visualPosition * parent.width
-		            height: parent.height
-		            color: "#21be2b"
-		            radius: 2
-		        }
-		    }
-		    handle: Rectangle {
-		        x: volumecontrol.leftPadding + volumecontrol.visualPosition * (volumecontrol.availableWidth - width)
-		        y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
-		        implicitWidth: 26
-		        implicitHeight: 26
-		        radius: 13
-		        color: volumecontrol.pressed ? "#f0f0f0" : "#f6f6f6"
-		        border.color: "#bdbebf"
-		    }
-			Keys.onPressed: {
-				timer.restart();
-			}
-		}
-		
-		
-		background: Rectangle {
-		   
-		    color: "white"
-			  border.color:"black"
-			  border.width: 1
-			  radius: 20
-		}
-	}
-	
-	Timer {
-		id: timer
+            Layout.fillWidth: true
+    
+            text: "<strong>Quick Menu</strong>"
+            color: "white"
+            padding: Qt.application.font.pixelSize
+      
+            background: Rectangle {
+                color:  Material.primary
+            }                           
+        }//header
+   
+        model: ListModel 
+        {
+            ListElement 
+            {
+                name: "Volume"
+            }
+            ListElement 
+            {
+                name: "Moving Map"
+            }
+            ListElement {
+                name: "Mc Cready"
+            }
+            ListElement {
+                name: "Goto Position"
+            }
+        }
+      
+        delegate: ItemDelegate 
+        {        
+            Layout.alignment : Qt.AlignHCenter 
+            id: wrapper
+            Text 
+            { 
+                text: name
+                color: wrapper.ListView.isCurrentItem ? Material.primary : "black"
+    
+                font.pointSize: 14
+                horizontalAlignment : Text.AlignHCenter
+                verticalAlignment : Text.AlignVCenter
+                anchors.fill: parent
+            }
+            background: Rectangle 
+            {
+                implicitWidth: 202
+                implicitHeight: 40
+                gradient: Gradient 
+                {
+                     GradientStop { position: 0 ; color:  "#FFFFFF" }
+                     GradientStop { position: 1 ; color:  "#EEEEEE" }
+                }
+            }
+            Keys.onPressed: 
+            {
+                if (event.key == Qt.Key_Return) 
+                {
+                    event.accepted = true;
+                    qickmenu.close();
+                    timer.start();
+                    if(modelData == "Volume")
+                    {
+                        popupvolumecontrol.visible = true
+                        popupvolumecontrol.focus = true
+                        page.volume = true
+                    }
+                    if(modelData == "Moving Map")
+                    {
+                        mapLoader.item.map.followGPS = false
+                        page.movingmap = true
+                    }
+                    if(modelData == "Goto Position")
+                    {
+                        mapLoader.item.map.followGPS = true
+                        toast.doToast(qsTr("Map Mode: Autopan"))
+                    }
+                }
+            }
+        }
+        highlight: Rectangle 
+        {
+            width: parent.width
+            color: "#AAAAAA"          
+        }
+    }
+    background: Rectangle 
+    {    
+        color: "transparent"
+        border.color:"black"
+        border.width: 1
+    }
+} 
+ 
+Popup 
+{  
+    id: icon
+}
+ 
+  
+Popup 
+{    
+  id: popupvolumecontrol
+  x: (parent.width / 2) - 150
+  y: (parent.height / 2) - 40
+  
+  width: 300
+  height: 40
+  focus: true
+     contentItem:  Slider {
+      id: volumecontrol
+      from: 1
+      value: 25
+      to: 100
+      stepSize : 5
+      focus: true
+      width: 200
+ 
+     // visible: false
+      
+      //x: (parent.width / 2) 
+         //y: (parent.height / 2) 
+     // orientation : Qt.Vertical
+      
+      background: Rectangle {
+          x: volumecontrol.leftPadding
+          y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
+          implicitWidth: 200
+          implicitHeight: 4
+          width: volumecontrol.availableWidth
+          height: implicitHeight
+          radius: 2
+          color: "#bdbebf"
+  
+          Rectangle {
+              width: volumecontrol.visualPosition * parent.width
+              height: parent.height
+              color: "#21be2b"
+              radius: 2
+          }
+      }
+      handle: Rectangle {
+          x: volumecontrol.leftPadding + volumecontrol.visualPosition * (volumecontrol.availableWidth - width)
+          y: volumecontrol.topPadding + volumecontrol.availableHeight / 2 - height / 2
+          implicitWidth: 26
+          implicitHeight: 26
+          radius: 13
+          color: volumecontrol.pressed ? "#f0f0f0" : "#f6f6f6"
+          border.color: "#bdbebf"
+      }
+   Keys.onPressed: {
+    timer.restart();
+   }
+}
+  
+  
+  background: Rectangle {
+     
+      color: "white"
+     border.color:"black"
+     border.width: 1
+     radius: 20
+  }
+ }
+ 
+ Timer {
+  id: timer
         interval: 1000; 
-       	onTriggered: page.closeSession()	
+        onTriggered: page.closeSession() 
     }
 
 }
