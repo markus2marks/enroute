@@ -28,48 +28,9 @@ import "../items"
 Page {
     id: flarmsettingpage
     title: qsTr("Flarm Settings")
-
-    Component {
-        id: sectionHeading
-
-        Label {
-            x: Qt.application.font.pixelSize
-            text: section
-            font.pixelSize: Qt.application.font.pixelSize*1.2
-            font.bold: true
-            color: Material.primary
-        }
-    }
-
-    header: ToolBar {
-
-        ToolButton {
-            id: backButton
-
-            anchors.left: parent.left
-            anchors.leftMargin: drawer.dragMargin
-
-            icon.source: "/icons/material/ic_arrow_back.svg"
-            onClicked: {
-                mobileAdaptor.vibrateBrief()
-                stackView.pop()
-            }
-        } // ToolButton
-
-        Label {
-            anchors.left: backButton.right
-            anchors.bottom: parent.bottom
-            anchors.top: parent.top
-
-            text: stackView.currentItem.title
-            elide: Label.ElideRight
-            font.bold: true
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-        }
-
-    } // ToolBar
-	
+    
+    header: StandardHeader {}
+	focus: true
 	
 	ScrollView {
         id: view
@@ -95,7 +56,6 @@ Page {
 				    width: 200
 				    popup.visible: ports.activeFocus
 				    model: ListModel {
-				        id: model
 				        ListElement { text: "Banana" }
 				        ListElement { text: "Apple" }
 				        ListElement { text: "Coconut" }
@@ -115,6 +75,11 @@ Page {
 				       	ports.focus = true;
 				       	ports.pressed = true;
 				    }
+				    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
 				}	
 			}
 			
@@ -128,20 +93,41 @@ Page {
 			    	id:baudrate
 			    	anchors.right:  parent.right
 				    width: 200
-				    model: [ "Banana", "Apple", "Coconut" ]
-				    
+
+				    //popup.visible: baudrate.activeFocus
+				    model: ListModel {
+				        
+                        ListElement { text: "Banana" }
+                        ListElement { text: "Apple" }
+                        ListElement { text: "Coconut" }
+                    }
 				    Keys.onPressed: {
-					    if (event.key == Qt.Key_Enter) {
+					    if (event.key == Qt.Key_Return) {
 					        event.accepted = true;
 					       	item2.focus = true;
 					    }
 					}
+					onActivated: {
+					   focus : true
+					}
+					onAccepted:{
+					   baudrate.popup.close()
+					}
 				}
 				Keys.onPressed: {
-				    if (event.key == Qt.Key_Enter) {
+				    if (event.key == Qt.Key_Return) {
 				        event.accepted = true;
-				       	baudrate.focus = true;
+				       	baudrate.popup.open();
+				       
+				        baudrate.popup.focus = true;
+				       	baudrate.popup.forceActiveFocus(Qt.MenuBarFocusReason);
+				       	
 				    }
+				    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
 				}	
 			}
 			

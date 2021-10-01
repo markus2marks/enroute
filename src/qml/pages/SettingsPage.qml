@@ -31,13 +31,15 @@ Page {
     title: qsTr("Settings")
 
     header: StandardHeader {}
-
+    focus: true
     ScrollView {
         id: view
+        focus: true
         anchors.fill: parent
         anchors.topMargin: Qt.application.font.pixelSize
 
         ColumnLayout {
+    
             width: settingsPage.width
             implicitWidth: settingsPage.width
 
@@ -51,7 +53,9 @@ Page {
             }
 
             SwitchDelegate {
+                focus: true
                 id: hideUpperAsp
+                KeyNavigation.down: hideGlidingSectors
                 text: qsTr("Hide Airspaces ≥ FL100") + (
                           global.settings().hideUpperAirspaces ? (
                                                                   `<br><font color="#606060" size="2">`
@@ -71,11 +75,27 @@ Page {
                 onToggled: {
                     global.mobileAdaptor().vibrateBrief()
                     global.settings().hideUpperAirspaces = hideUpperAsp.checked
+                   
+                }
+                //remote control
+                Keys.onPressed: {
+                    if (event.key == Qt.Key_Return) 
+                    { 
+                        hideUpperAsp.toggle()
+                        hideUpperAsp.toggled()
+                    } 
+                    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
                 }
             }
 
             SwitchDelegate {
                 id: hideGlidingSectors
+                KeyNavigation.up: hideUpperAsp
+                KeyNavigation.down: useMetricUnits
                 text: qsTr("Hide Gliding Sectors") + (
                           global.settings().hideGlidingSectors ? (
                                                                   `<br><font color="#606060" size="2">`
@@ -96,6 +116,19 @@ Page {
                     global.mobileAdaptor().vibrateBrief()
                     global.settings().hideGlidingSectors = hideGlidingSectors.checked
                 }
+                //remote control
+                Keys.onPressed: {
+                    if (event.key == Qt.Key_Return) 
+                    { 
+                        hideGlidingSectors.toggle()
+                        hideGlidingSectors.toggled()
+                    } 
+                    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
+                }
             }
 
             Label {
@@ -108,6 +141,8 @@ Page {
 
             SwitchDelegate {
                 id: useMetricUnits
+                KeyNavigation.up: hideGlidingSectors
+                KeyNavigation.down: nightMode
                 text: qsTr("Use metric units")
                       + `<br><font color="#606060" size="2">`
                       + ( global.settings().useMetricUnits ?
@@ -122,10 +157,25 @@ Page {
                     global.mobileAdaptor().vibrateBrief()
                     global.settings().useMetricUnits = useMetricUnits.checked
                 }
+                //remote control
+                Keys.onPressed: {
+                    if (event.key == Qt.Key_Return) 
+                    { 
+                        useMetricUnits.toggle()
+                        useMetricUnits.toggled()
+                    } 
+                    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
+                }
             }
 
             SwitchDelegate {
                 id: nightMode
+                KeyNavigation.up: useMetricUnits
+                KeyNavigation.down: flarm 
                 text: qsTr("Night mode")
                 icon.source: "/icons/material/ic_brightness_3.svg"
                 Layout.fillWidth: true
@@ -136,6 +186,19 @@ Page {
                     global.mobileAdaptor().vibrateBrief()
                     global.settings().nightMode = nightMode.checked
                 }
+                //remote control
+                Keys.onPressed: {
+                    if (event.key == Qt.Key_Return) 
+                    { 
+                        nightMode.toggle()
+                        nightMode.toggled()
+                    } 
+                    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
+                }
             }
 
             WordWrappingItemDelegate {
@@ -144,6 +207,38 @@ Page {
                 text: `<font size="4">` + qsTr("Clear password storage") + "</font>"
                 onClicked: clearPasswordDialog.open()
                 visible: !global.passwordDB().empty
+            }
+            
+            Label {
+                Layout.leftMargin: Qt.application.font.pixelSize
+                text: qsTr("Devices")
+                font.pixelSize: Qt.application.font.pixelSize*1.2
+                font.bold: true
+                color: Material.accent
+            }
+            
+            WordWrappingItemDelegate {
+                id: flarm
+                KeyNavigation.up: nightMode
+                Layout.fillWidth: true
+                icon.source: "/icons/material/flarm.svg"
+                text: qsTr("Flarm")
+                onClicked: {
+                    //stackView.pop()
+                    stackView.push("FlarmManager.qml")
+                }
+                //remote control
+                Keys.onPressed: {
+                    if (event.key == Qt.Key_Return) 
+                    { 
+                        stackView.push("FlarmManager.qml") 
+                    } 
+                    else if (event.key == Qt.Key_Left) 
+                    {
+                        //stackView.push("InfoMenu.qml")
+                        stackView.pop()
+                    }
+                }
             }
 
             Label {
@@ -218,6 +313,14 @@ Page {
         }
 
     }
-
+    
+    Keys.onPressed: 
+    {
+        event.accepted = true;
+        if (event.key == Qt.Key_Left) {
+            //stackView.push("InfoMenu.qml")
+            stackView.pop()
+        }
+    } 
 
 } // Page

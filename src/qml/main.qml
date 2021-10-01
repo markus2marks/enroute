@@ -136,6 +136,7 @@ ApplicationWindow {
                     text: qsTr("Nearby Waypoints")
                     icon.source: "/icons/material/ic_my_location.svg"
                     Layout.fillWidth: true
+                    KeyNavigation.up: menuItemRoute
 		            KeyNavigation.down: weatherItem
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
@@ -151,7 +152,8 @@ ApplicationWindow {
                     text: qsTr("Weather")
                     icon.source: "/icons/material/ic_cloud_queue.svg"
                     Layout.fillWidth: true
-                    KeyNavigation.down: menuItemSettings
+                    KeyNavigation.up: menuItemNearby 
+                    KeyNavigation.down: menuItemLibrary
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -167,6 +169,9 @@ ApplicationWindow {
                 }
 
                 ItemDelegate { // Library
+                    id: menuItemLibrary
+                    KeyNavigation.up: weatherItem
+                    KeyNavigation.down: menuItemSettings
                     text: qsTr("Library")
                     icon.source: "/icons/material/ic_library_books.svg"
                     Layout.fillWidth: true
@@ -214,6 +219,7 @@ ApplicationWindow {
 
                 ItemDelegate {
                     id: menuItemSettings
+                    KeyNavigation.up: menuItemLibrary
  					KeyNavigation.down: menuItemInformation
                     text: qsTr("Settings")
                     icon.source: "/icons/material/ic_settings.svg"
@@ -242,6 +248,9 @@ ApplicationWindow {
 
                 ItemDelegate { // Info
                     id: menuItemInformation
+                    KeyNavigation.up: menuItemSettings
+                    KeyNavigation.down: menuItemManual
+                    
                     text: qsTr("Information")
                     icon.source: "/icons/material/ic_info_outline.svg"
                     Layout.fillWidth: true
@@ -265,6 +274,9 @@ ApplicationWindow {
                 }
 
                 ItemDelegate { // Manual
+                    id: menuItemManual
+                    KeyNavigation.up: menuItemInformation
+                    KeyNavigation.down: menuItemBugReport
                     text: qsTr("Manual")
                     icon.source: "/icons/material/ic_book.svg"
                     Layout.fillWidth: true
@@ -352,6 +364,9 @@ ApplicationWindow {
                 }
 
                 ItemDelegate { // Bug report
+                    id: menuItemBugReport
+                    KeyNavigation.up: menuItemManual
+                    KeyNavigation.down: menuItemExit
                     text: qsTr("Bug report")
                     icon.source: "/icons/material/ic_bug_report.svg"
                     Layout.fillWidth: true
@@ -373,6 +388,8 @@ ApplicationWindow {
                 }
 
                 ItemDelegate { // Exit
+                    id: menuItemExit
+                    KeyNavigation.up: menuItemBugReport
                     text: qsTr("Exit")
                     icon.source: "/icons/material/ic_exit_to_app.svg"
                     Layout.fillWidth: true
@@ -384,6 +401,19 @@ ApplicationWindow {
                             exitDialog.open()
                         else
                             Qt.quit()
+                    }
+                    Keys.onPressed: {
+                        if (event.key == Qt.Key_Return) {
+                            drawer.close()
+                            if (global.navigator().isInFlight)
+                            {
+                                exitDialog.open()
+                            }
+                            else
+                            {
+                                Qt.quit()
+                            }
+                        } 
                     }
                 }
 
