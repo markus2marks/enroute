@@ -39,21 +39,16 @@ class DataSwitch : public QObject
 	Q_OBJECT
 	public:
 
-		DataSwitch(UdpConnection* udpConnection, QQmlApplicationEngine* engine);
+		DataSwitch(UdpConnection* udpConnection);
 		bool sendData(void* data);
 	public slots:
 		void setData(QByteArray data);
 	signals:
-		void sensorDataAvailable(struct sensorData* m_sensorData);
+		void sensorDataAvailable(struct sensorData* sensorData);
 	private:
 		UdpConnection *m_udpConnection;
 		struct sensorData* m_sensorData;
 		QObject *object;
-		KalmanFilter* kalman1;
-		KalmanFilter* kalman2;
-		KalmanFilter* kalman3;
-		KalmanFilter* kalman4;
-		KalmanFilter* kalman5;
 };
 
 

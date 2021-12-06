@@ -25,6 +25,9 @@ import QtQuick.Layouts 1.2
 
 import "../items"
 
+
+
+
 Page {
     id: flarmsettingpage
     title: qsTr("Flarm Settings")
@@ -42,40 +45,55 @@ Page {
             implicitWidth: flarmsettingpage.width
    
 	        
+            
 			ItemDelegate {
+			  
+		
+			
 				id:item1
 				focus: true
 				Layout.fillWidth: true
 				text: qsTr("Port:")
 				font.pixelSize: 16
 				KeyNavigation.down: item2
-			
+			   
+			    Component.onCompleted: {
+                    ports.currentIndex = 0;
+                }  
+			    
 			    ComboBox {
+			        ListModel {
+                        id: comports   
+                    }  
+			    
+			        Component.onCompleted: {
+			            QStringList liste = global.trafficDataSource_Serial().getSerialPorts()
+                        comports.insert(0,{"text":"COM1"})
+                        comports.insert(1,{"text":"COM2"})
+                        comports.insert(2,{"text":"COM3"})
+                    }
 			    	id:ports
 			    	anchors.right:  parent.right
 				    width: 200
-				    popup.visible: ports.activeFocus
-				    model: ListModel {
-				        ListElement { text: "Banana" }
-				        ListElement { text: "Apple" }
-				        ListElement { text: "Coconut" }
-				    }
+				    model: comports
 				    Keys.onPressed: {
 					    if (event.key == Qt.Key_Return) {
-					        event.accepted = true;
 					       	item1.focus = true;
-					       	
+					       	ports.focus = false;       	
 					    }
 					}
+					onActivated: {
+                       ports.pressed = true;
+                    }
+                    
 				}	
 				  
 				Keys.onPressed: {
-				    if (event.key == Qt.Key_Return) {
-				        event.accepted = true;
+				    if (event.key == Qt.Key_Return && (ports.popup.opened == false)) {
+				        ports.popup.close();
 				       	ports.focus = true;
-				       	ports.pressed = true;
 				    }
-				    else if (event.key == Qt.Key_Left) 
+				    else if (event.key == Qt.Key_Left && (ports.focus == false)) 
                     {
                         //stackView.push("InfoMenu.qml")
                         stackView.pop()
@@ -83,18 +101,17 @@ Page {
 				}	
 			}
 			
+			
+			
 			ItemDelegate {
 				id: item2
 				Layout.fillWidth: true
 				text: qsTr("Baudrate:")
 				font.pixelSize: 16
-				
 			    ComboBox {
 			    	id:baudrate
 			    	anchors.right:  parent.right
-				    width: 200
-
-				    //popup.visible: baudrate.activeFocus
+				    width: 200 
 				    model: ListModel {
 				        
                         ListElement { text: "Banana" }
@@ -103,27 +120,20 @@ Page {
                     }
 				    Keys.onPressed: {
 					    if (event.key == Qt.Key_Return) {
-					        event.accepted = true;
 					       	item2.focus = true;
+					       	baudrate.focus = false;
 					    }
 					}
 					onActivated: {
-					   focus : true
-					}
-					onAccepted:{
-					   baudrate.popup.close()
+					   baudrate.pressed = true;
 					}
 				}
 				Keys.onPressed: {
-				    if (event.key == Qt.Key_Return) {
-				        event.accepted = true;
-				       	baudrate.popup.open();
-				       
-				        baudrate.popup.focus = true;
-				       	baudrate.popup.forceActiveFocus(Qt.MenuBarFocusReason);
-				       	
-				    }
-				    else if (event.key == Qt.Key_Left) 
+				   if (event.key == Qt.Key_Return && (baudrate.popup.opened == false)) {
+                        baudrate.popup.close();
+                        baudrate.focus = true;      
+                    }
+				    else if (event.key == Qt.Key_Left && (baudrate.focus == false)) 
                     {
                         //stackView.push("InfoMenu.qml")
                         stackView.pop()
