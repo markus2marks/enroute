@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -33,50 +33,45 @@ Page {
     title: qsTr("Flight Route")
 
     Component {
-        id: aiX
+        id: waypointComponent
 
-        GridLayout {
-            id: grid
-            columns: 3
-            rowSpacing: 0
+        RowLayout {
+            id: waypointLayout
 
-            anchors.left: parent.left
-            anchors.leftMargin: Qt.application.font.pixelSize
-            anchors.right: parent.right
+            property var waypoint: ({})
+            property int index: -1
 
-            ItemDelegate {
-                visible: model.modelData instanceof Waypoint
-                icon.source: (model.modelData instanceof Waypoint) ? model.modelData.icon : ""
-                icon.color: "transparent"
+            WordWrappingItemDelegate {
+                icon.source: waypoint.icon
                 Layout.fillWidth: true
-                text: model.modelData.twoLineTitle
+                text: waypoint.twoLineTitle
 
                 onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    dialogLoader.active = false
-                    dialogLoader.dialogArgs = {waypoint: model.modelData}
-                    dialogLoader.text = "noRouteButton"
-                    dialogLoader.source = "../dialogs/WaypointDescription.qml"
-                    dialogLoader.active = true
+                    global.mobileAdaptor().vibrateBrief()
+                    waypointDescription.waypoint = waypoint
+                    waypointDescription.open()
                 }
             }
 
-            ItemDelegate {
-                visible: !(model.modelData instanceof Waypoint)
-                icon.source: "/icons/vertLine.svg"
-                icon.color: "transparent"
-                Layout.fillWidth: true
-                enabled: false
-                text: globalSettings.useMetricUnits ? model.modelData.descriptionMetric : model.modelData.description
+            ToolButton {
+                id: editButton
+
+                visible: waypoint.icon.indexOf("WP") !== -1
+                icon.source: "/icons/material/ic_mode_edit.svg"
+                onClicked: {
+                    global.mobileAdaptor().vibrateBrief()
+                    wpEditor.waypoint = waypoint
+                    wpEditor.index = waypointLayout.index
+                    wpEditor.open()
+                }
             }
 
             ToolButton {
                 id: wpMenuTB
 
-                visible: model.modelData instanceof Waypoint
                 icon.source: "/icons/material/ic_more_horiz.svg"
                 onClicked: {
-                    mobileAdaptor.vibrateBrief()
+                    global.mobileAdaptor().vibrateBrief()
                     wpMenu.popup()
                 }
 
@@ -86,66 +81,95 @@ Page {
                     Action {
                         text: qsTr("Move Up")
 
-                        enabled: model.modelData !== flightRoute.firstWaypointObject
+                        enabled: index > 0
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
-                            flightRoute.moveUp(model.modelData)
+                            global.mobileAdaptor().vibrateBrief()
+                            global.navigator().flightRoute.moveUp(index)
                         }
-                    } // Action
+                    }
 
                     Action {
                         text: qsTr("Move Down")
 
-                        enabled: model.modelData !== flightRoute.lastWaypointObject
+                        enabled: index < global.navigator().flightRoute.size-1
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
-                            flightRoute.moveDown(model.modelData)
+                            global.mobileAdaptor().vibrateBrief()
+                            global.navigator().flightRoute.moveDown(index)
                         }
-                    } // Action
+                    }
 
                     Action {
                         text: qsTr("Remove")
 
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
-                            flightRoute.removeWaypoint(model.modelData)
+                            global.mobileAdaptor().vibrateBrief()
+                            global.navigator().flightRoute.removeWaypoint(index)
                         }
-                    } // Action
+                    }
                 }
-            } // ToolButton
+            }
 
-        } // GridLayout
-    } // Component
+        }
+    }
+
+    Component {
+        id: legComponent
+
+        ColumnLayout {
+            id: grid
+
+            property var leg: ({});
+
+            Layout.fillWidth: true
+
+            ItemDelegate {
+                icon.source: "/icons/vertLine.svg"
+                Layout.fillWidth: true
+                enabled: false
+                text: {
+                    // Mention horizontal distance unit
+                    global.navigator().aircraft.horizontalDistanceUnit
+                    if (leg === null)
+                        return ""
+                    return leg.description
+                }
+            }
+
+        }
+    }
+
 
     header: ToolBar {
+
+        Material.foreground: "white"
+        height: 60
 
         ToolButton {
             id: backButton
 
             anchors.left: parent.left
-            anchors.leftMargin: drawer.dragMargin
+            anchors.verticalCenter: parent.verticalCenter
 
             icon.source: "/icons/material/ic_arrow_back.svg"
+
             onClicked: {
-                mobileAdaptor.vibrateBrief()
-                if (stackView.depth > 1) {
-                    stackView.pop()
-                } else {
-                    drawer.open()
-                }
+                global.mobileAdaptor().vibrateBrief()
+                stackView.pop()
             }
-        } // ToolButton
+        }
 
         Label {
-            anchors.left: backButton.right
+            id: lbl
+
+            anchors.verticalCenter: parent.verticalCenter
+
+            anchors.left: parent.left
+            anchors.leftMargin: 72
             anchors.right: headerMenuToolButton.left
-            anchors.bottom: parent.bottom
-            anchors.top: parent.top
 
             text: stackView.currentItem.title
             elide: Label.ElideRight
-            font.bold: true
-            horizontalAlignment: Qt.AlignHCenter
+            font.pixelSize: 20
             verticalAlignment: Qt.AlignVCenter
         }
 
@@ -153,10 +177,12 @@ Page {
             id: headerMenuToolButton
 
             anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+
             visible: (sv.currentIndex === 0)
             icon.source: "/icons/material/ic_more_vert.svg"
             onClicked: {
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 headerMenuX.popup()
             }
 
@@ -165,34 +191,23 @@ Page {
                 cascade: true
 
                 MenuItem {
-                    text: qsTr("Open from library …")
+                    text: qsTr("View Library …")
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         highlighted = false
-                        dialogLoader.active = false
-                        dialogLoader.source = "../dialogs/FlightRouteOpenDialog.qml"
-                        dialogLoader.active = true
+                        stackView.push("FlightRouteLibrary.qml")
                     }
                 }
 
                 MenuItem {
                     text: qsTr("Save to library …")
-                    enabled: (flightRoute.routeObjects.length > 1) && (sv.currentIndex === 0)
+                    enabled: (global.navigator().flightRoute.size > 0) && (sv.currentIndex === 0)
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         highlighted = false
                         dialogLoader.active = false
                         dialogLoader.source = "../dialogs/FlightRouteSaveDialog.qml"
                         dialogLoader.active = true
-                    }
-                }
-
-                MenuItem {
-                    text: qsTr("View Library …")
-                    onTriggered: {
-                        mobileAdaptor.vibrateBrief()
-                        highlighted = false
-                        stackView.push("FlightRouteLibrary.qml")
                     }
                 }
 
@@ -201,31 +216,41 @@ Page {
                 MenuItem {
                     text: qsTr("Import …")
                     enabled: Qt.platform.os !== "android"
+                    height: Qt.platform.os !== "android" ? undefined : 0
 
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         highlighted = false
 
-                        mobileAdaptor.importContent()
+                        global.mobileAdaptor().importContent()
                     }
                 }
 
                 AutoSizingMenu {
                     title: Qt.platform.os === "android" ? qsTr("Share …") : qsTr("Export …")
-                    enabled: (flightRoute.routeObjects.length > 1) && (sv.currentIndex === 0)
+                    enabled: (global.navigator().flightRoute.size > 0) && (sv.currentIndex === 0)
 
                     MenuItem {
                         text: qsTr("… to GeoJSON file")
                         onTriggered: {
                             headerMenuX.close()
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             highlighted = false
                             parent.highlighted = false
-                            var errorString = mobileAdaptor.exportContent(flightRoute.toGeoJSON(), "applicatin/geo+json", flightRoute.suggestedFilename())
+                            var errorString = global.mobileAdaptor().exportContent(global.navigator().flightRoute.toGeoJSON(), "application/geo+json", global.navigator().flightRoute.suggestedFilename())
+                            if (errorString === "abort") {
+                                toast.doToast(qsTr("Aborted"))
+                                return
+                            }
                             if (errorString !== "") {
                                 shareErrorDialogLabel.text = errorString
                                 shareErrorDialog.open()
+                                return
                             }
+                            if (Qt.platform.os === "android")
+                                toast.doToast(qsTr("Flight route shared"))
+                            else
+                                toast.doToast(qsTr("Flight route exported"))
                         }
                     }
 
@@ -233,36 +258,45 @@ Page {
                         text: qsTr("… to GPX file")
                         onTriggered: {
                             headerMenuX.close()
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             highlighted = false
                             parent.highlighted = false
-                            var errorString = mobileAdaptor.exportContent(flightRoute.toGpx(), "application/gpx+xml", flightRoute.suggestedFilename())
+                            var errorString = global.mobileAdaptor().exportContent(global.navigator().flightRoute.toGpx(), "application/gpx+xml", global.navigator().flightRoute.suggestedFilename())
+                            if (errorString === "abort") {
+                                toast.doToast(qsTr("Aborted"))
+                                return
+                            }
                             if (errorString !== "") {
                                 shareErrorDialogLabel.text = errorString
                                 shareErrorDialog.open()
+                                return
                             }
+                            if (Qt.platform.os === "android")
+                                toast.doToast(qsTr("Flight route shared"))
+                            else
+                                toast.doToast(qsTr("Flight route exported"))
                         }
                     }
                 }
 
                 AutoSizingMenu {
                     title: qsTr("Open in other app …")
-                    enabled: (flightRoute.routeObjects.length > 1) && (sv.currentIndex === 0)
+                    enabled: (global.navigator().flightRoute.size > 0) && (sv.currentIndex === 0)
 
                     MenuItem {
                         text: qsTr("… in GeoJSON format")
 
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             highlighted = false
                             parent.highlighted = false
 
-                            var errorString = mobileAdaptor.viewContent(flightRoute.toGeoJSON(), "application/geo+json", "FlightRoute-%1.geojson")
+                            var errorString = global.mobileAdaptor().viewContent(global.navigator().flightRoute.toGeoJSON(), "application/geo+json", "FlightRoute-%1.geojson")
                             if (errorString !== "") {
                                 shareErrorDialogLabel.text = errorString
                                 shareErrorDialog.open()
-                            }
-
+                            } else
+                                toast.doToast(qsTr("Flight route opened in other app"))
                         }
                     }
 
@@ -270,16 +304,16 @@ Page {
                         text: qsTr("… in GPX format")
 
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             highlighted = false
                             parent.highlighted = false
 
-                            var errorString = mobileAdaptor.viewContent(flightRoute.toGpx(), "application/gpx+xml", "FlightRoute-%1.gpx")
+                            var errorString = global.mobileAdaptor().viewContent(global.navigator().flightRoute.toGpx(), "application/gpx+xml", "FlightRoute-%1.gpx")
                             if (errorString !== "") {
                                 shareErrorDialogLabel.text = errorString
                                 shareErrorDialog.open()
-                            }
-
+                            } else
+                                toast.doToast(qsTr("Flight route opened in other app"))
                         }
                     }
 
@@ -289,10 +323,10 @@ Page {
 
                 MenuItem {
                     text: qsTr("Clear")
-                    enabled: (flightRoute.routeObjects.length > 0) && (sv.currentIndex === 0)
+                    enabled: (global.navigator().flightRoute.size > 0) && (sv.currentIndex === 0)
 
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         highlighted = false
                         clearDialog.open()
                     }
@@ -301,19 +335,20 @@ Page {
 
                 MenuItem {
                     text: qsTr("Reverse")
-                    enabled: (flightRoute.routeObjects.length > 1) && (sv.currentIndex === 0)
+                    enabled: (global.navigator().flightRoute.size > 0) && (sv.currentIndex === 0)
 
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         highlighted = false
-                        flightRoute.reverse()
+                        global.navigator().flightRoute.reverse()
+                        toast.doToast(qsTr("Flight route reversed"))
                     }
                 }
 
             }
-        } // ToolButton
+        }
 
-    } // ToolBar
+    }
 
     TabBar {
         id: bar
@@ -324,9 +359,9 @@ Page {
         currentIndex: sv.currentIndex
         TabButton { text: qsTr("Route") }
         TabButton { text: qsTr("Wind") }
-        TabButton { text: qsTr("ACFT") }
+
         Material.elevation: 3
-    } // TabBar
+    }
 
     SwipeView{
         id: sv
@@ -343,24 +378,61 @@ Page {
 
             Label {
                 anchors.fill: parent
-                visible: flightRoute.isEmpty
+                visible: global.navigator().flightRoute.size === 0
 
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment : Text.AlignVCenter
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
 
                 text: qsTr("<h2>Empty Route</h2><p>Use the button <strong>Add Waypoint</strong> below.</p>")
             }
 
-            ListView {
+            ScrollView {
                 anchors.fill: parent
 
-                model: flightRoute.routeObjects
-                delegate: aiX
-                clip: true
-                ScrollIndicator.vertical: ScrollIndicator {}
-            }
+                contentHeight: co.height
+                contentWidth: parent.width
 
+                // The visibility behavior of the vertical scroll bar is a little complex.
+                // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: (height < contentHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+
+                clip: true
+
+                ColumnLayout {
+                    id: co
+                    width: parent.width
+
+                    Connections {
+                        target: global.navigator().flightRoute
+                        function onWaypointsChanged() {
+                            co.createItems()
+                        }
+                    }
+
+                    Component.onCompleted: co.createItems()
+
+                    function createItems() {
+                        // Delete old text items
+                        co.children = {}
+
+                        if (global.navigator().flightRoute.size > 0) {
+                            // Create first waypointComponent
+                            waypointComponent.createObject(co, {waypoint: global.navigator().flightRoute.waypoints[0], index: 0});
+
+                            // Create leg description items
+                            var legs = global.navigator().flightRoute.legs
+                            var j
+                            for (j=0; j<legs.length; j++) {
+                                legComponent.createObject(co, {leg: legs[j]});
+                                waypointComponent.createObject(co, {waypoint: legs[j].endPoint, index: j+1});
+                            }
+                        }
+                    }
+                } // ColumnLayout
+
+            }
 
         }
 
@@ -384,204 +456,142 @@ Page {
                     Layout.columnSpan: 4
                     font.pixelSize: Qt.application.font.pixelSize*1.2
                     font.bold: true
-                    color: Material.primary
+                    color: Material.accent
                 }
 
-                Label { text: qsTr("Direction") }
+                Label {
+                    Layout.alignment: Qt.AlignBaseline
+                    text: qsTr("Direction")
+                }
                 TextField {
                     id: windDirection
                     Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
-                    validator: DoubleValidator {
-                        bottom: wind.minWindDirection
-                        top: wind.maxWindDirection
-                        notation: DoubleValidator.StandardNotation
+                    validator: IntValidator {
+                        bottom: 0
+                        top: 360
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
-                        wind.windDirectionInDEG = text
+                        global.navigator().wind.windDirection = angle.fromDEG(text)
                         windSpeed.focus = true
                     }
-                    color: (acceptableInput ? "black" : "red")
+                    color: (acceptableInput ? Material.foreground : "red")
                     KeyNavigation.tab: windSpeed
-                    text: isFinite(wind.windDirectionInDEG) ? wind.windDirectionInDEG : ""
+                    text: {
+                        if (!global.navigator().wind.windSpeed.isFinite()) {
+                            return ""
+                        }
+                        return Math.round( global.navigator().wind.windDirection.toDEG() )
+                    }
                     placeholderText: qsTr("undefined")
                 }
-                Label { text: "°" }
+                Label {
+                    text: "°"
+                    Layout.alignment: Qt.AlignBaseline
+                }
                 ToolButton {
-                    icon.source: "/icons/material/ic_delete.svg"
+                    icon.source: "/icons/material/ic_clear.svg"
+                    Layout.alignment: Qt.AlignVCenter
                     enabled: windDirection.text !== ""
                     onClicked: {
-                        wind.windDirectionInDEG = -1
+                        global.navigator().wind.windDirection = angle.nan()
                         windDirection.clear()
                     }
                 }
 
-                Label { text: qsTr("Speed") }
+                Label {
+                    text: qsTr("Speed")
+                    Layout.alignment: Qt.AlignBaseline
+                }
                 TextField {
                     id: windSpeed
                     Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
-                        bottom: globalSettings.useMetricUnits ? wind.minWindSpeedInKMH : wind.minWindSpeedInKT
-                        top: globalSettings.useMetricUnits ? wind.maxWindSpeedInKMH : wind.maxWindSpeedInKT
+                        bottom: {
+                            switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                            case Aircraft.NauticalMile:
+                                return global.navigator().wind.minWindSpeed.toKN()
+                            case Aircraft.Kilometer:
+                                return global.navigator().wind.minWindSpeed.toKMH()
+                            case Aircraft.StatuteMile :
+                                return global.navigator().wind.minWindSpeed.toMIL()
+                            }
+                            return NaN
+                        }
+                        top: {
+                            switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                            case Aircraft.NauticalMile:
+                                return global.navigator().wind.maxWindSpeed.toKN()
+                            case Aircraft.Kilometer:
+                                return global.navigator().wind.maxWindSpeed.toKMH()
+                            case Aircraft.StatuteMile :
+                                return global.navigator().wind.maxWindSpeed.toMIL()
+                            }
+                            return NaN
+                        }
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
-                        globalSettings.useMetricUnits ? wind.windSpeedInKMH = text : wind.windSpeedInKT = text
+                        switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                        case Aircraft.NauticalMile:
+                            global.navigator().wind.windSpeed = speed.fromKN(text)
+                            break;
+                        case Aircraft.Kilometer:
+                            global.navigator().wind.windSpeed = speed.fromKMH(text)
+                            break;
+                        case Aircraft.StatuteMile :
+                            global.navigator().wind.windSpeed = speed.fromMPH(text)
+                            break;
+                        }
                         focus = false
                     }
-                    color: (acceptableInput ? "black" : "red")
-                    text: isFinite(wind.windSpeedInKT) ? Math.round(globalSettings.useMetricUnits ? wind.windSpeedInKMH : wind.windSpeedInKT) : ""
+                    color: (acceptableInput ? Material.foreground : "red")
+                    text: {
+                        if (!global.navigator().wind.windSpeed.isFinite()) {
+                            return ""
+                        }
+                        switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                        case Aircraft.NauticalMile:
+                            return Math.round( global.navigator().wind.windSpeed.toKN() )
+                        case Aircraft.Kilometer:
+                            return Math.round( global.navigator().wind.windSpeed.toKMH() )
+                        case Aircraft.StatuteMile :
+                            return Math.round( global.navigator().wind.windSpeed.toMPH() )
+                        }
+                        return NaN
+                    }
                     placeholderText: qsTr("undefined")
                 }
-                Label { text: globalSettings.useMetricUnits ? "km/h" : "kt" }
+                Label {
+                    text: {
+                        switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                        case Aircraft.NauticalMile:
+                            return "kn"
+                        case Aircraft.Kilometer:
+                            return "km/h"
+                        case Aircraft.StatuteMile:
+                            return "mph"
+                        }
+                        return ""
+
+                    }
+                    Layout.alignment: Qt.AlignBaseline
+                }
                 ToolButton {
-                    icon.source: "/icons/material/ic_delete.svg"
+                    icon.source: "/icons/material/ic_clear.svg"
+                    Layout.alignment: Qt.AlignVCenter
                     enabled: windSpeed.text !== ""
                     onClicked: {
-                        wind.windSpeedInKT = -1
+                        global.navigator().wind.windSpeed = speed.fromKN(-1)
                         windSpeed.clear()
                     }
                 }
 
-            }
-
-        }
-
-        ScrollView {
-            id: acftTab
-
-            contentWidth: width
-            clip: true
-
-            GridLayout {
-                id: aircraftTab
-                anchors.left: parent.left
-                anchors.leftMargin: Qt.application.font.pixelSize
-                anchors.right: parent.right
-                anchors.rightMargin: Qt.application.font.pixelSize
-
-                columns: 4
-
-                Label { Layout.fillHeight: true }
-                Label {
-                    text: qsTr("True Airspeed")
-                    Layout.columnSpan: 4
-                    font.pixelSize: Qt.application.font.pixelSize*1.2
-                    font.bold: true
-                    color: Material.primary
-                }
-
-                Label { text: qsTr("Cruise") }
-                TextField {
-                    id: cruiseSpeed
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: Qt.application.font.pixelSize*5
-                    validator: DoubleValidator {
-                        bottom: globalSettings.useMetricUnits ? aircraft.minAircraftSpeedInKMH : aircraft.minAircraftSpeedInKT
-                        top: globalSettings.useMetricUnits ? aircraft.maxAircraftSpeedInKMH : aircraft.maxAircraftSpeedInKT
-                        notation: DoubleValidator.StandardNotation
-                    }
-                    inputMethodHints: Qt.ImhDigitsOnly
-                    onEditingFinished: {
-                        globalSettings.useMetricUnits ? aircraft.cruiseSpeedInKMH = text : aircraft.cruiseSpeedInKT = text
-                        descentSpeed.focus = true
-                    }
-                    color: (acceptableInput ? "black" : "red")
-                    KeyNavigation.tab: descentSpeed
-                    KeyNavigation.backtab: windSpeed
-                    text: isFinite(aircraft.cruiseSpeedInKT) ? Math.round(globalSettings.useMetricUnits ?
-                                                                              aircraft.cruiseSpeedInKMH.toString() :
-                                                                              aircraft.cruiseSpeedInKT.toString() ) : ""
-                    placeholderText: qsTr("undefined")
-                }
-                Label { text: globalSettings.useMetricUnits ? "km/h" : "kt" }
-                ToolButton {
-                    icon.source: "/icons/material/ic_delete.svg"
-                    enabled: cruiseSpeed.text !== ""
-                    onClicked: {
-                        aircraft.cruiseSpeedInKT = -1
-                        cruiseSpeed.clear()
-                    }
-                }
-
-                Label { text: qsTr("Descent") }
-                TextField {
-                    id: descentSpeed
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: Qt.application.font.pixelSize*5
-                    validator: DoubleValidator {
-                        bottom: globalSettings.useMetricUnits ? aircraft.minAircraftSpeedInKMH : aircraft.minAircraftSpeedInKT
-                        top: globalSettings.useMetricUnits ? aircraft.maxAircraftSpeedInKMH : aircraft.maxAircraftSpeedInKT
-                        notation: DoubleValidator.StandardNotation
-                    }
-                    inputMethodHints: Qt.ImhDigitsOnly
-                    onEditingFinished: {
-                        globalSettings.useMetricUnits ? aircraft.descentSpeedInKMH = text : aircraft.descentSpeedInKT = text
-                        fuelConsumption.focus = true
-                    }
-                    color: (acceptableInput ? "black" : "red")
-                    KeyNavigation.tab: fuelConsumption
-                    KeyNavigation.backtab: cruiseSpeed
-                    text: isFinite(aircraft.descentSpeedInKT) ? Math.round(globalSettings.useMetricUnits ?
-                                                                               aircraft.descentSpeedInKMH.toString() :
-                                                                               aircraft.descentSpeedInKT.toString() ) : ""
-                    placeholderText: qsTr("undefined")
-                }
-                Label { text: globalSettings.useMetricUnits ? "km/h" : "kt" }
-                ToolButton {
-                    icon.source: "/icons/material/ic_delete.svg"
-                    enabled: descentSpeed.text !== ""
-                    onClicked: {
-                        aircraft.descentSpeedInKT = -1
-                        descentSpeed.clear()
-                    }
-                }
-
-                Label { Layout.fillHeight: true }
-                Label {
-                    text: qsTr("Fuel consumption")
-                    Layout.columnSpan: 4
-                    font.pixelSize: Qt.application.font.pixelSize*1.2
-                    font.bold: true
-                    color: Material.primary
-                }
-
-                Label { text: qsTr("Cruise") }
-                TextField {
-                    id: fuelConsumption
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: Qt.application.font.pixelSize*5
-                    validator: DoubleValidator {
-                        bottom: aircraft.minFuelConsuption
-                        top: aircraft.maxFuelConsuption
-                        notation: DoubleValidator.StandardNotation
-                    }
-                    inputMethodHints: Qt.ImhDigitsOnly
-                    onEditingFinished: {
-                        focus = false
-                        aircraft.fuelConsumptionInLPH = text
-                    }
-                    color: (acceptableInput ? "black" : "red")
-                    KeyNavigation.tab: windDirection
-                    KeyNavigation.backtab: descentSpeed
-                    text: isFinite(aircraft.fuelConsumptionInLPH) ? aircraft.fuelConsumptionInLPH.toString() : ""
-                    placeholderText: qsTr("undefined")
-
-                }
-                Label { text: qsTr("l/h") }
-                ToolButton {
-                    icon.source: "/icons/material/ic_delete.svg"
-                    enabled: fuelConsumption.text !== ""
-                    onClicked: {
-                        aircraft.fuelConsumptionInLPH = -1
-                        fuelConsumption.clear()
-                    }
-                }
-
-                Label { Layout.fillHeight: true }
             }
 
         }
@@ -598,15 +608,22 @@ Page {
                 id: summary
 
                 Layout.fillWidth: true
-                text: globalSettings.useMetricUnits ? flightRoute.summaryMetric : flightRoute.summary
+                text: {
+                    // Mention horizontal distance units
+                    global.navigator().aircraft.horizontalDistanceUnit
+
+                    return global.navigator().flightRoute.summary
+                }
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 textFormat: Text.StyledText
-                visible: flightRoute.summary !== ""
+                visible: text !== ""
             }
 
             ToolButton {
                 id: addWPButton
+
+                Material.foreground: Material.accent
 
                 visible: (sv.currentIndex === 0)
                 Layout.alignment: Qt.AlignHCenter
@@ -614,7 +631,7 @@ Page {
                 icon.source: "/icons/material/ic_add_circle.svg"
 
                 onClicked: {
-                    mobileAdaptor.vibrateBrief()
+                    global.mobileAdaptor().vibrateBrief()
                     dialogLoader.active = false
                     dialogLoader.source = "../dialogs/FlightRouteAddWPDialog.qml"
                     dialogLoader.active = true
@@ -625,8 +642,12 @@ Page {
 
     Dialog {
         id: clearDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 5.15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Clear route?")
         standardButtons: Dialog.No | Dialog.Yes
@@ -642,15 +663,16 @@ Page {
 
             text: qsTr("Once erased, the current flight route cannot be restored.")
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
-            flightRoute.clear()
+            global.mobileAdaptor().vibrateBrief()
+            global.navigator().flightRoute.clear()
+            toast.doToast(qsTr("Flight route cleared"))
         }
         onRejected: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             close()
         }
     }
@@ -661,7 +683,7 @@ Page {
 
         property string title
         property string text
-        property Waypoint waypoint
+        property var waypoint
 
         onLoaded: {
             item.anchors.centerIn = dialogLoader
@@ -683,7 +705,7 @@ Page {
             id: shareErrorDialogLabel
             width: shareErrorDialog.availableWidth
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.Ok
@@ -698,6 +720,14 @@ Page {
             dialogLoader.source = "../dialogs/FlightRouteAddWPDialog.qml"
             dialogLoader.active = true
         }
+    }
+
+    WaypointDescription {
+        id: waypointDescription
+    }
+
+    WaypointEditor {
+        id: wpEditor
     }
 
 } // Page

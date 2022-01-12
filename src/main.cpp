@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,45 +23,94 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QLibraryInfo>
-#include <QQuickItem>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlProperty>
+#include <QQuickItem>
 #include <QSettings>
 #include <QTranslator>
 
-#if !defined(Q_OS_ANDROID)
+#if defined(Q_OS_ANDROID)
+#include <QtWebView/QtWebView>
+#else
 #include <QApplication>
 #include <kdsingleapplication.h>
 #endif
 
-#include "Aircraft.h"
-#include "Clock.h"
-#include "FlightRoute.h"
-#include "GeoMapProvider.h"
-#include "GlobalSettings.h"
+#include "DemoRunner.h"
+#include "GlobalObject.h"
 #include "Librarian.h"
-#include "MapManager.h"
-#include "Meteorologist.h"
 #include "MobileAdaptor.h"
-#include "SatNav.h"
-#include "ScaleQuickItem.h"
-#include "Wind.h"
+#include "Settings.h"
+#include "dataManagement/DataManager.h"
+#include "dataManagement/SSLErrorHandler.h"
+#include "geomaps/Airspace.h"
+#include "geomaps/GeoMapProvider.h"
+#include "navigation/Aircraft.h"
+#include "navigation/Clock.h"
+#include "navigation/Navigator.h"
+#include "platform/Notifier.h"
+#include "positioning/PositionProvider.h"
+#include "traffic/PasswordDB.h"
+#include "traffic/TrafficDataProvider.h"
+#include "traffic/TrafficFactor_WithPosition.h"
+#include "ui/ScaleQuickItem.h"
+#include "units/Angle.h"
+#include "units/Distance.h"
+#include "units/Speed.h"
+#include "units/Time.h"
+#include "units/Volume.h"
+#include "units/VolumeFlow.h"
+#include "weather/WeatherDataProvider.h"
+#include "weather/Wind.h"
+#include <chrono>
 
-int main(int argc, char *argv[])
+using namespace std::chrono_literals;
+
+auto main(int argc, char *argv[]) -> int
 {
+    // It seems that MapBoxGL does not work well with threaded rendering, so we disallow that.
+    qputenv("QSG_RENDER_LOOP", "basic");
+
     // Register types
+    qRegisterMetaType<Units::Angle>();
+    qRegisterMetaType<Units::Distance>();
+    qRegisterMetaType<Units::Speed>();
+    qRegisterMetaType<Units::Time>();
+    qRegisterMetaType<Units::Volume>();
+    qRegisterMetaType<Units::VolumeFlow>();
+    qRegisterMetaType<GeoMaps::Airspace>();
+    qRegisterMetaType<GeoMaps::Waypoint>();
+    qRegisterMetaType<Positioning::PositionInfo>();
+    qRegisterMetaType<Traffic::Warning>();
+
     qRegisterMetaType<MobileAdaptor::FileFunction>("MobileAdaptor::FileFunction");
-    qmlRegisterType<Airspace>("enroute", 1, 0, "Airspace");
-    qmlRegisterType<Clock>("enroute", 1, 0, "Clock");
-    qmlRegisterType<DownloadableGroup>("enroute", 1, 0, "DownloadableGroup");
-    qmlRegisterType<DownloadableGroup>("enroute", 1, 0, "DownloadableGroupWatcher");
+    qRegisterMetaType<Platform::Notifier::NotificationTypes>("Platform::Notifier::Notifications");
+    qmlRegisterUncreatableType<DemoRunner>("enroute", 1, 0, "DemoRunner", "DemoRunner objects cannot be created in QML");
+    qmlRegisterType<Navigation::Aircraft>("enroute", 1, 0, "Aircraft");
+    qmlRegisterType<Navigation::Clock>("enroute", 1, 0, "Clock");
+    qmlRegisterUncreatableType<DataManagement::SSLErrorHandler>("enroute", 1, 0, "SSLErrorHandler", "SSLErrorHandler objects cannot be created in QML");
+    qmlRegisterType<DataManagement::DownloadableGroup>("enroute", 1, 0, "DownloadableGroup");
+    qmlRegisterType<DataManagement::DownloadableGroupWatcher>("enroute", 1, 0, "DownloadableGroupWatcher");
+    qmlRegisterUncreatableType<Librarian>("enroute", 1, 0, "Librarian", "Librarian objects cannot be created in QML");
+    qmlRegisterUncreatableType<GeoMaps::GeoMapProvider>("enroute", 1, 0, "GeoMapProvider", "GeoMapProvider objects cannot be created in QML");
+    qmlRegisterUncreatableType<DataManagement::DataManager>("enroute", 1, 0, "DataManager", "DataManager objects cannot be created in QML");
+    qmlRegisterType<Settings>("enroute", 1, 0, "GlobalSettings");
     qmlRegisterUncreatableType<MobileAdaptor>("enroute", 1, 0, "MobileAdaptor", "MobileAdaptor objects cannot be created in QML");
-    qmlRegisterUncreatableType<SatNav>("enroute", 1, 0, "SatNav", "SatNav objects cannot be created in QML");
-    qmlRegisterUncreatableType<Meteorologist>("enroute", 1, 0, "Meteorologist", "Meteorologist objects cannot be created in QML");
-    qmlRegisterType<Meteorologist::WeatherStation>("enroute", 1, 0, "WeatherStation");
-    qmlRegisterType<ScaleQuickItem>("enroute", 1, 0, "Scale");
-    qmlRegisterType<Waypoint>("enroute", 1, 0, "Waypoint");
+    qmlRegisterUncreatableType<Navigation::Navigator>("enroute", 1, 0, "Navigator", "Navigator objects cannot be created in QML");
+    qmlRegisterUncreatableType<Traffic::PasswordDB>("enroute", 1, 0, "PasswordDB", "PasswordDB objects cannot be created in QML");
+    qmlRegisterUncreatableType<Traffic::TrafficDataProvider>("enroute", 1, 0, "TrafficDataProvider", "TrafficDataProvider objects cannot be created in QML");
+    qmlRegisterUncreatableType<Platform::Notifier>("enroute", 1, 0, "Notifier", "Notifier objects cannot be created in QML");
+    qmlRegisterUncreatableType<Positioning::PositionProvider>("enroute", 1, 0, "PositionProvider", "PositionProvider objects cannot be created in QML");
+    qmlRegisterUncreatableType<Traffic::TrafficFactor_WithPosition>("enroute", 1, 0, "TrafficFactor_WithPosition", "TrafficFactor_WithPosition objects cannot be created in QML");
+    qmlRegisterType<Ui::ScaleQuickItem>("enroute", 1, 0, "Scale");
+    qmlRegisterUncreatableType<Weather::WeatherDataProvider>("enroute", 1, 0, "WeatherProvider", "Weather::WeatherProvider objects cannot be created in QML");
+    qmlRegisterType<Weather::Station>("enroute", 1, 0, "WeatherStation");
+
+    // Initialize web view on platforms where we use it
+#if defined(Q_OS_ANDROID)
+    QtWebView::initialize();
+#endif
 
     // Set up application
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -79,121 +128,73 @@ int main(int argc, char *argv[])
     QGuiApplication::setDesktopFileName("de.akaflieg_freiburg.enroute");
 #endif
 
+    // Install translator
+    auto* enrouteTranslator = new QTranslator(&app);
+    if (enrouteTranslator->load(QString(":enroute_%1.qm").arg(QLocale::system().name().left(2)))) {
+        QCoreApplication::installTranslator(enrouteTranslator);
+    } else {
+        delete enrouteTranslator;
+    }
+
+
+    // Workaround for crappy Hauwei and Samsung devices.
+    //
+    // On Huawei devices, set the environment variable "QT_ANDROID_NO_EXIT_CALL", which
+    // prevents an exit() call, and thereby prevents a crash on these devices. Same problem on Samsung Galaxy S21 devices with Android 12.
+    qputenv("QT_ANDROID_NO_EXIT_CALL", "1");
+
+
     // Command line parsing
     QCommandLineParser parser;
-    parser.setApplicationDescription(QCoreApplication::translate("main", "Enroute Flight Navigation is a free nagivation app for VFR pilots, developed as a project of Akaflieg Freiburg."));
+    parser.setApplicationDescription(QCoreApplication::translate("main", "Enroute Flight Navigation is a free nagivation app for VFR pilots,\ndeveloped as a project of Akaflieg Freiburg."));
     parser.addHelpOption();
     parser.addVersionOption();
+    QCommandLineOption screenshotOption("s", QCoreApplication::translate("main", "Run simulator and generate screenshots for manual"));
+    parser.addOption(screenshotOption);
     parser.addPositionalArgument("[fileName]", QCoreApplication::translate("main", "File to import."));
     parser.process(app);
     auto positionalArguments = parser.positionalArguments();
-    if (positionalArguments.length() > 1)
+    if (positionalArguments.length() > 1) {
         parser.showHelp();
+    }
 
 #if !defined(Q_OS_ANDROID)
     // Single application on desktops
     KDSingleApplication kdsingleapp;
     if (!kdsingleapp.isPrimaryInstance()) {
-        if (positionalArguments.length() > 0)
+        if (positionalArguments.length() > 0) {
             kdsingleapp.sendMessage(positionalArguments[0].toUtf8());
-        else
+        } else {
             kdsingleapp.sendMessage(QByteArray());
+        }
         return 0;
     }
 #endif
 
     // Create mobile platform adaptor. We do this before creating the application engine because this also asks for permissions
-    auto *adaptor = new MobileAdaptor();
-    if (positionalArguments.length() == 1)
-        adaptor->processFileOpenRequest(positionalArguments[0]);
+    if (positionalArguments.length() == 1) {
+        GlobalObject::mobileAdaptor()->processFileOpenRequest(positionalArguments[0]);
+    }
+    QTimer::singleShot(4s, GlobalObject::mobileAdaptor(), &MobileAdaptor::hideSplashScreen);
 #if !defined(Q_OS_ANDROID)
-    QObject::connect(&kdsingleapp, SIGNAL(messageReceived(const QByteArray &)), adaptor, SLOT(processFileOpenRequest(const QByteArray &)));
+    QObject::connect(&kdsingleapp, SIGNAL(messageReceived(QByteArray)), GlobalObject::mobileAdaptor(), SLOT(processFileOpenRequest(QByteArray)));
 #endif
 
     /*
      * Set up ApplicationEngine for QML
      */
-    auto engine = new QQmlApplicationEngine();
-    QObject::connect(GlobalSettings::globalInstance(), &GlobalSettings::preferEnglishChanged, engine, &QQmlApplicationEngine::retranslate);
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("angle", QVariant::fromValue(Units::Angle()) );
+    engine.rootContext()->setContextProperty("manual_location", MANUAL_LOCATION );
+    engine.rootContext()->setContextProperty("global", new GlobalObject(&engine) );
+    engine.rootContext()->setContextProperty("speed", QVariant::fromValue(Units::Speed()) );
+    engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
 
-    // Make GPS available to QML engine
-    engine->rootContext()->setContextProperty("satNav", SatNav::globalInstance());
-
-    // Attach global settings object
-    engine->rootContext()->setContextProperty("globalSettings", GlobalSettings::globalInstance());
-
-    // Make MobileAdaptor available to QML engine
-    QTimer::singleShot(4000, adaptor, SLOT(hideSplashScreen()));
-    engine->rootContext()->setContextProperty("mobileAdaptor", adaptor);
-
-    // Attach library info
-    auto librarian = new Librarian(engine);
-    engine->rootContext()->setContextProperty("librarian", librarian);
-
-    // Attach aircraft info
-    auto aircraft = new Aircraft(engine);
-    engine->rootContext()->setContextProperty("aircraft", aircraft);
-
-    // Attach wind info
-    auto wind = new Wind(engine);
-    engine->rootContext()->setContextProperty("wind", wind);
-
-    // Attach clock
-    engine->rootContext()->setContextProperty("clock", Clock::globalInstance());
-
-    // Attach flight route
-    auto flightroute = new FlightRoute(aircraft, wind, engine);
-    engine->rootContext()->setContextProperty("flightRoute", flightroute);
-
-    // Create NetwortAccessManager
-    auto networkAccessManager = new QNetworkAccessManager();
-    networkAccessManager->setTransferTimeout();
-
-    // Attach map manager
-    auto mapManager = new MapManager(networkAccessManager);
-    engine->rootContext()->setContextProperty("mapManager", mapManager);
-    QObject::connect(mapManager->geoMaps(), &DownloadableGroup::downloadingChanged, adaptor, &MobileAdaptor::showDownloadNotification);
-
-    // Attach geo map provider
-    auto geoMapProvider = new GeoMapProvider(mapManager, librarian);
-    engine->rootContext()->setContextProperty("geoMapProvider", geoMapProvider);
-
-    // Attach meteorologist
-    auto meteorologist = new Meteorologist(flightroute, geoMapProvider, networkAccessManager, engine);
-    engine->rootContext()->setContextProperty("meteorologist", meteorologist);
-    geoMapProvider->setMeteorologist(meteorologist);
-
-    // Restore saved settings and make them available to QML
-    QSettings settings;
-    engine->rootContext()->setContextProperty("savedBearing", settings.value("Map/bearing", 0.0));
-    engine->rootContext()->setContextProperty("savedZoomLevel", settings.value("Map/zoomLevel", 9));
-
-    // Load GUI
-    engine->load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
-    if (engine->rootObjects().isEmpty())
-        return -1;
-
-    // Enter event loop
-    QGuiApplication::exec();
-
-    // Save settings
-    // Obtain a pointer to the flightMap
-    QQuickItem *flightMap = nullptr;
-    foreach (auto rootItem, engine->rootObjects()) {
-        flightMap = rootItem->findChild<QQuickItem*>("flightMap");
-        if (flightMap != nullptr)
-            break;
-    }
-    if (flightMap) {
-        settings.setValue("Map/bearing", QQmlProperty::read(flightMap, "bearing"));
-        settings.setValue("Map/zoomLevel", QQmlProperty::read(flightMap, "zoomLevel"));
+    if (parser.isSet(screenshotOption)) {
+        GlobalObject::demoRunner()->setEngine(&engine);
+        QTimer::singleShot(1s, GlobalObject::demoRunner(), &DemoRunner::run);
     }
 
-    // Ensure that things get deleted in the right order
-    delete engine;
-    delete mapManager; // This will also delete geoMapProvider
-    delete networkAccessManager;
-    delete adaptor;
-
-    return 0;
+    // Load GUI and enter event loop
+    return QGuiApplication::exec();
 }

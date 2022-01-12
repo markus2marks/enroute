@@ -12,6 +12,7 @@
 find_path(Qt5_TRANSLATION_DIR qtbase_de.qm
     HINTS ${Qt5Core_DIR}/../../../translations
     HINTS /usr/share/qt5/translations
+    HINTS /usr/share/qt/translations
     HINTS /usr/translations
     REQUIRED
     )
@@ -51,80 +52,158 @@ configure_file(ressources.qrc.in ressources.qrc)
 # Set up sources
 #
 
-# We use this macro here to avoid creating extremely large C++ files with binary content
-#qt5_add_big_resources(BIGRESOURCES ${CMAKE_CURRENT_BINARY_DIR}/flightMapFonts.qrc)
-
 set(SOURCES
     # Ressources
     ${CMAKE_CURRENT_BINARY_DIR}/flightMap.qrc
     ${CMAKE_CURRENT_BINARY_DIR}/icons.qrc
-    ${CMAKE_CURRENT_BINARY_DIR}/ressources.qrc
-    ${CMAKE_CURRENT_BINARY_DIR}/flightMapFonts.qrc
 
     # Translations
     enroute_de.qm
     enroute_fr.qm
-    
+    enroute_it.qm
+    enroute_pl.qm
+
     # Other files
+    AndroidManifest.xml.in
     flightMap.qrc.in
     icons.qrc.in
     qml.qrc.in
+    README.md
     ressources.qrc.in
-    AndroidManifest.xml.in
 
     # Header files
-    Aircraft.h
-    Airspace.h
-    Clock.h
-    Downloadable.h
-    DownloadableGroup.h
-    DownloadableGroupWatcher.h
-    FlightRoute.h
-    GeoMapProvider.h
-    GlobalSettings.h
+    dataManagement/DataManager.h
+    dataManagement/Downloadable.h
+    dataManagement/DownloadableGroup.h
+    dataManagement/DownloadableGroupWatcher.h
+    dataManagement/SSLErrorHandler.h
+    DemoRunner.h
+    geomaps/Airspace.h
+    geomaps/GeoMapProvider.h
+    geomaps/TileHandler.h
+    geomaps/TileServer.h
+    geomaps/Waypoint.h
+    GlobalObject.h
     Librarian.h
-    Meteorologist.h
-    Meteorologist_Decoder.h
-    Meteorologist_METAR.h
-    Meteorologist_TAF.h
-    Meteorologist_WeatherStation.h
     MobileAdaptor.h
-    SatNav.h
-    ScaleQuickItem.h
-    Waypoint.h
+    navigation/Aircraft.h
+    navigation/Clock.h
+    navigation/FlightRoute.h
+    navigation/FlightRoute_Leg.h
+    navigation/Navigator.h
+    platform/Notifier.h
+    positioning/Geoid.h
+    positioning/PositionInfo.h
+    positioning/PositionInfoSource_Abstract.h
+    positioning/PositionInfoSource_Satellite.h
+    positioning/PositionProvider.h
+    Settings.h
+    traffic/FlarmnetDB.h
+    traffic/PasswordDB.h
+    traffic/TrafficDataSource_Abstract.h
+    traffic/TrafficDataSource_AbstractSocket.h
+    traffic/TrafficDataSource_File.h
+    traffic/TrafficDataSource_Simulate.h
+    traffic/TrafficDataSource_Tcp.h
+    traffic/TrafficDataSource_Udp.h
+    traffic/TrafficDataProvider.h
+    traffic/TrafficFactor_Abstract.h
+    traffic/TrafficFactor_DistanceOnly.h
+    traffic/TrafficFactor_WithPosition.h
+    traffic/Warning.h
+    ui/ScaleQuickItem.h
+    units/Angle.h
+    units/Distance.h
+    units/Speed.h
+    units/Time.h
+    units/Units.h
+    units/Volume.h
+    units/VolumeFlow.h
+    weather/Decoder.h
+    weather/METAR.h
+    weather/Station.h
+    weather/TAF.h
+    weather/WeatherDataProvider.h
+    weather/Wind.h
 
     # C++ files
-    Aircraft.cpp
-    Airspace.cpp
-    AviationUnits.cpp
-    Clock.cpp
-    Downloadable.cpp
-    DownloadableGroup.cpp
-    DownloadableGroupWatcher.cpp
-    FlightRoute.cpp
-    FlightRoute_GPX.cpp
-    FlightRoute_Leg.cpp
-    Geoid.cpp
-    GeoMapProvider.cpp
-    GlobalSettings.cpp
+    dataManagement/DataManager.cpp
+    dataManagement/Downloadable.cpp
+    dataManagement/DownloadableGroup.cpp
+    dataManagement/DownloadableGroupWatcher.cpp
+    dataManagement/SSLErrorHandler.cpp
+    DemoRunner.cpp
+    geomaps/Airspace.cpp
+    geomaps/GeoMapProvider.cpp
+    geomaps/TileHandler.cpp
+    geomaps/TileServer.cpp
+    geomaps/Waypoint.cpp
+    GlobalObject.cpp
     Librarian.cpp
     main.cpp
-    MapManager.cpp
-    Meteorologist.cpp
-    Meteorologist_Decoder.cpp
-    Meteorologist_METAR.cpp
-    Meteorologist_TAF.cpp
-    Meteorologist_WeatherStation.cpp
     MobileAdaptor.cpp
     MobileAdaptor_share.cpp
-    SatNav.cpp
-    ScaleQuickItem.cpp
-    TileHandler.cpp
-    TileServer.cpp
-    Waypoint.cpp
-    Wind.cpp
+    navigation/Aircraft.cpp
+    navigation/Clock.cpp
+    navigation/FlightRoute.cpp
+    navigation/FlightRoute_GPX.cpp
+    navigation/FlightRoute_Leg.cpp
+    navigation/Navigator.cpp
+    platform/Notifier.cpp
+    positioning/Geoid.cpp
+    positioning/PositionInfo.cpp
+    positioning/PositionInfoSource_Abstract.cpp
+    positioning/PositionInfoSource_Satellite.cpp
+    positioning/PositionProvider.cpp
+    Settings.cpp
+    traffic/FlarmnetDB.cpp
+    traffic/PasswordDB.cpp
+    traffic/TrafficDataSource_Abstract.cpp
+    traffic/TrafficDataSource_Abstract_FLARM.cpp
+    traffic/TrafficDataSource_Abstract_GDL90.cpp
+    traffic/TrafficDataSource_Abstract_XGPS.cpp
+    traffic/TrafficDataSource_AbstractSocket.cpp
+    traffic/TrafficDataSource_File.cpp
+    traffic/TrafficDataSource_Simulate.cpp
+    traffic/TrafficDataSource_Tcp.cpp
+    traffic/TrafficDataSource_Udp.cpp
+    traffic/TrafficDataProvider.cpp
+    traffic/TrafficFactor_Abstract.cpp
+    traffic/TrafficFactor_DistanceOnly.cpp
+    traffic/TrafficFactor_WithPosition.cpp
+    traffic/Warning.cpp
+    ui/ScaleQuickItem.cpp
+    units/Angle.cpp
+    units/Distance.cpp
+    units/Speed.cpp
+    units/Time.cpp
+    units/Volume.cpp
+    units/VolumeFlow.cpp
+    weather/Decoder.cpp
+    weather/METAR.cpp
+    weather/Station.cpp
+    weather/TAF.cpp
+    weather/WeatherDataProvider.cpp
+    weather/Wind.cpp
+
+    ${HEADERS}
     )
 
+#
+# Compile definitions
+#
+
+add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050F00)
+
+
+#
+# We use this macro here to avoid creating extremely large C++ files with binary content
+#
+
+qt_add_big_resources(SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/flightMapFonts.qrc
+    ${CMAKE_CURRENT_BINARY_DIR}/ressources.qrc
+    )
 
 #
 # Generate android executable
@@ -133,75 +212,52 @@ if( ANDROID )
     qtquick_compiler_add_resources(QTQUICKCOMPILEDRESOURCES ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc)
     list(APPEND SOURCES
         ${QTQUICKCOMPILEDRESOURCES}
+        MobileAdaptor_Android.cpp
+        platform/Notifier_Android.cpp
+        android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java
         android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java
+        android/src/de/akaflieg_freiburg/enroute/Notifier.java
+        android/src/de/akaflieg_freiburg/enroute/ShareActivity.java
+        android/src/de/akaflieg_freiburg/enroute/ShareUtils.java
         )
 
     # Configure files
     configure_file(AndroidManifest.xml.in android/AndroidManifest.xml)
-    configure_file(android/build.gradle android/build.gradle COPYONLY)
-    configure_file(android/gradle/wrapper/gradle-wrapper.properties android/gradle/wrapper/gradle-wrapper.properties COPYONLY)
-    configure_file(android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar COPYONLY)
-    configure_file(android/gradlew android/gradlew COPYONLY)
-    configure_file(android/gradlew.bat android/gradlew.bat COPYONLY)
-    configure_file(android/res/drawable/splash.xml android/res/drawable/splash.xml COPYONLY)
-    configure_file(android/res/values/apptheme.xml android/res/values/apptheme.xml COPYONLY)
-    configure_file(android/res/values/apptheme.xml android/res/values/apptheme.xml COPYONLY)
-    configure_file(android/res/xml/filepaths.xml android/res/xml/filepaths.xml COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java android/src/de/akaflieg_freiburg/enroute/IntentLauncher.java COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java android/src/de/akaflieg_freiburg/enroute/MobileAdaptor.java COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/ShareActivity.java android/src/de/akaflieg_freiburg/enroute/ShareActivity.java COPYONLY)
-    configure_file(android/src/de/akaflieg_freiburg/enroute/ShareUtils.java android/src/de/akaflieg_freiburg/enroute/ShareUtils.java COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/action/drawable-hdpi/ic_info_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_info.png COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/file/drawable-hdpi/ic_file_download_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_file_download.png COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/alert/drawable-hdpi/ic_error_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_error.png COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/3rdParty/material-design-icons/alert/drawable-hdpi/ic_warning_black_24dp.png ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/ic_warning.png COPYONLY)
 
-    # Generate android extra sources. This includes icons, but also a few other files
-    set(ANDROID_EXTRA_SOURCES
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxxhdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxhdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xhdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-hdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-mdpi/icon.png
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/splash.xml
-        ${CMAKE_CURRENT_BINARY_DIR}/android/res/values/apptheme.xml
-        )
-    add_custom_command(
-        OUTPUT ${ANDROID_EXTRA_SOURCES}
-        DEPENDS ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/android android
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xxxhdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxxhdpi/icon.png -h 384 -w 384
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xxhdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xxhdpi/icon.png -h 288 -w 288
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-xhdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-xhdpi/icon.png -h 192 -w 192
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-hdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-hdpi/icon.png -h 144 -w 144
-        COMMAND ${CMAKE_COMMAND} -E make_directory android/res/drawable-mdpi
-        COMMAND rsvg-convert ${CMAKE_SOURCE_DIR}/metadata/${APP_ID}.svg -o ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable-mdpi/icon.png -h 96 -w 96
-        COMMENT "Generate android icons"
-        )
+    # Copy manual into Android assets directory
+    file(COPY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION android/assets)
+    file(COPY ${CMAKE_SOURCE_DIR}/generatedSources/src/android DESTINATION .)
+    file(COPY ${CMAKE_SOURCE_DIR}/src/android DESTINATION .)
 
     # The android target require a few additional variables
     set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/android" CACHE INTERNAL "")
 
+    # Compile definitions
+    add_compile_definitions(MANUAL_LOCATION="/android_asset/manual")
+
     # The android target depends on our own copy of openssl
-    set(ANDROID_EXTRA_LIBS
-        ${openssl_SOURCE_DIR}/arm/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/arm/libssl_1_1.so
-        ${openssl_SOURCE_DIR}/arm64/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/arm64/libssl_1_1.so
-        ${openssl_SOURCE_DIR}/x86/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/x86/libssl_1_1.so
-        ${openssl_SOURCE_DIR}/x86_64/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/x86_64/libssl_1_1.so
-        CACHE INTERNAL ""
-        )
+#    set(ANDROID_EXTRA_LIBS
+ #       ${openssl_SOURCE_DIR}/arm/libcrypto_1_1.so
+  #      ${openssl_SOURCE_DIR}/arm/libssl_1_1.so
+   #     ${openssl_SOURCE_DIR}/arm64/libcrypto_1_1.so
+    #    ${openssl_SOURCE_DIR}/arm64/libssl_1_1.so
+     #   ${openssl_SOURCE_DIR}/x86/libcrypto_1_1.so
+      #  ${openssl_SOURCE_DIR}/x86/libssl_1_1.so
+       # ${openssl_SOURCE_DIR}/x86_64/libcrypto_1_1.so
+        #${openssl_SOURCE_DIR}/x86_64/libssl_1_1.so
+    #    CACHE INTERNAL ""
+     #   )
 
     # The android target is a library, not an executable
     add_library(${PROJECT_NAME} SHARED ${SOURCES} ${ANDROID_EXTRA_SOURCES})
 
     # Add libraries and include paths
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::AndroidExtras Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg qhttpengine sunset)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::AndroidExtras Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg Qt5::WebView qhttpengine sunset)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
 endif()
 
 
@@ -211,19 +267,29 @@ endif()
 
 if (NOT ANDROID)
     list(APPEND SOURCES
+        MobileAdaptor_Linux.cpp
+        platform/Notifier_Linux.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc
         )
 
+    # Compile definitions
+    add_compile_definitions(MANUAL_LOCATION="${CMAKE_INSTALL_FULL_DOCDIR}/manual")
+
     # Add executable and libraries
     add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg qhttpengine kdsingleapplication sunset)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::DBus Qt5::Positioning Qt5::Quick Qt5::Sql Qt5::Svg qhttpengine kdsingleapplication sunset)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
+    target_precompile_headers(${PROJECT_NAME} PRIVATE
+        <QObject>
+        <QPointer>
+        )
 
     # Install
     install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 
-# Enforde C++17 and no extensions  
+# Enforce C++17 and no extensions
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 

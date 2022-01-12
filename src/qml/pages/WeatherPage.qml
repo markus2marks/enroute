@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2020 by Stefan Kebekus                                  *
+ *   Copyright (C) 2020-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -35,7 +35,7 @@ import "../items"
 
   - Perhaps give sunset information in top line
 
-  - Unify/coordinate behaviour with MapManager
+  - Unify/coordinate behaviour with DataManager
 
   - Handle error messages
 
@@ -48,68 +48,79 @@ Page {
 
     header: ToolBar {
 
-        RowLayout {
-            width: pg.width
+        Material.foreground: "white"
+        height: 60
 
-            ToolButton {
-                id: backButton
+        ToolButton {
+            id: backButton
 
-                icon.source: "/icons/material/ic_arrow_back.svg"
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    if (stackView.depth > 1) {
-                        stackView.pop()
-                    } else {
-                        drawer.open()
-                    }
-                }
-            }
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
 
-            Label {
-                Layout.fillWidth: true
+            icon.source: "/icons/material/ic_arrow_back.svg"
 
-                text: stackView.currentItem.title
-                elide: Label.ElideRight
-                font.bold: true
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
-            }
-
-            ToolButton {
-                id: headerMenuToolButton
-
-                icon.source: "/icons/material/ic_more_vert.svg"
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    headerMenuX.popup()
-                }
-
-                AutoSizingMenu{
-                    id: headerMenuX
-
-                    MenuItem {
-                        text: qsTr("Update METAR/TAF data")
-                        enabled: (!meteorologist.downloading) && (globalSettings.acceptedWeatherTerms)
-                        onTriggered: {
-                            mobileAdaptor.vibrateBrief()
-                            if (!meteorologist.downloading)
-                                meteorologist.update(false)
-                        }
-                    } // MenuItem
-
-                    MenuItem {
-                        text: qsTr("Disallow internet connection")
-                        enabled: globalSettings.acceptedWeatherTerms
-                        onTriggered: {
-                            mobileAdaptor.vibrateBrief()
-                            globalSettings.acceptedWeatherTerms = false
-                        }
-                    } // MenuItem
-
-                }
-
+            onClicked: {
+                global.mobileAdaptor().vibrateBrief()
+                stackView.pop()
             }
         }
+
+        Label {
+            id: lbl
+
+            anchors.verticalCenter: parent.verticalCenter
+
+            anchors.left: parent.left
+            anchors.leftMargin: 72
+            anchors.right: headerMenuToolButton.left
+
+            text: stackView.currentItem.title
+            elide: Label.ElideRight
+            font.pixelSize: 20
+            verticalAlignment: Qt.AlignVCenter
+        }
+
+        ToolButton {
+            id: headerMenuToolButton
+
+            anchors.verticalCenter: parent.verticalCenter
+
+            anchors.right: parent.right
+
+            icon.source: "/icons/material/ic_more_vert.svg"
+            icon.color: "white"
+
+            onClicked: {
+                global.mobileAdaptor().vibrateBrief()
+                headerMenuX.popup()
+            }
+
+            AutoSizingMenu{
+                id: headerMenuX
+
+                MenuItem {
+                    text: qsTr("Update METAR/TAF data")
+                    enabled: (!global.weatherDataProvider().downloading) && (global.settings().acceptedWeatherTerms)
+                    onTriggered: {
+                        global.mobileAdaptor().vibrateBrief()
+                        if (!global.weatherDataProvider().downloading)
+                            global.weatherDataProvider().update(false)
+                    }
+                } // MenuItem
+
+                MenuItem {
+                    text: qsTr("Disallow internet connection")
+                    enabled: global.settings().acceptedWeatherTerms
+                    onTriggered: {
+                        global.mobileAdaptor().vibrateBrief()
+                        global.settings().acceptedWeatherTerms = false
+                    }
+                } // MenuItem
+
+            }
+
+        }
+
     }
 
     Component {
@@ -131,7 +142,7 @@ Page {
                 text: {
                     var result = model.modelData.twoLineTitle
 
-                    var wayTo  = model.modelData.wayTo(satNav.coordinate, globalSettings.useMetricUnits)
+                    var wayTo  = model.modelData.wayTo(global.positionProvider().positionInfo.coordinate())
                     if (wayTo !== "")
                         result = result + "<br>" + wayTo
 
@@ -146,7 +157,7 @@ Page {
                 width: parent.width
 
                 onClicked: {
-                    mobileAdaptor.vibrateBrief()
+                    global.mobileAdaptor().vibrateBrief()
                     weatherReport.weatherStation = model.modelData
                     weatherReport.open()
                 }
@@ -156,7 +167,7 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        visible: globalSettings.acceptedWeatherTerms
+        visible: global.settings().acceptedWeatherTerms
 
         // List of weather stations
         ListView {
@@ -165,7 +176,7 @@ Page {
             Layout.fillWidth: true
             clip: true
 
-            model: meteorologist.weatherStations
+            model: global.weatherDataProvider().weatherStations
             delegate: stationDelegate
             ScrollIndicator.vertical: ScrollIndicator {}
 
@@ -174,7 +185,7 @@ Page {
                 color: "white"
                 visible: stationList.count == 0
 
-                Label {
+                Text {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
@@ -184,7 +195,7 @@ Page {
                     topPadding: 2*Qt.application.font.pixelSize
 
                     horizontalAlignment: Text.AlignHCenter
-                    textFormat: Text.RichText
+                    textFormat: Text.StyledText
                     wrapMode: Text.Wrap
                     text: qsTr("<h3>Sorry!</h3><p>No METAR/TAF data available. You can restart the download manually using the item 'Update METAR/TAF' from the three-dot menu at the top right corner of the screen.</p>")
                 }
@@ -198,13 +209,13 @@ Page {
 
             onFlickEnded: {
                 if ( atYBeginning && refreshFlick ) {
-                    mobileAdaptor.vibrateBrief()
-                    meteorologist.update(false)
+                    global.mobileAdaptor().vibrateBrief()
+                    global.weatherDataProvider().update(false)
                 }
             }
 
         }
-    } // ColumnLayout
+    }
 
     Rectangle {
         id: downloadIndicator
@@ -212,9 +223,9 @@ Page {
         anchors.fill: parent
 
         color: "white"
-        visible: meteorologist.downloading && !meteorologist.backgroundUpdate
+        visible: global.weatherDataProvider().downloading && !global.weatherDataProvider().backgroundUpdate
 
-        Label {
+        Text {
             id: downloadIndicatorLabel
 
             anchors.left: parent.left
@@ -223,10 +234,9 @@ Page {
             anchors.topMargin: Qt.application.font.pixelSize*2
 
             horizontalAlignment: Text.AlignHCenter
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
             wrapMode: Text.Wrap
             text: qsTr("<h3>Download in progress…</h3><p>Please stand by while we download METAR/TAF data from the Aviation Weather Center…</p>")
-            onLinkActivated: Qt.openUrlExternally(link)
         } // downloadIndicatorLabel
 
         BusyIndicator {
@@ -239,9 +249,9 @@ Page {
         // Without this, the downaloadIndication would not be visible on very quick downloads, leaving the user
         // without any feedback if the download did actually take place.
         Connections {
-            target: meteorologist
+            target: global.weatherDataProvider()
             function onDownloadingChanged () {
-                if (meteorologist.downloading && !meteorologist.backgroundUpdate) {
+                if (global.weatherDataProvider().downloading && !global.weatherDataProvider().backgroundUpdate) {
                     downloadIndicator.visible = true
                     downloadIndicator.opacity = 1.0
                 } else
@@ -254,12 +264,12 @@ Page {
             NumberAnimation { target: downloadIndicator; property: "opacity"; to:0.0; duration: 400 }
             NumberAnimation { target: downloadIndicator; property: "visible"; to:1.0; duration: 20}
         }
-    } // downloadIndicator - Rectangle
+    }
 
     ScrollView { // Privacy Warning
         anchors.fill: parent
         clip: true
-        visible: !globalSettings.acceptedWeatherTerms
+        visible: !global.settings().acceptedWeatherTerms
 
         Item {
             width: parent.width
@@ -268,7 +278,7 @@ Page {
             Label {
                 id: t1
                 width: parent.width
-                text: librarian.getStringFromRessource(":text/weatherPermissions.html")
+                text: global.librarian().getStringFromRessource(":text/weatherPermissions.html")
                 leftPadding: Qt.application.font.pixelSize
                 rightPadding: Qt.application.font.pixelSize
                 topPadding: 2*Qt.application.font.pixelSize
@@ -285,9 +295,9 @@ Page {
                 Layout.alignment: Qt.AlignHCenter
 
                 onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    globalSettings.acceptedWeatherTerms = true
-                    meteorologist.update()
+                    global.mobileAdaptor().vibrateBrief()
+                    global.settings().acceptedWeatherTerms = true
+                    global.weatherDataProvider().update()
                 }
             }
 
@@ -305,7 +315,7 @@ Page {
             anchors.fill: parent
             columns: 2
 
-            Image {
+            Icon {
                 visible: qnhLabel.text != ""
                 source: "/icons/material/ic_speed.svg"
             }
@@ -313,9 +323,10 @@ Page {
                 id: qnhLabel
                 visible: qnhLabel.text != ""
                 Layout.fillWidth: true
-                text: meteorologist.QNHInfo
+                text: global.weatherDataProvider().QNHInfo
             }
-            Image {
+
+            Icon {
                 visible: sunLabel.text != ""
                 source: "/icons/material/ic_wb_sunny.svg"
             }
@@ -323,27 +334,27 @@ Page {
                 id: sunLabel
                 visible: sunLabel.text != ""
                 Layout.fillWidth: true
-                text: meteorologist.sunInfo
+                text: global.weatherDataProvider().sunInfo
             }
 
         }
 
-    } // Pane (footer)
+    }
 
     // Try and update METAR/TAF as soon as someone opens this page if the current list of stations
     // is empty. This is not a background update, we want user interaction.
     Component.onCompleted: {
         if (stationList.count == 0)
-            meteorologist.update(false)
+            global.weatherDataProvider().update(false)
         else
-            meteorologist.update(true)
+            global.weatherDataProvider().update(true)
     }
 
     // Show error when weather cannot be updated -- but not if we are running a background upate
     Connections {
-        target: meteorologist
+        target: global.weatherDataProvider()
         function onError (message) {
-            if (meteorologist.backgroundUpdate)
+            if (global.weatherDataProvider().backgroundUpdate)
                 return
             dialogLoader.active = false
             dialogLoader.title = qsTr("Update Error")
@@ -355,6 +366,7 @@ Page {
 
     WeatherReport {
         id: weatherReport
+        objectName: "weatherReport"
     }
 
 } // Page

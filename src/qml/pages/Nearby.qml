@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -78,12 +78,14 @@ Page {
                     width: sv.width
 
                     icon.source: model.modelData.icon
-                    icon.color: "transparent"
 
                     text: {
+                        // Mention horizontal distance
+                        global.navigator().aircraft.horizontalDistanceUnit
+
                         var result = model.modelData.twoLineTitle
 
-                        var wayTo  = model.modelData.wayTo(satNav.coordinate, globalSettings.useMetricUnits)
+                        var wayTo  = global.navigator().describeWay(global.positionProvider().positionInfo.coordinate(), model.modelData.coordinate)
                         if (wayTo !== "")
                             result = result + "<br>" + wayTo
 
@@ -93,7 +95,7 @@ Page {
                     }
 
                     onClicked: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         waypointDescription.waypoint = model.modelData
                         waypointDescription.open()
                     }
@@ -109,7 +111,7 @@ Page {
             delegate: waypointDelegate
             ScrollIndicator.vertical: ScrollIndicator {}
 
-            Component.onCompleted: adList.model = geoMapProvider.nearbyWaypoints(satNav.lastValidCoordinate, "AD")
+            Component.onCompleted: adList.model = global.geoMapProvider().nearbyWaypoints(global.positionProvider().lastValidCoordinate, "AD")
 
             Label {
                 anchors.fill: parent
@@ -117,7 +119,7 @@ Page {
                 visible: parent.count == 0
 
                 horizontalAlignment: Text.AlignHCenter
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
                 wrapMode: Text.Wrap
                 text: qsTr("<h3>Sorry!</h3><p>No aerodrome data available. Please make sure that an aviation map is installed.</p>")
             }
@@ -131,7 +133,7 @@ Page {
             delegate: waypointDelegate
             ScrollIndicator.vertical: ScrollIndicator {}
 
-            Component.onCompleted: naList.model = geoMapProvider.nearbyWaypoints(satNav.lastValidCoordinate, "NAV")
+            Component.onCompleted: naList.model = global.geoMapProvider().nearbyWaypoints(global.positionProvider().lastValidCoordinate, "NAV")
 
             Label {
                 anchors.fill: parent
@@ -139,7 +141,7 @@ Page {
                 visible: parent.count == 0
 
                 horizontalAlignment: Text.AlignHCenter
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
                 wrapMode: Text.Wrap
                 text: qsTr("<h3>Sorry!</h3><p>No navaid data available.</p>")
             }
@@ -153,7 +155,7 @@ Page {
             delegate: waypointDelegate
             ScrollIndicator.vertical: ScrollIndicator {}
 
-            Component.onCompleted: rpList.model = geoMapProvider.nearbyWaypoints(satNav.lastValidCoordinate, "WP")
+            Component.onCompleted: rpList.model = global.geoMapProvider().nearbyWaypoints(global.positionProvider().lastValidCoordinate, "WP")
             
             Label {
                 anchors.fill: parent
@@ -161,7 +163,7 @@ Page {
                 visible: parent.count == 0
 
                 horizontalAlignment: Text.AlignHCenter
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
                 wrapMode: Text.Wrap
                 text: qsTr("<h3>Sorry!</h3><p>No reporting point data available.</p>")
             }

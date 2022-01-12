@@ -68,7 +68,8 @@ public class ShareActivity extends QtActivity {
      * Called when the activity is starting.
      *
      * This is where most initialization should go.
-     * We don't process any intent here as the app may* not be fully initialized yet.
+     * We don't process any intent here as the app may
+     * not be fully initialized yet.
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -194,6 +195,9 @@ public class ShareActivity extends QtActivity {
             Log.d(TAG, "processIntent intent.getAction() == null");
             return;
         }
+
+    Log.d(TAG, "processIntent() " + intent.getAction());
+
         // we are listening to android.intent.action.SEND or VIEW (see Manifest)
         if (intent.getAction().equals("android.intent.action.VIEW")) {
             intentUri = intent.getData();
@@ -216,10 +220,16 @@ public class ShareActivity extends QtActivity {
      * in setUriReceived().
      */
     private void setUriReceived(Uri src) {
+	String pth = src.getPath();
+	String ending = null;
+	int lastIndexOfDot = pth.lastIndexOf('.');
+	if (lastIndexOfDot >= 0) {
+	    ending = pth.substring(lastIndexOfDot);
+	}
 	Log.d(TAG, "setUriReceived");
 
         try {
-            File tmpFile = File.createTempFile("tmp", null, tmpDir);
+            File tmpFile = File.createTempFile("tmp", ending, tmpDir);
             copyContent(src, Uri.fromFile(tmpFile));
             setFileReceived(tmpFile.getPath());
         } catch (IOException exception) {

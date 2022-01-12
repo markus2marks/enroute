@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,26 +20,28 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Shapes 1.15
 
 import enroute 1.0
 
+import "../items"
 
 /* This is a dialog with detailed information about a waypoint. To use this dialog, all you have to do is to set a Waypoint in the property "waypoint" and call open(). */
 
 Dialog {
     id: waypointDescriptionDialog
 
-    // Property waypoint, and code to handle waypoint changes
-    property Waypoint waypoint
+    property var waypoint : global.geoMapProvider().createWaypoint()
+    property var weatherStation : global.weatherDataProvider().findWeatherStation( waypoint.ICAOCode )
 
-    onWaypointChanged: {
+    onWaypointChanged : {
         // Delete old text items
         co.children = {}
 
         // If no waypoint is given, then do nothing
-        if (waypoint === null)
+        if (!waypoint.isValid)
             return
 
         // Create METAR info box
@@ -51,10 +53,11 @@ Dialog {
             waypointPropertyDelegate.createObject(co, {text: pro[j]});
 
         // Create airspace description items
-        var asl = geoMapProvider.airspaces(waypoint.coordinate)
+        var asl = global.geoMapProvider().airspaces(waypoint.coordinate)
         for (var i in asl)
             airspaceDelegate.createObject(co, {airspace: asl[i]});
     }
+
 
     // Size is chosen so that the dialog does not cover the parent in full
     width: Math.min(Overlay.overlay.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
@@ -74,12 +77,12 @@ Dialog {
         id: metarInfo
 
         Label { // METAR info
-            visible: (waypoint !== null) && (waypoint.hasMETAR || waypoint.hasTAF)
+            visible: (weatherStation !== null) && (weatherStation.hasMETAR || weatherStation.hasTAF)
             text: {
-                if (waypoint === null)
+                if (weatherStation === null)
                     return ""
-                if (waypoint.hasMETAR)
-                    return waypoint.weatherStation.metar.summary + " • <a href='xx'>" + qsTr("full report") + "</a>"
+                if (weatherStation.hasMETAR)
+                    return weatherStation.metar.summary + " • <a href='xx'>" + qsTr("full report") + "</a>"
                 return "<a href='xx'>" + qsTr("read TAF") + "</a>"
             }
             Layout.fillWidth: true
@@ -90,14 +93,14 @@ Dialog {
             leftPadding: 0.2*Qt.application.font.pixelSize
             rightPadding: 0.2*Qt.application.font.pixelSize
             onLinkActivated: {
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 weatherReport.open()
             }
 
             // Background color according to METAR/FAA flight category
             background: Rectangle {
                 border.color: "black"
-                color: (waypoint.hasMETAR) ? waypoint.weatherStation.metar.flightCategoryColor : "transparent"
+                color: ((weatherStation !== null) && weatherStation.hasMETAR) ? weatherStation.metar.flightCategoryColor : "transparent"
                 opacity: 0.2
             }
 
@@ -127,7 +130,7 @@ Dialog {
                 Layout.fillWidth: true
                 text: rowLYO.text.substring(4)
                 wrapMode: Text.WordWrap
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
             }
 
         }
@@ -144,34 +147,37 @@ Dialog {
 
             Layout.preferredWidth: sv.width
 
-            property Airspace airspace: ({});
+            property var airspace: ({});
 
 
             Item {
                 id: box
 
                 Layout.preferredWidth: Qt.application.font.pixelSize*3
-                Layout.preferredHeight: Qt.application.font.pixelSize*3
+                Layout.preferredHeight: Qt.application.font.pixelSize*2.5
                 Layout.rowSpan: 3
                 Layout.alignment: Qt.AlignLeft
-
-                property var boxWidth: Qt.application.font.pixelSize*3
-                property var boxHeight: Qt.application.font.pixelSize*2.5
 
                 Shape {
                     anchors.fill: parent
 
                     ShapePath {
                         strokeWidth: 2
+                        fillColor: "transparent"
                         strokeColor:  {
                             switch(airspace.CAT) {
                             case "A":
                             case "B":
                             case "C":
                             case "D":
+                            case "E":
+                            case "F":
+                            case "G":
                                 return "blue";
                             case "CTR":
                                 return "blue";
+                            case "GLD":
+                                return "yellow";
                             case "DNG":
                             case "P":
                             case "PJE":
@@ -181,38 +187,48 @@ Dialog {
                                 return "blue";
                             case "TMZ":
                                 return "black";
+                            case "FIS":
+                            case "NRA":
+                                return "green";
                             }
                             return "transparent"
                         }
                         strokeStyle:  {
-                            switch(airspace.mapLayout) {
+                            switch(airspace.CAT) {
                             case "A":
                             case "B":
                             case "C":
                             case "D":
+                            case "E":
+                            case "F":
+                            case "G":
+                            case "GLD":
+                            case "NRA":
                                 return ShapePath.SolidLine;
                             }
                             return ShapePath.DashLine
                         }
                         dashPattern:  {
-                            switch(airspace.mapLayout) {
+                            switch(airspace.CAT) {
                             case "TMZ":
                                 return [4, 2, 1, 2];
+                            case "FIS":
+                                return [4, 0]
                             }
                             return [4, 4]
                         }
 
                         startX: 1; startY: 1
-                        PathLine { x: 1;           y: box.boxHeight }
-                        PathLine { x: box.boxWidth; y: box.boxHeight }
-                        PathLine { x: box.boxWidth; y: 1 }
+                        PathLine { x: 1;           y: box.height-1 }
+                        PathLine { x: box.width-1; y: box.height-1 }
+                        PathLine { x: box.width-1; y: 1 }
                         PathLine { x: 1;           y: 1 }
                     }
                 }
 
                 Rectangle {
-                    width: box.boxWidth
-                    height: box.boxHeight
+                    width: box.width
+                    height: box.height
 
                     border.color: {
                         switch(airspace.CAT) {
@@ -227,6 +243,8 @@ Dialog {
                             return "#40ff0000";
                         case "RMZ":
                             return "#400000ff";
+                        case "NRA":
+                            return "#4000ff00";
                         }
                         return "transparent"
                     }
@@ -236,11 +254,14 @@ Dialog {
                         switch(airspace.CAT) {
                         case "CTR":
                             return "#40ff0000";
+                        case "GLD":
+                            return "#40ffff00";
                         case "RMZ":
                             return "#400000ff";
                         }
                         return "transparent"
                     }
+
                     Label {
                         anchors.centerIn: parent
                         text: airspace.CAT
@@ -253,23 +274,39 @@ Dialog {
             Label {
                 Layout.fillWidth: true
                 Layout.rowSpan: 3
+                Layout.alignment: Qt.AlignVCenter
                 text: gridLYO.airspace.name
                 wrapMode: Text.WordWrap
             }
 
             Label {
                 Layout.alignment: Qt.AlignHCenter|Qt.AlignBottom
-                text: gridLYO.airspace.upperBound
+                text: {
+                    switch(global.navigator().aircraft.verticalDistanceUnit) {
+                    case Aircraft.Feet:
+                        return gridLYO.airspace.upperBound
+                    case Aircraft.Meters:
+                        return gridLYO.airspace.upperBoundMetric
+                    }
+                }
                 wrapMode: Text.WordWrap
             }
             Rectangle {
-                color: "black"
+                Layout.alignment: Qt.AlignHCenter
+                color: Material.foreground
                 height: 1
                 width: Qt.application.font.pixelSize*5
             }
             Label {
                 Layout.alignment: Qt.AlignHCenter|Qt.AlignTop
-                text: gridLYO.airspace.lowerBound
+                text: {
+                    switch(global.navigator().aircraft.verticalDistanceUnit) {
+                    case Aircraft.Feet:
+                        return gridLYO.airspace.lowerBound
+                    case Aircraft.Meters:
+                        return gridLYO.airspace.lowerBoundMetric
+                    }
+                }
                 wrapMode: Text.WordWrap
             }
         }
@@ -282,31 +319,27 @@ Dialog {
             id: headX
             Layout.fillWidth: true
 
-            Image {
-                source: (waypoint !== null) ? waypoint.icon : "/icons/waypoints/WP.svg"
-                sourceSize.width: 25
+            Icon {
+                source: waypoint.icon
             }
 
             Label {
-                text: (waypoint !== null) ? waypoint.extendedName : ""
+                text: waypoint.extendedName
                 font.bold: true
                 font.pixelSize: 1.2*Qt.application.font.pixelSize
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
                 wrapMode: Text.WordWrap
             }
-            ToolButton {
-                icon.source: "/icons/material/ic_bug_report.svg"
-
-                onClicked: {
-                    mobileAdaptor.vibrateBrief()
-                    Qt.openUrlExternally(qsTr("mailto:stefan.kebekus@gmail.com?subject=Enroute, Error Report &body=Thank you for suggesting a correction in the map data. Please describe the issue here."))
-                }
-            }
         }
 
         Label { // Second header line with distance and QUJ
-            text: (waypoint !== null) ? waypoint.wayTo(satNav.coordinate, globalSettings.useMetricUnits) : ""
+            text: {
+                // Mention horizontalDistanceUnit
+                global.navigator().aircraft.horizontalDistanceUnit
+
+                return global.navigator().describeWay(global.positionProvider().positionInfo.coordinate(), waypoint.coordinate)
+            }
             visible: (text !== "")
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignRight
@@ -322,12 +355,10 @@ Dialog {
             contentHeight: co.height
             contentWidth: waypointDescriptionDialog.availableWidth
 
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
             // The visibility behavior of the vertical scroll bar is a little complex.
             // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
-            ScrollBar.vertical.policy: (height < co.implicitHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-            ScrollBar.vertical.interactive: false
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: (height < contentHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
             clip: true
 
@@ -346,38 +377,59 @@ Dialog {
 
     footer: DialogButtonBox {
 
-        Button {
-            flat: true
+        ToolButton {
             text: qsTr("Direct")
             icon.source: "/icons/material/ic_keyboard_tab.svg"
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-            enabled: (satNav.status === SatNav.OK) && (dialogLoader.text !== "noRouteButton")
+            enabled: global.positionProvider().receivingPositionInfo && (dialogLoader.text !== "noRouteButton")
 
             onClicked: {
-                mobileAdaptor.vibrateBrief()
-                if (flightRoute.routeObjects.length > 0)
+                global.mobileAdaptor().vibrateBrief()
+                if (global.navigator().flightRoute.size > 0)
                     overwriteDialog.open()
                 else {
-                    flightRoute.clear()
-                    flightRoute.append(satNav.lastValidCoordinate)
-                    flightRoute.append(waypoint)
+                    global.navigator().flightRoute.clear()
+                    global.navigator().flightRoute.append(global.positionProvider().lastValidCoordinate)
+                    global.navigator().flightRoute.append(waypoint)
+                    toast.doToast(qsTr("New flight route: direct to %1.").arg(waypoint.extendedName))
                 }
             }
         }
 
-        Button {
-            flat: true
-            text: flightRoute.contains(waypoint) ? qsTr("from Route") : qsTr("to Route")
-            icon.source: flightRoute.contains(waypoint) ? "/icons/material/ic_remove_circle.svg" : "/icons/material/ic_add_circle.svg"
-            DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+        ToolButton {
+            enabled: {
+                // Mention Object to ensure that property gets updated
+                // when flight route changes
+                global.navigator().flightRoute.size
 
+                return global.navigator().flightRoute.canAppend(waypoint)
+            }
+            icon.source: "/icons/material/ic_add_circle.svg"
             onClicked: {
-                mobileAdaptor.vibrateBrief()
-                if (!flightRoute.contains(waypoint)) {
-                    flightRoute.append(waypoint)
-                } else {
-                    flightRoute.removeWaypoint(waypoint)
-                }
+                global.mobileAdaptor().vibrateBrief()
+                global.navigator().flightRoute.append(waypoint)
+                close()
+                toast.doToast(qsTr("Added %1 to route.").arg(waypoint.extendedName))
+            }
+        }
+
+        ToolButton {
+            icon.source: "/icons/material/ic_remove_circle.svg"
+            enabled:  {
+                // Mention to ensure that property gets updated
+                // when flight route changes
+                global.navigator().flightRoute.size
+
+                return global.navigator().flightRoute.contains(waypoint)
+            }
+            onClicked: {
+                global.mobileAdaptor().vibrateBrief()
+                close()
+                var index = global.navigator().flightRoute.lastIndexOf(waypoint)
+                if (index < 0)
+                    return
+                toast.doToast(qsTr("Removed %1 from route.").arg(waypoint.extendedName))
+                global.navigator().flightRoute.removeWaypoint(index)
             }
         }
 
@@ -393,37 +445,37 @@ Dialog {
 
         // Width is chosen so that the dialog does not cover the parent in full, height is automatic
         // Size is chosen so that the dialog does not cover the parent in full
-        width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
-        height: Math.min(parent.height-Qt.application.font.pixelSize, implicitHeight)
+        width: Math.min(view.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
+        height: Math.min(view.height-Qt.application.font.pixelSize, implicitHeight)
 
         Label {
             width: overwriteDialog.availableWidth
 
             text: qsTr("Once overwritten, the current flight route cannot be restored.")
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.No | Dialog.Yes
         modal: true
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
-            flightRoute.clear()
-            flightRoute.append(satNav.lastValidCoordinate)
-            flightRoute.append(waypoint)
+            global.mobileAdaptor().vibrateBrief()
+            global.navigator().flightRoute.clear()
+            global.navigator().flightRoute.append(global.positionProvider().lastValidCoordinate)
+            global.navigator().flightRoute.append(waypoint)
+            close()
+            toast.doToast(qsTr("New flight route: direct to %1.").arg(waypoint.extendedName))
         }
         onRejected: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             close()
             waypointDescriptionDialog.open()
         }
-
     }
 
     WeatherReport {
         id: weatherReport
-        weatherStation: (waypoint !== null) ? waypoint.weatherStation : null
+        weatherStation: waypointDescriptionDialog.weatherStation
     }
-
 } // Dialog

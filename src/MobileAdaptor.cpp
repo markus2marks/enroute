@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,29 +18,23 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-
-#include "MobileAdaptor.h"
-
 #include <QDir>
 #include <QStandardPaths>
 
 #if defined(Q_OS_ANDROID)
+#include <QAndroidJniEnvironment>
+#include <QHash>
 #include <QtAndroid>
 #include <QtAndroidExtras/QAndroidJniObject>
-#include <QAndroidJniEnvironment>
-
-const QStringList permissions({"android.permission.ACCESS_COARSE_LOCATION",
-                               "android.permission.ACCESS_FINE_LOCATION",
-                               "android.permission.WRITE_EXTERNAL_STORAGE",
-                               "android.permission.READ_EXTERNAL_STORAGE"});
-
-MobileAdaptor* MobileAdaptor::mInstance = nullptr;
 #endif
+
+#include "MobileAdaptor.h"
 
 
 MobileAdaptor::MobileAdaptor(QObject *parent)
     : QObject(parent)
 {
+
     // Do all the set-up required for sharing files
     // Android requires you to use a subdirectory within the AppDataLocation for
     // sending and receiving files. We create this and clear this directory on creation of the Share object -- even if the
@@ -52,10 +46,14 @@ MobileAdaptor::MobileAdaptor(QObject *parent)
     exchangeDir.mkpath(fileExchangeDirectoryName);
 
 #if defined (Q_OS_ANDROID)
-    // we need the instance for the JNI Call
-    mInstance = this;
-
     // Ask for permissions
+    permissions << "android.permission.ACCESS_COARSE_LOCATION";
+    permissions << "android.permission.ACCESS_FINE_LOCATION";
+    permissions << "android.permission.ACCESS_NETWORK_STATE";
+    permissions << "android.permission.ACCESS_WIFI_STATE";
+    permissions << "android.permission.READ_EXTERNAL_STORAGE";
+    permissions << "android.permission.WRITE_EXTERNAL_STORAGE";
+    permissions << "android.permission.WAKE_LOCK";
     QtAndroid::requestPermissionsSync(permissions);
 #endif
 
@@ -79,61 +77,23 @@ MobileAdaptor::MobileAdaptor(QObject *parent)
             }
         }
         QAndroidJniEnvironment env;
-        if (env->ExceptionCheck()) {
+        if (env->ExceptionCheck() != 0u) {
             env->ExceptionClear();
         }
     });
 #endif
+
+    getSSID();
+
+    // Don't forget the deferred initialization
+    QTimer::singleShot(0, this, &MobileAdaptor::deferredInitialization);
+
 }
 
 
-MobileAdaptor::~MobileAdaptor()
-{
-  // Close all pending notifications
-  showDownloadNotification(false);
-}
-
-
-void MobileAdaptor::hideSplashScreen()
-{
-    if (splashScreenHidden)
-        return;
-    splashScreenHidden = true;
-#if defined(Q_OS_ANDROID)
-    QtAndroid::hideSplashScreen(200);
-#endif
-}
-
-
-Q_INVOKABLE bool MobileAdaptor::missingPermissionsExist()
-{
-#if defined (Q_OS_ANDROID)
-    // Check is required permissions have been granted
-    for(const QString &permission : permissions)
-        if (QtAndroid::checkPermission(permission) == QtAndroid::PermissionResult::Denied)
-            return true;
-#endif
-    return false;
-}
-
-
-void MobileAdaptor::vibrateBrief()
+void MobileAdaptor::deferredInitialization()
 {
 #if defined(Q_OS_ANDROID)
-    QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "vibrateBrief");
-#endif
-}
-
-
-void MobileAdaptor::showDownloadNotification(bool show)
-{
-  Q_UNUSED(show)
-    
-#if defined(Q_OS_ANDROID)
-    QString text;
-  if (show)
-    text = tr("Downloading map data…");
-  QAndroidJniObject jni_title   = QAndroidJniObject::fromString(text);
-  QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "notifyDownload", "(Ljava/lang/String;)V", jni_title.object<jstring>());
+    QAndroidJniObject::callStaticMethod<void>("de/akaflieg_freiburg/enroute/MobileAdaptor", "startWiFiMonitor");
 #endif
 }

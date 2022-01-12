@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,15 +18,19 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+import QtGraphicalEffects 1.15
 import QtLocation 5.15
 import QtPositioning 5.15
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls.Material 2.15
+import QtQuick.Layouts 1.15
 
 import enroute 1.0
 
 import QtQml 2.15
 
+import "."
 import ".."
 import "../dialogs"
 
@@ -39,7 +43,7 @@ Item {
 
         PluginParameter {
             name: "mapboxgl.mapping.additional_style_urls"
-            value: geoMapProvider.styleFileURL
+            value: global.geoMapProvider().styleFileURL
         }
 
     }
@@ -49,10 +53,12 @@ Item {
         objectName: "flightMap"
 
         anchors.fill: parent
-        geoJSON: geoMapProvider.geoJSON
+
+        geoJSON: global.geoMapProvider().geoJSON
+        copyrightsVisible: false // We have our own copyrights notice
 
         property bool followGPS: true
-        property real animatedTrack: satNav.lastValidTrack
+        property real animatedTrack: global.positionProvider().lastValidTT.isFinite() ? global.positionProvider().lastValidTT.toDEG() : 0
         Behavior on animatedTrack { RotationAnimation {duration: 400; direction: RotationAnimation.Shortest } }
 
 
@@ -60,61 +66,70 @@ Item {
 
         // Enable gestures. Make sure that whenever a gesture starts, the property "followGPS" is set to "false"
         gesture.enabled: true
-        gesture.acceptedGestures: MapGestureArea.PanGesture|MapGestureArea.PinchGesture|MapGestureArea.RotationGesture
+        gesture.acceptedGestures: MapGestureArea.PanGesture|MapGestureArea.PinchGesture
         gesture.onPanStarted: {flightMap.followGPS = false}
         gesture.onPinchStarted: {flightMap.followGPS = false}
-        gesture.onRotationStarted: {flightMap.followGPS = false}
+        gesture.onRotationStarted: {
+            flightMap.followGPS = false
+            global.settings().mapBearingPolicy = GlobalSettings.UserDefinedBearingUp
+        }
 
 
+        //
         // PROPERTY "bearing"
+        //
 
         // Initially, set the bearing to the last saved value
-        bearing: savedBearing
+        bearing: 0
 
         // If "followGPS" is true, then update the map bearing whenever a new GPS position comes in
-        Connections {
-            id: trackChangedConnection
-
-            target: satNav
-            function onLastValidTrackChanged() {
-                if (flightMap.followGPS === true) {
-                    if (!globalSettings.autoFlightDetection || satNav.isInFlight) {
-                        flightMap.bearing = satNav.track
-                    } else {
-                        flightMap.bearing = 0.0
-                    }
-                }
-            }
+        Binding on bearing {
+            restoreMode: Binding.RestoreBinding
+            when: global.settings().mapBearingPolicy !== GlobalSettings.UserDefinedBearingUp
+            value: global.settings().mapBearingPolicy === GlobalSettings.TTUp ? global.positionProvider().lastValidTT.toDEG() : 0
         }
 
         // We expect GPS updates every second. So, we choose an animation of duration 1000ms here, to obtain a flowing movement
         Behavior on bearing { RotationAnimation {duration: 1000; direction: RotationAnimation.Shortest } }
 
 
+        //
         // PROPERTY "center"
+        //
+
+        // Initially, set the center to the last saved value
+        center: global.positionProvider().lastValidCoordinate
 
         // If "followGPS" is true, then update the map center whenever a new GPS position comes in
+        // or the zoom level changes
         Binding on center {
             id: centerBinding
 
-            restoreMode: Binding.RestoreBinding
+            restoreMode: Binding.RestoreNone
             when: flightMap.followGPS === true
             value: {
-                flightMap.zoomLevel;  // zoomLevel mentioned to trigger center re-calculation after zoom-in / -out
-                let coordForCenter = satNav.lastValidCoordinate;
-                if (satNav.isInFlight) {
-                    const targetHeight = Math.min(
-                        flightMap.height-150,  // stay above the ruler scale a couple of pixels
-                        flightMap.height*3/4    // otherwise 4/5 of the view is fine
-                    );
-                    const center = flightMap.toCoordinate(Qt.point(width/2, height/2), false);
-                    const target = flightMap.toCoordinate(Qt.point(width/2, targetHeight), false);
-                    const centerTargetDistance = center.distanceTo(target);
-                    let bearing = satNav.track;
-                    bearing = bearing < 0 ? 0 : bearing;  // set to 0 if undefined (which is -1)
-                    coordForCenter = coordForCenter.atDistanceAndAzimuth(centerTargetDistance, bearing);
-                }
-                return coordForCenter
+                // If not in flight, then aircraft stays in center of display
+                if (!global.navigator().isInFlight)
+                    return global.positionProvider().lastValidCoordinate
+                if (!global.positionProvider().lastValidTT.isFinite())
+                    return global.positionProvider().lastValidCoordinate
+
+                // Otherwise, we position the aircraft someplace on a circle around the
+                // center, so that the map shows a larger portion of the airspace ahead
+                // of the aircraft. The following lines find a good radius for that
+                // circle, which ensures that the circle does not collide with any of the
+                // GUI elements.
+                const xCenter = flightMap.width/2.0
+                const yCenter = flightMap.height/2.0
+                const radiusInPixel = Math.min(
+                                        Math.abs(xCenter-zoomIn.x),
+                                        Math.abs(xCenter-followGPSButton.x-followGPSButton.width),
+                                        Math.abs(yCenter-northButton.y-northButton.height),
+                                        Math.abs(yCenter-zoomIn.y)
+                                        )
+                const radiusInM = 10000.0*radiusInPixel/flightMap.pixelPer10km
+
+                return global.positionProvider().lastValidCoordinate.atDistanceAndAzimuth(radiusInM, global.positionProvider().lastValidTT.toDEG())
             }
         }
 
@@ -130,36 +145,137 @@ Item {
                 omitAnimationForZoomTimer.start()
             }
         }
+
         Timer {
             id: omitAnimationForZoomTimer
             interval: 410  // little more than time for animation
             onTriggered: centerBindingAnimation.enabled = true
         }
 
+
+        //
         // PROPERTY "zoomLevel"
+        //
 
         // Initially, set the zoom level to the last saved value
-        zoomLevel: savedZoomLevel
+        zoomLevel: 12
 
         // Animate changes in zoom level for visually smooth transition
         Behavior on zoomLevel { NumberAnimation { duration: 400 } }
 
 
         // ADDITINAL MAP ITEMS
+        MapCircle { // Circle for nondirectional traffic warning
+            center: global.positionProvider().lastValidCoordinate
+
+            radius: Math.max(500, global.trafficDataProvider().trafficObjectWithoutPosition.hDist.toM())
+            Behavior on radius {
+                NumberAnimation { duration: 1000 }
+                enabled: global.trafficDataProvider().trafficObjectWithoutPosition.animate
+            }
+
+            color: global.trafficDataProvider().trafficObjectWithoutPosition.color
+            Behavior on color {
+                ColorAnimation { duration: 400 }
+                enabled: global.trafficDataProvider().trafficObjectWithoutPosition.animate
+            }
+            opacity: 0.3
+            visible: global.trafficDataProvider().trafficObjectWithoutPosition.valid
+        }
+
+        MapQuickItem {
+            id: mapCircleLabel
+
+            property real distFromCenter: 0.5*Math.sqrt(lbl.width*lbl.width + lbl.height*lbl.height) + 28
+
+            coordinate: global.positionProvider().lastValidCoordinate
+            Behavior on coordinate {
+                CoordinateAnimation { duration: 1000 }
+                enabled: global.trafficDataProvider().trafficObjectWithoutPosition.animate
+            }
+
+            visible: global.trafficDataProvider().trafficObjectWithoutPosition.valid
+
+            Connections {
+                // This is a workaround against a bug in Qt 5.15.2.  The position of the MapQuickItem
+                // is not updated when the height of the map changes. It does get updated when the
+                // width of the map changes. We use the undocumented method polishAndUpdate() here.
+                target: flightMap
+                function onHeightChanged() { mapCircleLabel.polishAndUpdate() }
+            }
+
+            sourceItem: Label {
+                id: lbl
+
+                x: -width/2
+                y: mapCircleLabel.distFromCenter - height/2
+
+                text: global.trafficDataProvider().trafficObjectWithoutPosition.description
+                textFormat: Text.RichText
+
+                font.pixelSize: 0.8*Qt.application.font.pixelSize
+
+                leftInset: -4
+                rightInset: -4
+                bottomInset: -1
+                topInset: -2
+
+                background: Rectangle {
+                    border.color: "black"
+                    border.width: 1
+                    color: Qt.lighter(global.trafficDataProvider().trafficObjectWithoutPosition.color, 1.9)
+
+                    Behavior on color {
+                        ColorAnimation { duration: 400 }
+                        enabled: global.trafficDataProvider().trafficObjectWithoutPosition.animate
+                    }
+                    radius: 4
+                }
+            }
+        }
+
+        MapItemView { // Labels for traffic opponents
+            model: global.trafficDataProvider().trafficObjects4QML
+            delegate: Component {
+                TrafficLabel {
+                    trafficInfo: model.modelData
+                }
+            }
+        }
+
         MapQuickItem {
             id: fiveMinuteBar
 
             anchorPoint.x: fiveMinuteBarBaseRect.width/2
             anchorPoint.y: fiveMinuteBarBaseRect.height
-            coordinate: satNav.lastValidCoordinate
-            visible: (!globalSettings.autoFlightDetection || satNav.isInFlight) && (satNav.track >= 0)
+            coordinate: global.positionProvider().lastValidCoordinate
+            visible: {
+                if (!global.positionProvider().positionInfo.trueTrack().isFinite())
+                    return false
+                if (!global.positionProvider().positionInfo.groundSpeed().isFinite())
+                    return false
+                if (global.positionProvider().positionInfo.groundSpeed().toMPS() < 2.0)
+                    return false
+                return true
+            }
+
+            Connections {
+                // This is a workaround against a bug in Qt 5.15.2.  The position of the MapQuickItem
+                // is not updated when the height of the map changes. It does get updated when the
+                // width of the map changes. We use the undocumented method polishAndUpdate() here.
+                target: flightMap
+                function onHeightChanged() { fiveMinuteBar.polishAndUpdate() }
+            }
 
             sourceItem: Item{
                 Rectangle {
                     id: fiveMinuteBarBaseRect
 
-                    property real animatedGroundSpeedInMetersPerSecond: (!globalSettings.autoFlightDetection || satNav.isInFlight) ?
-                                                                            satNav.groundSpeedInMetersPerSecond : 0.0
+                    property real animatedGroundSpeedInMetersPerSecond: {
+                        if (!global.positionProvider().positionInfo.groundSpeed().isFinite())
+                            return 0.0
+                        return global.positionProvider().positionInfo.groundSpeed().toMPS()
+                    }
                     Behavior on animatedGroundSpeedInMetersPerSecond {NumberAnimation {duration: 400}}
 
                     rotation: flightMap.animatedTrack-flightMap.bearing
@@ -198,17 +314,44 @@ Item {
         MapQuickItem {
             id: ownPosition
 
-            anchorPoint.x: image.width/2
-            anchorPoint.y: image.height/2
-            coordinate: satNav.lastValidCoordinate
+            coordinate: global.positionProvider().lastValidCoordinate
 
-            sourceItem: Item{
+            Connections {
+                // This is a workaround against a bug in Qt 5.15.2.  The position of the MapQuickItem
+                // is not updated when the height of the map changes. It does get updated when the
+                // width of the map changes. We use the undocumented method polishAndUpdate() here.
+                target: flightMap
+                function onHeightChanged() { ownPosition.polishAndUpdate() }
+            }
+
+            sourceItem: Item {
+
+                rotation: flightMap.animatedTrack-flightMap.bearing
+
+                FlightVector {
+                    groundSpeedInMetersPerSecond: global.positionProvider().positionInfo.groundSpeed().toMPS()
+                    visible: (global.navigator().isInFlight) && (global.positionProvider().positionInfo.trueTrack().isFinite())
+                }
+
                 Image {
-                    id: image
+                    id: imageOP
 
-                    rotation: flightMap.animatedTrack-flightMap.bearing
+                    x: -width/2.0
+                    y: -height/2.0
 
-                    source:  satNav.icon
+                    source: {
+                        var pInfo = global.positionProvider().positionInfo
+
+                        if (!pInfo.isValid()) {
+                            return "/icons/self-noPosition.svg"
+                        }
+                        if (!pInfo.trueTrack().isFinite()) {
+                            return "/icons/self-noDirection.svg"
+                        }
+
+                        return "/icons/self-withDirection.svg"
+                    }
+
                     sourceSize.width: 50
                     sourceSize.height: 50
                 }
@@ -219,9 +362,69 @@ Item {
             id: flightPath
 
             line.width: 3
-            line.color: 'green'
-            path: flightRoute.geoPath
+            line.color: '#008000' //'green'
+            path: global.navigator().flightRoute.geoPath
             opacity: (flightMap.zoomLevel < 11.0) ? 1.0 : 0.3
+        }
+
+        MapItemView { // Traffic opponents
+            model: global.trafficDataProvider().trafficObjects4QML
+            delegate: Component {
+                Traffic {
+                    trafficInfo: model.modelData
+                }
+            }
+        }
+
+        MapItemView {
+            id: midFieldWaypoints
+            model: global.navigator().flightRoute.midFieldWaypoints
+            delegate: Component {
+
+                MapQuickItem {
+                    id: midFieldWP
+
+                    anchorPoint.x: image.width/2
+                    anchorPoint.y: image.height/2
+                    coordinate: model.modelData.coordinate
+
+                    Connections {
+                        // This is a workaround against a bug in Qt 5.15.2.  The position of the MapQuickItem
+                        // is not updated when the height of the map changes. It does get updated when the
+                        // width of the map changes. We use the undocumented method polishAndUpdate() here.
+                        target: flightMap
+                        function onHeightChanged() { midFieldWP.polishAndUpdate() }
+                    }
+
+                    sourceItem: Item{
+                        Image {
+                            id: image
+
+                            source:  "/icons/waypoints/WP-map.svg"
+                            sourceSize.width: 10
+                            sourceSize.height: 10
+                        }
+                        Label {
+                            anchors.verticalCenter: image.verticalCenter
+                            anchors.left: image.right
+                            anchors.leftMargin: 5
+                            text: model.modelData.extendedName
+                            visible: (flightMap.zoomLevel > 11.0) && (model.modelData.extendedName !== "Waypoint")
+                            leftInset: -4
+                            rightInset: -4
+                            topInset: -2
+                            bottomInset: -2
+                            background: Rectangle {
+                                opacity: 0.8
+                                border.color: "black"
+                                border.width: 0.5
+                                color: "white"
+                            }
+                        }
+                    }
+                }
+
+            }
         }
 
         // Mouse Area, in order to receive mouse clicks
@@ -237,16 +440,32 @@ Item {
             onPressAndHold: onDoubleClicked(mouse)
 
             onDoubleClicked: {
-                mobileAdaptor.vibrateBrief()
-                waypointDescription.waypoint = geoMapProvider.closestWaypoint(flightMap.toCoordinate(Qt.point(mouse.x,mouse.y)),
-                                                                              flightMap.toCoordinate(Qt.point(mouse.x+25,mouse.y)))
+                global.mobileAdaptor().vibrateBrief()
+                var wp = global.geoMapProvider().closestWaypoint(flightMap.toCoordinate(Qt.point(mouse.x,mouse.y)),
+                                                        flightMap.toCoordinate(Qt.point(mouse.x+25,mouse.y)),
+                                                        global.navigator().flightRoute)
+                if (!wp.isValid)
+                    return
+                waypointDescription.waypoint = wp
                 waypointDescription.open()
             }
         }
 
-        // Oddly, this is necessary, or else the system will try to reset
-        // the write-once property 'plugin' on language changes
-        Component.onCompleted: plugin = mapPlugin
+        // On completion, re-consider the binding of the property bearing
+        Component.onCompleted: {
+            // Oddly, this is necessary, or else the system will try to reset
+            // the write-once property 'plugin' on language changes
+            plugin = mapPlugin
+        }
+
+        onCopyrightLinkActivated: Qt.openUrlExternally(link)
+    }
+
+    BrightnessContrast { // Graphical effects: increase contrast, reduce brightness in dark mode
+        anchors.fill: flightMap
+        source: flightMap
+        brightness: Material.theme == Material.Dark ? -0.9 : -0.2
+        contrast: Material.theme == Material.Dark ? 0.6 : 0.2
     }
 
     Rectangle {
@@ -257,56 +476,108 @@ Item {
         width: parent.width*0.6
         height: noMapWarning.height+20
         border.color: "black"
-        visible: !mapManager.aviationMaps.hasFile
+        visible: !global.dataManager().aviationMaps.hasFile
         Label {
             id: noMapWarning
             anchors.centerIn: parent
             width: parent.width-20
             wrapMode: Text.WordWrap
 
-            text: qsTr("<p><strong>There is no aviation map installed.</strong></p><p>Please open the menu and go to <strong>Settings/Library/Maps</strong>.</p>")
-            textFormat: Text.RichText
+            text: qsTr("<p><strong>There is no aviation map installed.</strong></p>
+<p>In order to install a map, please open the menu using the menu button in the upper left corner of this screen.
+Choose <strong>Library/Maps and Data</strong> to open the map management page.</p>")
+            textFormat: Text.StyledText
             color: "red"
         }
     }
 
-    Image {
-        id: northArrow
+    RoundButton {
+        id: northButton
 
         anchors.horizontalCenter: zoomIn.horizontalCenter
-        anchors.top: parent.top
+        anchors.top: page.top
         anchors.topMargin: 0.5*Qt.application.font.pixelSize
 
-        rotation: -flightMap.bearing
+        height: 66
+        width:  66
 
-        source: "/icons/NorthArrow.svg"
-        sourceSize.width: 44
-        sourceSize.height: 44
+        icon.source: "/icons/NorthArrow.svg"
+
+
+        contentItem: Image {
+            Layout.alignment: Qt.AlignHCenter
+            id: northArrow
+
+            opacity: global.settings().nightMode ? 0.3 : 1.0
+            rotation: -flightMap.bearing
+
+            source: "/icons/NorthArrow.svg"
+        }
+
+        onClicked: {
+            if (global.settings().mapBearingPolicy === GlobalSettings.NUp) {
+                global.settings().mapBearingPolicy = GlobalSettings.TTUp
+                toast.doToast(qsTr("Map Mode: Track Up"))
+            } else {
+                global.settings().mapBearingPolicy = GlobalSettings.NUp
+                toast.doToast(qsTr("Map Mode: North Up"))
+            }
+        }
     }
 
-    Button {
+    RoundButton {
         id: followGPSButton
 
         opacity: 0.9
         icon.source: "/icons/material/ic_my_location.svg"
-        visible: !flightMap.followGPS
+        enabled: !flightMap.followGPS
+
+        anchors.left: parent.left
+        anchors.leftMargin: 0.5*Qt.application.font.pixelSize
+        anchors.bottom: trafficDataReceiverButton.top
+        anchors.bottomMargin: trafficDataReceiverButton.visible ? 0.5*Qt.application.font.pixelSize : 1.5*Qt.application.font.pixelSize
+
+        height: 66
+        width:  66
+
+        onClicked: {
+            global.mobileAdaptor().vibrateBrief()
+            flightMap.followGPS = true
+            toast.doToast(qsTr("Map Mode: Autopan"))
+        }
+    }
+
+    RoundButton {
+        id: trafficDataReceiverButton
+
+        Material.background: global.trafficDataProvider().receivingHeartbeat ? Material.Green : Material.Red
+
+        opacity: Material.theme === Material.Dark ? 0.3 : 0.8
+        icon.source: "/icons/material/ic_airplanemode_active.svg"
+        visible: !global.trafficDataProvider().receivingHeartbeat
 
         anchors.left: parent.left
         anchors.leftMargin: 0.5*Qt.application.font.pixelSize
         anchors.bottom: navBar.top
-        anchors.bottomMargin: 1.5*Qt.application.font.pixelSize
+        anchors.bottomMargin: visible ? 1.5*Qt.application.font.pixelSize : 0
+
+        height: visible ? 66 : 0
+        width:  66
 
         onClicked: {
-            mobileAdaptor.vibrateBrief()
-            flightMap.followGPS = true
-            trackChangedConnection.onLastValidTrackChanged()
+            global.mobileAdaptor().vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
+            stackView.pop()
+            stackView.push("../pages/TrafficReceiver.qml")
         }
     }
 
-    Button {
+    RoundButton {
         id: zoomIn
 
-        visible: flightMap.zoomLevel < flightMap.maximumZoomLevel
+        opacity: 0.9
+        icon.source: "/icons/material/ic_add.svg"
+        enabled: flightMap.zoomLevel < flightMap.maximumZoomLevel
         autoRepeat: true
 
         anchors.right: parent.right
@@ -314,25 +585,22 @@ Item {
         anchors.bottom: zoomOut.top
         anchors.bottomMargin: 0.5*Qt.application.font.pixelSize
 
-        contentItem: Label {
-            text: "+"
-            font.bold: true
-            font.pixelSize: Qt.application.font.pixelSize*1.2
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
-        }
+        height: 66
+        width:  66
 
         onClicked: {
             centerBindingAnimation.omitAnimationforZoom()
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             flightMap.zoomLevel += 1
         }
     }
 
-    Button {
+    RoundButton {
         id: zoomOut
 
-        visible: flightMap.zoomLevel > flightMap.minimumZoomLevel
+        opacity: 0.9
+        icon.source: "/icons/material/ic_remove.svg"
+        enabled: flightMap.zoomLevel > flightMap.minimumZoomLevel
         autoRepeat: true
 
         anchors.right: parent.right
@@ -340,19 +608,31 @@ Item {
         anchors.bottom: navBar.top
         anchors.bottomMargin: 1.5*Qt.application.font.pixelSize
 
-        contentItem: Label {
-            text: "-"
-            font.bold: true
-            font.pixelSize: Qt.application.font.pixelSize*1.2
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
-        }
+        height: 66
+        width:  66
 
         onClicked: {
             centerBindingAnimation.omitAnimationforZoom()
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             flightMap.zoomLevel -= 1
         }
+    }
+
+    Scale {
+        id: leftScale
+
+        anchors.top: northButton.bottom
+        anchors.topMargin: 0.5*Qt.application.font.pixelSize
+        anchors.bottom: followGPSButton.top
+        anchors.bottomMargin: 0.5*Qt.application.font.pixelSize
+        anchors.horizontalCenter: followGPSButton.horizontalCenter
+
+        opacity: Material.theme === Material.Dark ? 0.3 : 1.0
+        visible: !scale.visible
+
+        pixelPer10km: flightMap.pixelPer10km
+        vertical: true
+        width: 30
     }
 
     Scale {
@@ -362,11 +642,42 @@ Item {
         anchors.leftMargin: 0.5*Qt.application.font.pixelSize
         anchors.right: zoomIn.left
         anchors.rightMargin: 0.5*Qt.application.font.pixelSize
-        anchors.verticalCenter: followGPSButton.verticalCenter
+        anchors.verticalCenter: zoomOut.verticalCenter
 
-        useMetricUnits: globalSettings.useMetricUnits
+        opacity: Material.theme === Material.Dark ? 0.3 : 1.0
+        visible: parent.height > parent.width
+
         pixelPer10km: flightMap.pixelPer10km
+        vertical: false
         height: 30
+    }
+
+    Label {
+        id: copyrightInfo
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: navBar.top
+        anchors.bottomMargin: 0.4*Qt.application.font.pixelSize
+
+        text: global.geoMapProvider().copyrightNotice
+        visible: width < parent.width
+        onLinkActivated: Qt.openUrlExternally(link)
+    }
+
+    Label {
+        id: noCopyrightInfo
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: navBar.top
+        anchors.bottomMargin: 0.4*Qt.application.font.pixelSize
+        text: "<a href='xx'>"+qsTr("Map Data Copyright Info")+"</a>"
+        visible: !copyrightInfo.visible
+        onLinkActivated: copyrightDialog.open()
+
+        LongTextDialog {
+            id: copyrightDialog
+            title: qsTr("Map Data Copyright Information")
+            text: global.geoMapProvider().copyrightNotice.replace("•", "<br><br>").replace("•", "<br><br>").replace("•", "<br><br>")
+            standardButtons: Dialog.Cancel
+        }
     }
 
     NavBar {
@@ -375,10 +686,11 @@ Item {
         anchors.right: parent.right
         anchors.left: parent.left
 
-        y: (!globalSettings.autoFlightDetection || satNav.isInFlight) ? view.height - height : view.height
+        y: parent.height - height
     }
 
     WaypointDescription {
         id: waypointDescription
+        objectName: "waypointDescription"
     }
 }

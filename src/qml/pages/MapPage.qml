@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -38,7 +38,7 @@ Page {
         anchors.fill: parent
     }
 
-    Button {
+    RoundButton {
         id: menuButton
         icon.source: "/icons/material/ic_menu.svg"
 
@@ -47,8 +47,11 @@ Page {
         anchors.top: parent.top
         anchors.topMargin: 0.5*Qt.application.font.pixelSize
 
+        height: 66
+        width: 66
+
         onClicked: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             drawer.open()
         }
     }
@@ -58,7 +61,7 @@ Page {
     }
 
     Connections {
-        target: geoMapProvider
+        target: global.geoMapProvider()
 
         function onStyleFileURLChanged() {
             mapLoader.active = false

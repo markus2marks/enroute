@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2020 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,6 +23,8 @@ import QtQuick.Controls 2.15
 import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
+import enroute 1.0
+
 import "../dialogs"
 import "../items"
 
@@ -31,45 +33,51 @@ Page {
     title: qsTr("Flight Route Library")
     focus: true
 
+
     header: ToolBar {
+
+        Material.foreground: "white"
+        height: 60
 
         ToolButton {
             id: backButton
 
             anchors.left: parent.left
-            anchors.leftMargin: drawer.dragMargin
+            anchors.verticalCenter: parent.verticalCenter
 
             icon.source: "/icons/material/ic_arrow_back.svg"
+
             onClicked: {
-                mobileAdaptor.vibrateBrief()
-                if (stackView.depth > 1) {
-                    stackView.pop()
-                } else {
-                    drawer.open()
-                }
+                global.mobileAdaptor().vibrateBrief()
+                stackView.pop()
             }
-        } // ToolButton
+        }
 
         Label {
-            anchors.left: backButton.right
+            anchors.verticalCenter: parent.verticalCenter
+
+            anchors.left: parent.left
+            anchors.leftMargin: 72
             anchors.right: headerMenuToolButton.left
-            anchors.bottom: parent.bottom
-            anchors.top: parent.top
 
             text: stackView.currentItem.title
             elide: Label.ElideRight
-            font.bold: true
-            horizontalAlignment: Qt.AlignHCenter
+            font.pixelSize: 20
             verticalAlignment: Qt.AlignVCenter
         }
 
         ToolButton {
             id: headerMenuToolButton
 
+            anchors.verticalCenter: parent.verticalCenter
+
             anchors.right: parent.right
+
             icon.source: "/icons/material/ic_more_vert.svg"
+            icon.color: "white"
+
             onClicked: {
-                mobileAdaptor.vibrateBrief()
+                global.mobileAdaptor().vibrateBrief()
                 headerMenuX.popup()
             }
 
@@ -79,7 +87,7 @@ Page {
                 MenuItem {
                     text: qsTr("Info …")
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         infoDialog.open()
                     }
 
@@ -88,19 +96,21 @@ Page {
                 MenuItem {
                     text: qsTr("Import …")
                     enabled: Qt.platform.os !== "android"
+                    visible: Qt.platform.os !== "android"
+                    height: Qt.platform.os !== "android" ? undefined : 0
 
                     onTriggered: {
-                        mobileAdaptor.vibrateBrief()
+                        global.mobileAdaptor().vibrateBrief()
                         highlighted = false
-                        mobileAdaptor.importContent()
+                        global.mobileAdaptor().importContent()
                     }
                 }
 
             }
 
-        } // ToolButton
+        }
 
-    } // ToolBar
+    }
 
     TextField {
         id: textInput
@@ -129,7 +139,15 @@ Page {
 
                 text: modelData
                 icon.source: "/icons/material/ic_directions.svg"
-                icon.color: Material.primary
+
+                onClicked: {
+                    global.mobileAdaptor().vibrateBrief()
+                    finalFileName = modelData
+                    if (global.navigator().flightRoute.size > 0)
+                        overwriteDialog.open()
+                    else
+                        openFromLibrary()
+                }
 
             }
 
@@ -139,28 +157,12 @@ Page {
                 icon.source: "/icons/material/ic_more_horiz.svg"
 
                 onClicked: {
-                    mobileAdaptor.vibrateBrief()
+                    global.mobileAdaptor().vibrateBrief()
                     cptMenu.popup()
                 }
 
                 AutoSizingMenu {
                     id: cptMenu
-
-                    Action {
-                        id: openAction
-                        text: qsTr("Open …")
-                        onTriggered: {
-                            mobileAdaptor.vibrateBrief()
-                            finalFileName = modelData
-                            if (flightRoute.routeObjects.length > 0)
-                                overwriteDialog.open()
-                            else
-                                openFromLibrary()
-                        }
-
-                    } // openAction
-
-                    MenuSeparator { }
 
                     AutoSizingMenu {
                         title: Qt.platform.os === "android" ? qsTr("Share …") : qsTr("Export …")
@@ -169,16 +171,24 @@ Page {
                             text: qsTr("… to GeoJSON file")
                             onTriggered: {
                                 cptMenu.close()
-                                mobileAdaptor.vibrateBrief()
+                                global.mobileAdaptor().vibrateBrief()
                                 highlighted = false
                                 parent.highlighted = false
 
-                                var errorString = mobileAdaptor.exportContent(librarian.flightRouteGet(modelData).toGeoJSON(), "application/geo+json", librarian.flightRouteGet(modelData).suggestedFilename())
+                                var errorString = global.mobileAdaptor().exportContent(global.librarian().get(Librarian.Routes, modelData).toGeoJSON(), "application/geo+json", global.librarian().get(Librarian.Routes, modelData).suggestedFilename())
+                                if (errorString === "abort") {
+                                    toast.doToast(qsTr("Aborted"))
+                                    return
+                                }
                                 if (errorString !== "") {
                                     shareErrorDialogLabel.text = errorString
                                     shareErrorDialog.open()
+                                    return
                                 }
-
+                                if (Qt.platform.os === "android")
+                                    toast.doToast(qsTr("Flight route shared"))
+                                else
+                                    toast.doToast(qsTr("Flight route exported"))
                             }
                         }
 
@@ -186,15 +196,24 @@ Page {
                             text: qsTr("… to GPX file")
                             onTriggered: {
                                 cptMenu.close()
-                                mobileAdaptor.vibrateBrief()
+                                global.mobileAdaptor().vibrateBrief()
                                 highlighted = false
                                 parent.highlighted = false
 
-                                var errorString = mobileAdaptor.exportContent(librarian.flightRouteGet(modelData).toGpx(), "application/gpx+xml", librarian.flightRouteGet(modelData).suggestedFilename())
+                                var errorString = global.mobileAdaptor().exportContent(global.librarian().get(Librarian.Routes, modelData).toGpx(), "application/gpx+xml", global.librarian().get(Librarian.Routes, modelData).suggestedFilename())
+                                if (errorString === "abort") {
+                                    toast.doToast(qsTr("Aborted"))
+                                    return
+                                }
                                 if (errorString !== "") {
                                     shareErrorDialogLabel.text = errorString
                                     shareErrorDialog.open()
+                                    return
                                 }
+                                if (Qt.platform.os === "android")
+                                    toast.doToast(qsTr("Flight route shared"))
+                                else
+                                    toast.doToast(qsTr("Flight route exported"))
                             }
                         }
                     }
@@ -206,16 +225,16 @@ Page {
                             text: qsTr("… in GeoJSON format")
 
                             onTriggered: {
-                                mobileAdaptor.vibrateBrief()
+                                global.mobileAdaptor().vibrateBrief()
                                 highlighted = false
                                 parent.highlighted = false
 
-                                var errorString = mobileAdaptor.viewContent(librarian.flightRouteGet(modelData).toGeoJSON(), "application/geo+json", "FlightRoute-%1.geojson")
+                                var errorString = global.mobileAdaptor().viewContent(global.librarian().get(Librarian.Routes, modelData).toGeoJSON(), "application/geo+json", "FlightRoute-%1.geojson")
                                 if (errorString !== "") {
                                     shareErrorDialogLabel.text = errorString
                                     shareErrorDialog.open()
-                                }
-
+                                } else
+                                    toast.doToast(qsTr("Flight route opened in other app"))
                             }
                         }
 
@@ -223,16 +242,16 @@ Page {
                             text: qsTr("… in GPX format")
 
                             onTriggered: {
-                                mobileAdaptor.vibrateBrief()
+                                global.mobileAdaptor().vibrateBrief()
                                 highlighted = false
                                 parent.highlighted = false
 
-                                var errorString = mobileAdaptor.viewContent(librarian.flightRouteGet(modelData).toGpx(), "application/gpx+xml", "FlightRoute-%1.gpx")
+                                var errorString = global.mobileAdaptor().viewContent(global.librarian().get(Librarian.Routes, modelData).toGpx(), "application/gpx+xml", "FlightRoute-%1.gpx")
                                 if (errorString !== "") {
                                     shareErrorDialogLabel.text = errorString
                                     shareErrorDialog.open()
-                                }
-
+                                } else
+                                    toast.doToast(qsTr("Flight route opened in other app"))
                             }
                         }
 
@@ -244,7 +263,7 @@ Page {
                         id: renameAction
                         text: qsTr("Rename …")
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             finalFileName = modelData
                             renameName.text = ""
                             renameDialog.open()
@@ -256,7 +275,7 @@ Page {
                         id: removeAction
                         text: qsTr("Remove …")
                         onTriggered: {
-                            mobileAdaptor.vibrateBrief()
+                            global.mobileAdaptor().vibrateBrief()
                             finalFileName = modelData
                             removeDialog.open()
                         }
@@ -278,7 +297,7 @@ Page {
 
         clip: true
 
-        model: librarian.flightRoutes(textInput.displayText)
+        model: global.librarian().entries(Librarian.Routes, textInput.displayText)
         delegate: flightRouteDelegate
         ScrollIndicator.vertical: ScrollIndicator {}
     }
@@ -293,12 +312,11 @@ Page {
         leftPadding: Qt.application.font.pixelSize*2
         rightPadding: Qt.application.font.pixelSize*2
 
-        textFormat: Text.RichText
+        textFormat: Text.StyledText
         wrapMode: Text.Wrap
         text: (textInput.text === "")
               ? qsTr("<h3>Sorry!</h3><p>No flight routes available. To add a route here, chose 'Flight Route' from the main menu, edit a route and save it to the library.</p>")
               : qsTr("<h3>Sorry!</h3><p>No flight routes match your filter criteria.</p>")
-        onLinkActivated: Qt.openUrlExternally(link)
     }
 
 
@@ -306,7 +324,7 @@ Page {
     property string finalFileName;
 
     function openFromLibrary() {
-        var errorString = flightRoute.loadFromGeoJSON(librarian.flightRouteFullPath(finalFileName))
+        var errorString = global.navigator().flightRoute.loadFromGeoJSON(global.librarian().fullPath(Librarian.Routes, finalFileName))
         if (errorString !== "") {
             lbl.text = errorString
             fileError.open()
@@ -328,8 +346,11 @@ Page {
         width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
         height: Math.min(parent.height-Qt.application.font.pixelSize, implicitHeight)
 
-        anchors.centerIn: parent
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (view.width-width)/2.0
+        y: (view.height-height)/2.0
 
         modal: true
         title: qsTr("An error occurred…")
@@ -358,8 +379,8 @@ Page {
                 Label {
                     id: lbl
                     width: fileError.availableWidth
-                    textFormat: Text.RichText
-                    horizontalAlignment: Text.AlignJustify
+                    textFormat: Text.StyledText
+                    linkColor: Material.accent
                     wrapMode: Text.Wrap
                     onLinkActivated: Qt.openUrlExternally(link)
                 } // Label
@@ -371,10 +392,9 @@ Page {
     LongTextDialog {
         id: infoDialog
         standardButtons: Dialog.Ok
-        anchors.centerIn: parent
 
         title: qsTr("Flight Route Library")
-        text: librarian.getStringFromRessource(":text/flightRouteLibraryInfo.html").arg(librarian.flightRouteDirectory())
+        text: global.librarian().getStringFromRessource(":text/flightRouteLibraryInfo.html").arg(global.librarian().directory(Librarian.Routes))
     }
 
     Dialog {
@@ -394,18 +414,18 @@ Page {
 
             text: qsTr("Loading the route <strong>%1</strong> will overwrite the current route. Once overwritten, the current flight route cannot be restored.").arg(finalFileName)
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.No | Dialog.Yes
         modal: true
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             page.openFromLibrary()
         }
         onRejected: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             close()
         }
 
@@ -428,19 +448,20 @@ Page {
 
             text: qsTr("Once the flight route <strong>%1</strong> is removed, it cannot be restored.").arg(page.finalFileName)
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.No | Dialog.Yes
         modal: true
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
-            librarian.flightRouteRemove(page.finalFileName)
+            global.mobileAdaptor().vibrateBrief()
+            global.librarian().remove(Librarian.Routes, page.finalFileName)
             page.reloadFlightRouteList()
+            toast.doToast(qsTr("Flight route removed from device"))
         }
         onRejected: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             close()
         }
 
@@ -473,7 +494,7 @@ Page {
                 color: Material.primary
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                textFormat: Text.RichText
+                textFormat: Text.StyledText
             }
 
             TextField {
@@ -482,7 +503,7 @@ Page {
                 Layout.fillWidth: true
                 focus: true
 
-                placeholderText: "New Flight Route Name"
+                placeholderText: qsTr("New Flight Route Name")
 
                 onAccepted: renameDialog.onAccepted()
             }
@@ -494,25 +515,26 @@ Page {
                 id: renameButton
 
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-                enabled: (renameName.displayText !== "") && !librarian.flightRouteExists(renameName.displayText)
+                enabled: (renameName.text !== "") && !(global.librarian().exists(Librarian.Routes, renameName.text))
                 text: qsTr("Rename")
             }
         }
 
         onAccepted: {
-            mobileAdaptor.vibrateBrief()
-            if ((renameName.text !== "") && !librarian.flightRouteExists(renameName.text)) {
-                librarian.flightRouteRename(finalFileName, renameName.text)
+            global.mobileAdaptor().vibrateBrief()
+            if ((renameName.text !== "") && !global.librarian().exists(Librarian.Routes, renameName.text)) {
+                global.librarian().rename(Librarian.Routes, finalFileName, renameName.text)
                 page.reloadFlightRouteList()
                 close()
+                toast.doToast(qsTr("Flight route renamed"))
             }
         }
         onRejected: {
-            mobileAdaptor.vibrateBrief()
+            global.mobileAdaptor().vibrateBrief()
             close()
         }
 
-    } // renameDialog
+    }
 
     Dialog {
         id: shareErrorDialog
@@ -527,7 +549,7 @@ Page {
             width: shareErrorDialog.availableWidth
             onLinkActivated: Qt.openUrlExternally(link)
             wrapMode: Text.Wrap
-            textFormat: Text.RichText
+            textFormat: Text.StyledText
         }
 
         standardButtons: Dialog.Ok
