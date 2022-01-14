@@ -106,11 +106,41 @@ Page {
                             global.navigator().flightRoute.removeWaypoint(index)
                         }
                     }
+<<<<<<< HEAD
+=======
                 }
             }
 
         }
     }
+
+    Component {
+        id: legComponent
+
+        ColumnLayout {
+            id: grid
+
+            property var leg: ({});
+
+            Layout.fillWidth: true
+
+            ItemDelegate {
+                icon.source: "/icons/vertLine.svg"
+                Layout.fillWidth: true
+                enabled: false
+                text: {
+                    // Mention horizontal distance unit
+                    global.navigator().aircraft.horizontalDistanceUnit
+                    if (leg === null)
+                        return ""
+                    return leg.description
+>>>>>>> master
+                }
+            }
+
+        }
+    }
+<<<<<<< HEAD
 
     Component {
         id: legComponent
@@ -137,6 +167,8 @@ Page {
 
         }
     }
+=======
+>>>>>>> master
 
 
     header: ToolBar {
@@ -191,13 +223,11 @@ Page {
                 cascade: true
 
                 MenuItem {
-                    text: qsTr("Open from library …")
+                    text: qsTr("View Library …")
                     onTriggered: {
                         global.mobileAdaptor().vibrateBrief()
                         highlighted = false
-                        dialogLoader.active = false
-                        dialogLoader.source = "../dialogs/FlightRouteOpenDialog.qml"
-                        dialogLoader.active = true
+                        stackView.push("FlightRouteLibrary.qml")
                     }
                 }
 
@@ -213,6 +243,7 @@ Page {
                     }
                 }
 
+<<<<<<< HEAD
                 MenuItem {
                     text: qsTr("View Library …")
                     onTriggered: {
@@ -222,6 +253,8 @@ Page {
                     }
                 }
 
+=======
+>>>>>>> master
                 MenuSeparator { }
 
                 MenuItem {
@@ -370,7 +403,7 @@ Page {
         currentIndex: sv.currentIndex
         TabButton { text: qsTr("Route") }
         TabButton { text: qsTr("Wind") }
-        TabButton { text: qsTr("ACFT") }
+
         Material.elevation: 3
     }
 
@@ -403,6 +436,7 @@ Page {
 
                 contentHeight: co.height
                 contentWidth: parent.width
+<<<<<<< HEAD
 
                 // The visibility behavior of the vertical scroll bar is a little complex.
                 // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
@@ -444,23 +478,30 @@ Page {
                 } // ColumnLayout
 
             }
+=======
+>>>>>>> master
 
-        }
+                // The visibility behavior of the vertical scroll bar is a little complex.
+                // The following code guarantees that the scroll bar is shown initially. If it is not used, it is faded out after half a second or so.
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: (height < contentHeight) ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
 
-        ScrollView {
-            id: windTab
+                clip: true
 
-            contentWidth: width
-            clip: true
+                ColumnLayout {
+                    id: co
+                    width: parent.width
 
-            GridLayout {
-                anchors.left: parent.left
-                anchors.leftMargin: Qt.application.font.pixelSize
-                anchors.right: parent.right
-                anchors.rightMargin: Qt.application.font.pixelSize
+                    Connections {
+                        target: global.navigator().flightRoute
+                        function onWaypointsChanged() {
+                            co.createItems()
+                        }
+                    }
 
-                columns: 4
+                    Component.onCompleted: co.createItems()
 
+<<<<<<< HEAD
                 Label { Layout.fillHeight: true }
                 Label {
                     text: qsTr("Wind")
@@ -542,21 +583,38 @@ Page {
                     onClicked: {
                         global.navigator().wind.windSpeedInKT = -1
                         windSpeed.clear()
+=======
+                    function createItems() {
+                        // Delete old text items
+                        co.children = {}
+
+                        if (global.navigator().flightRoute.size > 0) {
+                            // Create first waypointComponent
+                            waypointComponent.createObject(co, {waypoint: global.navigator().flightRoute.waypoints[0], index: 0});
+
+                            // Create leg description items
+                            var legs = global.navigator().flightRoute.legs
+                            var j
+                            for (j=0; j<legs.length; j++) {
+                                legComponent.createObject(co, {leg: legs[j]});
+                                waypointComponent.createObject(co, {waypoint: legs[j].endPoint, index: j+1});
+                            }
+                        }
+>>>>>>> master
                     }
-                }
+                } // ColumnLayout
 
             }
 
         }
 
         ScrollView {
-            id: acftTab
+            id: windTab
 
             contentWidth: width
             clip: true
 
             GridLayout {
-                id: aircraftTab
                 anchors.left: parent.left
                 anchors.leftMargin: Qt.application.font.pixelSize
                 anchors.right: parent.right
@@ -566,7 +624,7 @@ Page {
 
                 Label { Layout.fillHeight: true }
                 Label {
-                    text: qsTr("True Airspeed")
+                    text: qsTr("Wind")
                     Layout.columnSpan: 4
                     font.pixelSize: Qt.application.font.pixelSize*1.2
                     font.bold: true
@@ -574,6 +632,7 @@ Page {
                 }
 
                 Label {
+<<<<<<< HEAD
                     text: qsTr("Cruise")
                     Layout.alignment: Qt.AlignBaseline
                 }
@@ -618,11 +677,17 @@ Page {
                     text: qsTr("Descent")
                     Layout.alignment: Qt.AlignBaseline
                 }
+=======
+                    Layout.alignment: Qt.AlignBaseline
+                    text: qsTr("Direction")
+                }
+>>>>>>> master
                 TextField {
-                    id: descentSpeed
+                    id: windDirection
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
+<<<<<<< HEAD
                     validator: DoubleValidator {
                         bottom: global.settings().useMetricUnits ? global.navigator().aircraft.minAircraftSpeedInKMH : global.navigator().aircraft.minAircraftSpeedInKT
                         top: global.settings().useMetricUnits ? global.navigator().aircraft.maxAircraftSpeedInKMH : global.navigator().aircraft.maxAircraftSpeedInKT
@@ -643,20 +708,50 @@ Page {
                 }
                 Label {
                     text: global.settings().useMetricUnits ? "km/h" : "kt"
+=======
+                    validator: IntValidator {
+                        bottom: 0
+                        top: 360
+                    }
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    onEditingFinished: {
+                        global.navigator().wind.windDirection = angle.fromDEG(text)
+                        windSpeed.focus = true
+                    }
+                    color: (acceptableInput ? Material.foreground : "red")
+                    KeyNavigation.tab: windSpeed
+                    text: {
+                        if (!global.navigator().wind.windSpeed.isFinite()) {
+                            return ""
+                        }
+                        return Math.round( global.navigator().wind.windDirection.toDEG() )
+                    }
+                    placeholderText: qsTr("undefined")
+                }
+                Label {
+                    text: "°"
+>>>>>>> master
                     Layout.alignment: Qt.AlignBaseline
                 }
                 ToolButton {
                     icon.source: "/icons/material/ic_clear.svg"
                     Layout.alignment: Qt.AlignVCenter
+<<<<<<< HEAD
                     enabled: descentSpeed.text !== ""
                     onClicked: {
                         global.navigator().aircraft.descentSpeedInKT = -1
                         descentSpeed.clear()
+=======
+                    enabled: windDirection.text !== ""
+                    onClicked: {
+                        global.navigator().wind.windDirection = angle.nan()
+                        windDirection.clear()
+>>>>>>> master
                     }
                 }
 
-                Label { Layout.fillHeight: true }
                 Label {
+<<<<<<< HEAD
                     text: qsTr("Fuel consumption")
                     Layout.columnSpan: 4
                     font.pixelSize: Qt.application.font.pixelSize*1.2
@@ -668,19 +763,61 @@ Page {
                     text: qsTr("Cruise")
                     Layout.alignment: Qt.AlignBaseline
                 }
+=======
+                    text: qsTr("Speed")
+                    Layout.alignment: Qt.AlignBaseline
+                }
+>>>>>>> master
                 TextField {
-                    id: fuelConsumption
+                    id: windSpeed
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignBaseline
                     Layout.minimumWidth: Qt.application.font.pixelSize*5
                     validator: DoubleValidator {
+<<<<<<< HEAD
                         bottom: global.navigator().aircraft.minFuelConsuption
                         top: global.navigator().aircraft.maxFuelConsuption
+=======
+                        bottom: {
+                            switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                            case Aircraft.NauticalMile:
+                                return global.navigator().wind.minWindSpeed.toKN()
+                            case Aircraft.Kilometer:
+                                return global.navigator().wind.minWindSpeed.toKMH()
+                            case Aircraft.StatuteMile :
+                                return global.navigator().wind.minWindSpeed.toMIL()
+                            }
+                            return NaN
+                        }
+                        top: {
+                            switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                            case Aircraft.NauticalMile:
+                                return global.navigator().wind.maxWindSpeed.toKN()
+                            case Aircraft.Kilometer:
+                                return global.navigator().wind.maxWindSpeed.toKMH()
+                            case Aircraft.StatuteMile :
+                                return global.navigator().wind.maxWindSpeed.toMIL()
+                            }
+                            return NaN
+                        }
+>>>>>>> master
                         notation: DoubleValidator.StandardNotation
                     }
                     inputMethodHints: Qt.ImhDigitsOnly
                     onEditingFinished: {
+                        switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                        case Aircraft.NauticalMile:
+                            global.navigator().wind.windSpeed = speed.fromKN(text)
+                            break;
+                        case Aircraft.Kilometer:
+                            global.navigator().wind.windSpeed = speed.fromKMH(text)
+                            break;
+                        case Aircraft.StatuteMile :
+                            global.navigator().wind.windSpeed = speed.fromMPH(text)
+                            break;
+                        }
                         focus = false
+<<<<<<< HEAD
                         global.navigator().aircraft.fuelConsumptionInLPH = text
                     }
                     color: (acceptableInput ? Material.foreground : "red")
@@ -697,13 +834,51 @@ Page {
                     icon.source: "/icons/material/ic_clear.svg"
                     Layout.alignment: Qt.AlignVCenter
                     enabled: fuelConsumption.text !== ""
+=======
+                    }
+                    color: (acceptableInput ? Material.foreground : "red")
+                    text: {
+                        if (!global.navigator().wind.windSpeed.isFinite()) {
+                            return ""
+                        }
+                        switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                        case Aircraft.NauticalMile:
+                            return Math.round( global.navigator().wind.windSpeed.toKN() )
+                        case Aircraft.Kilometer:
+                            return Math.round( global.navigator().wind.windSpeed.toKMH() )
+                        case Aircraft.StatuteMile :
+                            return Math.round( global.navigator().wind.windSpeed.toMPH() )
+                        }
+                        return NaN
+                    }
+                    placeholderText: qsTr("undefined")
+                }
+                Label {
+                    text: {
+                        switch(global.navigator().aircraft.horizontalDistanceUnit) {
+                        case Aircraft.NauticalMile:
+                            return "kn"
+                        case Aircraft.Kilometer:
+                            return "km/h"
+                        case Aircraft.StatuteMile:
+                            return "mph"
+                        }
+                        return ""
+
+                    }
+                    Layout.alignment: Qt.AlignBaseline
+                }
+                ToolButton {
+                    icon.source: "/icons/material/ic_clear.svg"
+                    Layout.alignment: Qt.AlignVCenter
+                    enabled: windSpeed.text !== ""
+>>>>>>> master
                     onClicked: {
-                        aircraft.fuelConsumptionInLPH = -1
-                        fuelConsumption.clear()
+                        global.navigator().wind.windSpeed = speed.fromKN(-1)
+                        windSpeed.clear()
                     }
                 }
 
-                Label { Layout.fillHeight: true }
             }
 
         }
@@ -721,8 +896,13 @@ Page {
 
                 Layout.fillWidth: true
                 text: {
+<<<<<<< HEAD
                     // Mention useMetricUnits
                     global.settings().useMetricUnits
+=======
+                    // Mention horizontal distance units
+                    global.navigator().aircraft.horizontalDistanceUnit
+>>>>>>> master
 
                     return global.navigator().flightRoute.summary
                 }

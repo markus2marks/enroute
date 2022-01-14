@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019 by Stefan Kebekus                                  *
+ *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,98 +18,202 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "Aircraft.h"
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 
-#include <QPointer>
-#include <QtGlobal>
+#include "Aircraft.h"
+#include "GlobalObject.h"
+#include "Librarian.h"
 
 
 Navigation::Aircraft::Aircraft(QObject *parent) : QObject(parent) {
-    _cruiseSpeedInKT = settings.value("Aircraft/cruiseSpeedInKTS", 0.0).toDouble();
-    if ((_cruiseSpeedInKT < minAircraftSpeedInKT) || (_cruiseSpeedInKT > maxAircraftSpeedInKT)) {
-        _cruiseSpeedInKT = qQNaN();
-    }
-
-    _descentSpeedInKT = settings.value("Aircraft/descentSpeedInKTS", 0.0).toDouble();
-    if ((_descentSpeedInKT < minAircraftSpeedInKT) || (_descentSpeedInKT > maxAircraftSpeedInKT)) {
-        _descentSpeedInKT = qQNaN();
-    }
-
-    _fuelConsumptionInLPH = settings.value("Aircraft/fuelConsumptionInLPH", 0.0).toDouble();
-    if ((_fuelConsumptionInLPH < minFuelConsuption) || (_fuelConsumptionInLPH > maxFuelConsuption)) {
-        _fuelConsumptionInLPH = qQNaN();
-    }
 }
 
 
-auto Navigation::Aircraft::cruiseSpeedInKT() const -> double {
-    return _cruiseSpeedInKT;
-}
+void Navigation::Aircraft::setCruiseSpeed(Units::Speed newSpeed) {
 
-
-void Navigation::Aircraft::setCruiseSpeedInKT(double speedInKT) {
-    if ((speedInKT < minAircraftSpeedInKT) || (speedInKT > maxAircraftSpeedInKT)) {
-        speedInKT = qQNaN();
+    if ((newSpeed < minValidSpeed) || (newSpeed > maxValidSpeed)) {
+        newSpeed = Units::Speed();
+    }
+    if (newSpeed == _cruiseSpeed) {
+        return;
     }
 
-    if (!qFuzzyCompare(speedInKT, _cruiseSpeedInKT)) {
-        _cruiseSpeedInKT = speedInKT;
-        settings.setValue("Aircraft/cruiseSpeedInKTS", _cruiseSpeedInKT);
-        emit valChanged();
+    _cruiseSpeed = newSpeed;
+    emit cruiseSpeedChanged();
+
+}
+
+
+void Navigation::Aircraft::setDescentSpeed(Units::Speed newSpeed) {
+
+    if ((newSpeed < minValidSpeed) || (newSpeed > maxValidSpeed)) {
+        newSpeed = Units::Speed();
     }
-}
-
-
-auto Navigation::Aircraft::cruiseSpeedInKMH() const -> double {
-    auto speed = Units::Speed::fromKN(_cruiseSpeedInKT);
-    return speed.toKMH();
-}
-
-
-void Navigation::Aircraft::setCruiseSpeedInKMH(double speedInKMH) {
-    auto speed = Units::Speed::fromKMH(speedInKMH);
-    setCruiseSpeedInKT(speed.toKN());
-}
-
-
-auto Navigation::Aircraft::descentSpeedInKT() const -> double {
-    return _descentSpeedInKT;
-}
-
-
-void Navigation::Aircraft::setDescentSpeedInKT(double speedInKT) {
-    if ((speedInKT < minAircraftSpeedInKT) || (speedInKT > maxAircraftSpeedInKT)) {
-        speedInKT = qQNaN();
+    if (newSpeed == _descentSpeed) {
+        return;
     }
 
-    if (!qFuzzyCompare(speedInKT, _descentSpeedInKT)) {
-        _descentSpeedInKT = speedInKT;
-        settings.setValue("Aircraft/descentSpeedInKTS", _descentSpeedInKT);
-        emit valChanged();
+    _descentSpeed = newSpeed;
+    emit descentSpeedChanged();
+}
+
+
+void Navigation::Aircraft::setFuelConsumption(Units::VolumeFlow newFuelConsumption) {
+    if ((newFuelConsumption < minValidFuelConsumption) || (newFuelConsumption > maxValidFuelConsumption)) {
+        newFuelConsumption = Units::VolumeFlow();
+    }
+
+    if (!qFuzzyCompare(newFuelConsumption.toLPH(), _fuelConsumption.toLPH())) {
+        _fuelConsumption = newFuelConsumption;
+        emit fuelConsumptionChanged();
     }
 }
 
 
-auto Navigation::Aircraft::descentSpeedInKMH() const -> double {
-    auto speed = Units::Speed::fromKN(_descentSpeedInKT);
-    return speed.toKMH();
+void Navigation::Aircraft::setFuelConsumptionUnit(FuelConsumptionUnit newUnit)
+{
+    if (newUnit == _fuelConsumptionUnit) {
+        return;
+    }
+
+    _fuelConsumptionUnit = newUnit;
+    emit fuelConsumptionUnitChanged();
 }
 
 
-void Navigation::Aircraft::setDescentSpeedInKMH(double speedInKMH) {
-    auto speed = Units::Speed::fromKMH(speedInKMH);
-    setDescentSpeedInKT(speed.toKN());
+void Navigation::Aircraft::setHorizontalDistanceUnit(HorizontalDistanceUnit newUnit)
+{
+    if (newUnit == _horizontalDistanceUnit) {
+        return;
+    }
+
+    _horizontalDistanceUnit = newUnit;
+    emit horizontalDistanceUnitChanged();
 }
 
 
-void Navigation::Aircraft::setFuelConsumptionInLPH(double fuelConsumptionInLPH) {
-    if ((fuelConsumptionInLPH < minFuelConsuption) || (fuelConsumptionInLPH > maxFuelConsuption)) {
-        fuelConsumptionInLPH = qQNaN();
+void Navigation::Aircraft::setMinimumSpeed(Units::Speed newSpeed) {
+
+    if ((newSpeed < minValidSpeed) || (newSpeed > maxValidSpeed)) {
+        newSpeed = Units::Speed();
+    }
+    if (newSpeed == _minimumSpeed) {
+        return;
     }
 
-    if (!qFuzzyCompare(fuelConsumptionInLPH, _fuelConsumptionInLPH)) {
-        _fuelConsumptionInLPH = fuelConsumptionInLPH;
-        settings.setValue("Aircraft/fuelConsumptionInLPH", _fuelConsumptionInLPH);
-        emit valChanged();
+    _minimumSpeed = newSpeed;
+    emit minimumSpeedChanged();
+}
+
+
+void Navigation::Aircraft::setName(const QString& newName) {
+
+    if (newName == _name) {
+        return;
     }
+
+    _name = newName;
+    emit nameChanged();
+}
+
+
+void Navigation::Aircraft::setVerticalDistanceUnit(VerticalDistanceUnit newUnit)
+{
+    if (newUnit == _verticalDistanceUnit) {
+        return;
+    }
+
+    _verticalDistanceUnit = newUnit;
+    emit verticalDistanceUnitChanged();
+}
+
+
+
+//
+// Methods
+//
+
+auto Navigation::Aircraft::loadFromJSON(const QString& fileName) -> QString
+{
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return tr("Unable to open the file '%1' for reading.").arg(fileName);
+    }
+    return loadFromJSON(file.readAll());
+}
+
+
+auto Navigation::Aircraft::loadFromJSON(const QByteArray &JSON) -> QString
+{
+    QJsonParseError parseError{};
+    auto document = QJsonDocument::fromJson(JSON, &parseError);
+    if (parseError.error != QJsonParseError::NoError) {
+        return parseError.errorString();
+    }
+
+    auto content = document.object();
+    if (content.isEmpty()) {
+        return tr("JSON document contains no data.");
+    }
+
+    if (content["content"] != "aircraft") {
+        return tr("JSON document does not describe an aircraft.");
+    }
+
+    setCruiseSpeed( Units::Speed::fromMPS( content["cruiseSpeed_mps"].toDouble(NAN) ));
+    setDescentSpeed( Units::Speed::fromMPS( content["descentSpeed_mps"].toDouble(NAN) ));
+    setFuelConsumption( Units::VolumeFlow::fromLPH( content["fuelConsumption_lph"].toDouble(NAN) ));
+    setFuelConsumptionUnit( static_cast<FuelConsumptionUnit>(content["fuelConsumptionUnit"].toInt(LiterPerHour)) );
+    setHorizontalDistanceUnit( static_cast<HorizontalDistanceUnit>(content["horizontalDistanceUnit"].toInt(NauticalMile)) );
+    setMinimumSpeed( Units::Speed::fromMPS( content["minimumSpeed_mps"].toDouble(NAN) ));
+    setName( content["name"].toString() );
+    setVerticalDistanceUnit( static_cast<VerticalDistanceUnit>(content["verticalDistanceUnit"].toInt(Feet)) );
+
+    return {};
+}
+
+
+auto Navigation::Aircraft::save(const QString& fileName) const -> QString
+{
+    // Make directory, if it does not yet exist.
+    QDir dir;
+    dir.mkpath(GlobalObject::librarian()->directory(Librarian::Aircraft));
+
+    QFile file(fileName);
+    auto success = file.open(QIODevice::WriteOnly);
+    if (!success) {
+        return tr("Unable to open the file '%1' for writing.").arg(fileName);
+    }
+    auto numBytesWritten = file.write(toJSON());
+    if (numBytesWritten == -1) {
+        file.close();
+        QFile::remove(fileName);
+        return tr("Unable to write to file '%1'.").arg(fileName);
+    }
+    return {};
+}
+
+
+auto Navigation::Aircraft::toJSON() const -> QByteArray
+{
+    QJsonObject jsonObj;
+    jsonObj.insert(QStringLiteral("content"), "aircraft");
+
+    jsonObj.insert(QStringLiteral("cruiseSpeed_mps"), _cruiseSpeed.toMPS());
+    jsonObj.insert(QStringLiteral("descentSpeed_mps"), _descentSpeed.toMPS());
+    jsonObj.insert(QStringLiteral("fuelConsumption_lph"), _fuelConsumption.toLPH());
+    jsonObj.insert(QStringLiteral("fuelConsumptionUnit"), _fuelConsumptionUnit);
+    jsonObj.insert(QStringLiteral("horizontalDistanceUnit"), _horizontalDistanceUnit);
+    jsonObj.insert(QStringLiteral("minimumSpeed_mps"), _minimumSpeed.toMPS());
+    jsonObj.insert(QStringLiteral("name"), _name);
+    jsonObj.insert(QStringLiteral("verticalDistanceUnit"), _verticalDistanceUnit);
+
+
+    QJsonDocument doc;
+    doc.setObject(jsonObj);
+    return doc.toJson();
 }

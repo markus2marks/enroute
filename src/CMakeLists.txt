@@ -77,13 +77,14 @@ set(SOURCES
     dataManagement/Downloadable.h
     dataManagement/DownloadableGroup.h
     dataManagement/DownloadableGroupWatcher.h
+    dataManagement/SSLErrorHandler.h
     DemoRunner.h
     geomaps/Airspace.h
     geomaps/GeoMapProvider.h
     geomaps/TileHandler.h
     geomaps/TileServer.h
     geomaps/Waypoint.h
-    Global.h
+    GlobalObject.h
     Librarian.h
     MobileAdaptor.h
     navigation/Aircraft.h
@@ -117,29 +118,33 @@ set(SOURCES
     units/Distance.h
     units/Speed.h
     units/Time.h
+    units/Units.h
+    units/Volume.h
+    units/VolumeFlow.h
     weather/Decoder.h
     weather/METAR.h
     weather/Station.h
     weather/TAF.h
     weather/WeatherDataProvider.h
     weather/Wind.h
-
     variometer/Variometer.h
     variometer/UdpConnection.h
     variometer/DataSwitch.h
     variometer/KalmanFilter.h
+
     # C++ files
     dataManagement/DataManager.cpp
     dataManagement/Downloadable.cpp
     dataManagement/DownloadableGroup.cpp
     dataManagement/DownloadableGroupWatcher.cpp
+    dataManagement/SSLErrorHandler.cpp
     DemoRunner.cpp
     geomaps/Airspace.cpp
     geomaps/GeoMapProvider.cpp
     geomaps/TileHandler.cpp
     geomaps/TileServer.cpp
     geomaps/Waypoint.cpp
-    Global.cpp
+    GlobalObject.cpp
     Librarian.cpp
     main.cpp
     MobileAdaptor.cpp
@@ -183,6 +188,8 @@ set(SOURCES
     variometer/UdpConnection.cpp
     variometer/DataSwitch.cpp
     variometer/KalmanFilter.cpp
+    units/Volume.cpp
+    units/VolumeFlow.cpp
     weather/Decoder.cpp
     weather/METAR.cpp
     weather/Station.cpp
@@ -244,17 +251,17 @@ if( ANDROID )
     add_compile_definitions(MANUAL_LOCATION="/android_asset/manual")
 
     # The android target depends on our own copy of openssl
-    set(ANDROID_EXTRA_LIBS
-        ${openssl_SOURCE_DIR}/arm/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/arm/libssl_1_1.so
-        ${openssl_SOURCE_DIR}/arm64/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/arm64/libssl_1_1.so
-        ${openssl_SOURCE_DIR}/x86/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/x86/libssl_1_1.so
-        ${openssl_SOURCE_DIR}/x86_64/libcrypto_1_1.so
-        ${openssl_SOURCE_DIR}/x86_64/libssl_1_1.so
-        CACHE INTERNAL ""
-        )
+#    set(ANDROID_EXTRA_LIBS
+ #       ${openssl_SOURCE_DIR}/arm/libcrypto_1_1.so
+  #      ${openssl_SOURCE_DIR}/arm/libssl_1_1.so
+   #     ${openssl_SOURCE_DIR}/arm64/libcrypto_1_1.so
+    #    ${openssl_SOURCE_DIR}/arm64/libssl_1_1.so
+     #   ${openssl_SOURCE_DIR}/x86/libcrypto_1_1.so
+      #  ${openssl_SOURCE_DIR}/x86/libssl_1_1.so
+       # ${openssl_SOURCE_DIR}/x86_64/libcrypto_1_1.so
+        #${openssl_SOURCE_DIR}/x86_64/libssl_1_1.so
+    #    CACHE INTERNAL ""
+     #   )
 
     # The android target is a library, not an executable
     add_library(${PROJECT_NAME} SHARED ${SOURCES} ${ANDROID_EXTRA_SOURCES})
@@ -281,7 +288,7 @@ if (NOT ANDROID)
 
     # Add executable and libraries
     add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Positioning Qt5::Quick Qt5::SerialPort Qt5::Sql Qt5::Svg Qt5::WebView KF5::Notifications qhttpengine kdsingleapplication sunset)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::DBus Qt5::Positioning Qt5::SerialPort Qt5::Quick Qt5::Sql Qt5::Svg qhttpengine kdsingleapplication sunset)
     target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
     target_precompile_headers(${PROJECT_NAME} PRIVATE
         <QObject>
@@ -290,7 +297,6 @@ if (NOT ANDROID)
 
     # Install
     install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/enroute\ flight\ navigation.notifyrc DESTINATION ${KNOTIFYRC_INSTALL_DIR})
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/3rdParty/enrouteText/docs/manual DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 

@@ -18,10 +18,11 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <QApplication>
 #include <QQmlEngine>
 #include <chrono>
 
-#include "Global.h"
+#include "GlobalObject.h"
 #include "MobileAdaptor.h"
 #include "traffic/TrafficDataProvider.h"
 #include "traffic/TrafficDataSource_File.h"
@@ -65,6 +66,7 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
 //    addDataSource( new Traffic::TrafficDataSource_Udp(4000, this) );
 //    addDataSource( new Traffic::TrafficDataSource_Udp(49002, this));
     //addDataSource( new Traffic::TrafficDataSource_Serial(this));
+
     // Bindings for status string
     connect(this, &Traffic::TrafficDataProvider::positionInfoChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
     connect(this, &Traffic::TrafficDataProvider::pressureAltitudeChanged, this, &Traffic::TrafficDataProvider::updateStatusString);
@@ -79,10 +81,13 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
 
     // Try to (re)connect whenever the network situation changes
     QTimer::singleShot(0, this, &Traffic::TrafficDataProvider::deferredInitialization);
+
+    // Clean up
+    connect(qApp, &QApplication::aboutToQuit, this, &Traffic::TrafficDataProvider::clearDataSources);
 }
 
 
-Traffic::TrafficDataProvider::~TrafficDataProvider()
+void Traffic::TrafficDataProvider::clearDataSources()
 {
     foreach(auto dataSource, m_dataSources) {
         if (dataSource.isNull()) {
@@ -128,7 +133,7 @@ void Traffic::TrafficDataProvider::connectToTrafficReceiver()
 void Traffic::TrafficDataProvider::deferredInitialization() const
 {
     // Try to (re)connect whenever the network situation changes
-    connect(Global::mobileAdaptor(), &MobileAdaptor::wifiConnected, this, &Traffic::TrafficDataProvider::connectToTrafficReceiver);
+    connect(GlobalObject::mobileAdaptor(), &MobileAdaptor::wifiConnected, this, &Traffic::TrafficDataProvider::connectToTrafficReceiver);
 }
 
 
@@ -154,7 +159,7 @@ void Traffic::TrafficDataProvider::onSourceHeartbeatChanged()
     // If we have a current source, if the current source has a heartbeat and if the current source is a TCP source, then we simply stick with it.
     if ((qobject_cast<Traffic::TrafficDataSource_Tcp*>(m_currentSource) != nullptr)
             && m_currentSource->receivingHeartbeat() ) {
-        emit setReceivingHeartbeat(true);
+        setReceivingHeartbeat(true);
         return;
     }
 

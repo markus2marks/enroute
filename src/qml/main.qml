@@ -46,9 +46,7 @@ ApplicationWindow {
         id: drawer
 
         height: view.height
-		
-		
-		
+	
         ScrollView {
             anchors.fill: parent
             focus: true
@@ -68,6 +66,29 @@ ApplicationWindow {
 
                 Rectangle {
                     height: 16
+                    Layout.fillWidth: true
+                    color: Material.primary
+                }
+
+
+                Label {
+                    Layout.fillWidth: true
+                    leftPadding: 16
+                    rightPadding: 16
+
+                    text: "Enroute Flight Navigation " + Qt.application.version
+                    color: "white"
+                    font.pixelSize: 20
+                    font.weight: Font.Medium
+
+                    background: Rectangle {
+                        color: Material.primary
+                    }
+                }
+
+                Rectangle {
+                    height: 4
+
                     Layout.fillWidth: true
                     color: Material.primary
                 }
@@ -117,11 +138,25 @@ ApplicationWindow {
                 }
 
                 ItemDelegate {
+                    id: menuItemAircraft
+                    text: qsTr("Aircraft")
+                    icon.source: "/icons/material/ic_airplanemode_active.svg"
+                    Layout.fillWidth: true
+
+                    onClicked: {
+                        global.mobileAdaptor().vibrateBrief()
+                        stackView.pop()
+                        stackView.push("pages/Aircraft.qml")
+                        drawer.close()
+                    }
+                }
+
+                ItemDelegate {
                     id: menuItemRoute
-                    text: qsTr("Route")
+                    text: qsTr("Route and Wind")
                     icon.source: "/icons/material/ic_directions.svg"
                     Layout.fillWidth: true
-		            KeyNavigation.down: menuItemNearby
+		    KeyNavigation.down: menuItemNearby
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -130,6 +165,7 @@ ApplicationWindow {
                     }
                 }
 
+
                 ItemDelegate {
                     id: menuItemNearby
 
@@ -137,7 +173,7 @@ ApplicationWindow {
                     icon.source: "/icons/material/ic_my_location.svg"
                     Layout.fillWidth: true
                     KeyNavigation.up: menuItemRoute
-		            KeyNavigation.down: weatherItem
+		    KeyNavigation.down: weatherItem
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -172,6 +208,7 @@ ApplicationWindow {
                     id: menuItemLibrary
                     KeyNavigation.up: weatherItem
                     KeyNavigation.down: menuItemSettings
+
                     text: qsTr("Library")
                     icon.source: "/icons/material/ic_library_books.svg"
                     Layout.fillWidth: true
@@ -182,7 +219,20 @@ ApplicationWindow {
                     }
 
                     AutoSizingMenu {
-                        id: libraryMenu
+                        id: libraryMenu                        
+
+                        ItemDelegate {
+                            text: qsTr("Aircraft")
+                            icon.source: "/icons/material/ic_airplanemode_active.svg"
+                            Layout.fillWidth: true
+
+                            onClicked: {
+                                global.mobileAdaptor().vibrateBrief()
+                                stackView.push("pages/AircraftLibrary.qml")
+                                libraryMenu.close()
+                                drawer.close()
+                            }
+                        }
 
                         ItemDelegate {
                             text: qsTr("Flight Routes")
@@ -196,6 +246,7 @@ ApplicationWindow {
                                 drawer.close()
                             }
                         }
+
 
                         ItemDelegate {
                             text: qsTr("Maps and Data")
@@ -220,7 +271,7 @@ ApplicationWindow {
                 ItemDelegate {
                     id: menuItemSettings
                     KeyNavigation.up: menuItemLibrary
- 					KeyNavigation.down: menuItemInformation
+                    KeyNavigation.down: menuItemInformation
                     text: qsTr("Settings")
                     icon.source: "/icons/material/ic_settings.svg"
                     Layout.fillWidth: true
@@ -250,7 +301,6 @@ ApplicationWindow {
                     id: menuItemInformation
                     KeyNavigation.up: menuItemSettings
                     KeyNavigation.down: menuItemManual
-                    
                     text: qsTr("Information")
                     icon.source: "/icons/material/ic_info_outline.svg"
                     Layout.fillWidth: true
@@ -261,22 +311,128 @@ ApplicationWindow {
                         stackView.pop()
                         stackView.push("pages/InfoMenu.qml")
                         drawer.close()
+                        aboutMenu.popup()
                     }
                     Keys.onPressed: {
-					    if (event.key == Qt.Key_Return) {
-		    			    event.accepted = true;
-		    			    //aboutMenu.open()
-		    			     stackView.pop()
-                             stackView.push("pages/InfoMenu.qml")
-                             drawer.close()
-		    		    } 
-		    		}
+			if (event.key == Qt.Key_Return) {
+    			    event.accepted = true;
+    			    //aboutMenu.open()
+    			     stackView.pop()
+			     stackView.push("pages/InfoMenu.qml")
+			     drawer.close()
+    		        } 
+    	            }
                 }
 
                 ItemDelegate { // Manual
                     id: menuItemManual
                     KeyNavigation.up: menuItemInformation
                     KeyNavigation.down: menuItemBugReport
+                    text: qsTr("Manual")
+                    icon.source: "/icons/material/ic_book.svg"
+                    Layout.fillWidth: true
+
+                    onClicked: {
+                        global.mobileAdaptor().vibrateBrief()
+                        manualMenu.popup()
+                    }
+
+
+                    AutoSizingMenu { // Info Menu
+                        id: aboutMenu
+
+                        ItemDelegate { // Sat Status
+                            text: qsTr("Positioning")
+                                  +`<br><font color="#606060" size="2">`
+                                  + (global.positionProvider().receivingPositionInfo ? qsTr("Receiving position information.") : qsTr("Not receiving position information."))
+                                  + `</font>`
+                            icon.source: "/icons/material/ic_satellite.svg"
+                            Layout.fillWidth: true
+                            onClicked: {
+                                global.mobileAdaptor().vibrateBrief()
+                                stackView.pop()
+                                stackView.push("pages/Positioning.qml")
+                                aboutMenu.close()
+                                drawer.close()
+                            }
+                            background: Rectangle {
+                                anchors.fill: parent
+                                color: global.positionProvider().receivingPositionInfo ? "green" : "red"
+                                opacity: 0.2
+                            }
+                        }
+
+                        ItemDelegate { // FLARM Status
+                            Layout.fillWidth: true
+
+                            text: qsTr("Traffic Receiver")
+                                  + `<br><font color="#606060" size="2">`
+                                  + ((global.trafficDataProvider().receivingHeartbeat) ? qsTr("Receiving heartbeat.") : qsTr("Not receiving heartbeat."))
+                                  + `</font>`
+                            icon.source: "/icons/material/ic_airplanemode_active.svg"
+                            onClicked: {
+                                global.mobileAdaptor().vibrateBrief()
+                                stackView.pop()
+                                stackView.push("pages/TrafficReceiver.qml")
+                                aboutMenu.close()
+                                drawer.close()
+                            }
+                            background: Rectangle {
+                                anchors.fill: parent
+                                color: (global.trafficDataProvider().receivingHeartbeat) ? "green" : "red"
+                                opacity: 0.2
+                            }
+                        }
+
+                        Rectangle {
+                            height: 1
+                            Layout.fillWidth: true
+                            color: Material.primary
+                        }
+
+                        ItemDelegate { // About
+                            text: qsTr("About Enroute Flight Navigation")
+                            icon.source: "/icons/material/ic_info_outline.svg"
+
+                            onClicked: {
+                                global.mobileAdaptor().vibrateBrief()
+                                stackView.pop()
+                                stackView.push("pages/InfoPage.qml")
+                                aboutMenu.close()
+                                drawer.close()
+                            }
+                        }
+
+                        ItemDelegate { // Participate
+                            text: qsTr("Participate")
+                            icon.source: "/icons/nav_participate.svg"
+
+                            onClicked: {
+                                global.mobileAdaptor().vibrateBrief()
+                                stackView.pop()
+                                stackView.push("pages/ParticipatePage.qml")
+                                aboutMenu.close()
+                                drawer.close()
+                            }
+                        }
+
+                        ItemDelegate { // Donate
+                            text: qsTr("Donate")
+                            icon.source: "/icons/material/ic_attach_money.svg"
+
+                            onClicked: {
+                                global.mobileAdaptor().vibrateBrief()
+                                stackView.pop()
+                                stackView.push("pages/DonatePage.qml")
+                                aboutMenu.close()
+                                drawer.close()
+                            }
+                        }
+                    }
+
+                }
+
+                ItemDelegate { // Manual
                     text: qsTr("Manual")
                     icon.source: "/icons/material/ic_book.svg"
                     Layout.fillWidth: true
@@ -294,6 +450,8 @@ ApplicationWindow {
                             text: qsTr("Read manual")
                             icon.source: "/icons/material/ic_book.svg"
                             Layout.fillWidth: true
+                            visible: Qt.platform.os == "android"
+                            height: visible ? undefined : 0
 
                             onClicked: {
                                 global.mobileAdaptor().vibrateBrief()
@@ -310,7 +468,8 @@ ApplicationWindow {
                         }
 
                         Rectangle {
-                            height: 1
+                            visible: Qt.platform.os == "android"
+                            height: visible ? 1 : 0
                             Layout.fillWidth: true
                             color: Material.primary
                         }
@@ -364,9 +523,6 @@ ApplicationWindow {
                 }
 
                 ItemDelegate { // Bug report
-                    id: menuItemBugReport
-                    KeyNavigation.up: menuItemManual
-                    KeyNavigation.down: menuItemExit
                     text: qsTr("Bug report")
                     icon.source: "/icons/material/ic_bug_report.svg"
                     Layout.fillWidth: true
@@ -424,11 +580,14 @@ ApplicationWindow {
             }
             Keys.forwardTo: [menuItemRoute, menuItemNearby, weatherItem]
         }
-    } // Drawer
+
+    }
 
     StackView {
         id: stackView
+
         initialItem: "pages/MapPage.qml"
+
         anchors.fill: parent
 
         focus: true
@@ -459,6 +618,13 @@ ApplicationWindow {
                 return
             }
 
+            if ((global.settings().lastWhatsNewInMapsHash !== global.dataManager().whatsNewHash) &&
+                    (global.dataManager().whatsNew !== "") &&
+                    !global.navigator().isInFlight) {
+                whatsNewInMapsDialog.open()
+                return
+            }
+
             if (global.dataManager().geoMaps.updatable && !global.navigator().isInFlight) {
                 dialogLoader.active = false
                 dialogLoader.source = "dialogs/UpdateMapDialog.qml"
@@ -482,6 +648,29 @@ ApplicationWindow {
             }
         }
 
+        Connections {
+            target: global.demoRunner()
+
+            function onRequestClosePages() {
+                stackView.pop()
+            }
+
+            function onRequestOpenAircraftPage() {
+                stackView.pop()
+                stackView.push("pages/Aircraft.qml")
+            }
+
+            function onRequestOpenNearbyPage() {
+                stackView.pop()
+                stackView.push("pages/Nearby.qml")
+            }
+
+            function onRequestOpenWeatherPage() {
+                stackView.pop()
+                stackView.push("pages/WeatherPage.qml")
+            }
+
+        }
     }
 
     DropArea {
@@ -565,7 +754,6 @@ ApplicationWindow {
     LongTextDialog {
         id: exitDialog
         standardButtons: Dialog.No | Dialog.Yes
-        anchors.centerIn: parent
 
         title: qsTr("Exit…?")
         text: qsTr("Do you wish to exit <strong>Enroute Flight Navigation</strong>?")
@@ -577,13 +765,21 @@ ApplicationWindow {
     LongTextDialog {
         id: whatsNewDialog
         standardButtons: Dialog.Ok
-        anchors.centerIn: parent
         
         title: qsTr("What's new …?")
         text: global.librarian().getStringFromRessource(":text/whatsnew.html")
         onOpened: global.settings().lastWhatsNewHash = global.librarian().getStringHashFromRessource(":text/whatsnew.html")
     }
-    
+
+    LongTextDialog {
+        id: whatsNewInMapsDialog
+        standardButtons: Dialog.Ok
+
+        title: qsTr("What's new …?")
+        text: global.dataManager().whatsNew
+        onOpened: global.settings().lastWhatsNewInMapsHash = global.dataManager().whatsNewHash
+    }
+
     Shortcut {
         sequence: StandardKey.Quit
         onActivated: Qt.quit()
@@ -598,7 +794,7 @@ ApplicationWindow {
     // Connections
     //
 
-    Connections {
+    Connections { // GeoMaps
         target: global.dataManager().geoMaps
 
         function onDownloadingChanged(downloading) {
@@ -610,7 +806,56 @@ ApplicationWindow {
         }
     }
 
-    Connections {
+    Connections { // Notifier
+        target: global.notifier()
+
+        function onNotificationClicked(notifyID) {
+            if ((notifyID === 0) && (stackView.currentItem.objectName !== "DataManagerPage")) {
+                stackView.push("pages/DataManager.qml")
+            }
+            if ((notifyID === 1) && (stackView.currentItem.objectName !== "TrafficReceiverPage")) {
+                stackView.push("pages/TrafficReceiver.qml")
+            }
+        }
+
+    }
+
+    Connections { // SSLErrorHandler
+        target: global.sslErrorHandler()
+
+
+        function onSslError(message) {
+            sslErrorDialog.text = message
+            sslErrorDialog.open()
+        }
+
+    }
+
+    LongTextDialog {
+        id: sslErrorDialog
+
+        standardButtons: Dialog.Close|Dialog.Ignore
+
+        title: qsTr("Network security error")
+
+        onAccepted: {
+            close()
+            global.settings().ignoreSSLProblems = true
+            sslErrorConfirmation.open()
+        }
+
+        LongTextDialogMD {
+            id: sslErrorConfirmation
+            standardButtons: Dialog.Ok
+
+            title: qsTr("Network security settings")
+            text: qsTr("You have chosen to ignore network security errors in the future. \
+**This poses a security risk.** \
+Go to the 'Settings' page if you wish to restore the original, safe, behavior of this app.")
+        }
+    }
+
+    Connections { // TrafficDataProvider
         target: global.trafficDataProvider()
 
         function onPasswordRequest(ssid) {
@@ -645,20 +890,6 @@ ApplicationWindow {
         }
     }
 
-    Connections {
-        target: global.notifier()
-
-        function onNotificationClicked(notifyID) {
-            if ((notifyID === 0) && (stackView.currentItem.objectName !== "DataManagerPage")) {
-                stackView.push("pages/DataManager.qml")
-            }
-            if ((notifyID === 1) && (stackView.currentItem.objectName !== "TrafficReceiverPage")) {
-                stackView.push("pages/TrafficReceiver.qml")
-            }
-        }
-
-    }
-
     // Enroute closed unexpectedly if...
     // * the "route" page is open
     // * the route menu is opened
@@ -682,5 +913,12 @@ ApplicationWindow {
             close.accepted = false // prevent closing of the app
             stackView.pop(); // will close the stackView page
         }
-    } // onClosing
+    }
+
+    function openManual(pageUrl) {
+        if (Qt.platform.os === "android")
+            stackView.push("pages/Manual.qml", {"fileName": pageUrl})
+        else
+            Qt.openUrlExternally("https://akaflieg-freiburg.github.io/enrouteText/manual/"+pageUrl)
+    }
 }

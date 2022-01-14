@@ -25,7 +25,6 @@
 #include <QObject>
 #include <QPointer>
 #include <QSettings>
-#include <QTranslator>
 
 
 /*! \brief Global Settings Manager
@@ -35,7 +34,7 @@
  * QSettings on destruction.
  *
  * There exists one static instance of this class, which can be accessed via the
- * method globalInstance().  No other instance of this class should be used.
+ * Global functions.  No other instance of this class should be used.
  *
  * The methods in this class are reentrant, but not thread safe.
  */
@@ -50,9 +49,6 @@ public:
      * @param parent The standard QObject parent pointer
      */
     explicit Settings(QObject *parent = nullptr);
-
-    /*! \brief Standard deconstructor */
-    ~Settings() override;
 
     /*! \brief Possible map bearing policies */
     enum MapBearingPolicyValues
@@ -101,7 +97,6 @@ public:
     /*! \brief Getter function for property of the same name
      *
      * This function differs from acceptedWeatherTerms() only in that it is static.
-     * It uses the globalInstance() to retrieve data.
      *
      * @returns Property acceptedWeatherTerms
      */
@@ -149,7 +144,6 @@ public:
     /*! \brief Getter function for property of the same name
      *
      * This function differs from hideUpperAirspaces() only in that it is static.
-     * It uses the globalInstance() to retrieve data.
      *
      * @returns Property hideUpperAirspaces
      */
@@ -161,7 +155,22 @@ public:
      */
     void setHideUpperAirspaces(bool hide);
 
-    /*! \brief Hash of the last "what's new message that was shown to the user
+    /*! \brief Ignore SSL securitry problems */
+    Q_PROPERTY(bool ignoreSSLProblems READ ignoreSSLProblems WRITE setIgnoreSSLProblems NOTIFY ignoreSSLProblemsChanged)
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @returns Property ignoreSSLProblems
+     */
+    bool ignoreSSLProblems() const { return settings.value(QStringLiteral("ignoreSSLProblems"), false).toBool(); }
+
+    /*! \brief Setter function for property of the same name
+     *
+     * @param ignore Property ignoreSSLProblems
+     */
+    void setIgnoreSSLProblems(bool ignore);
+
+    /*! \brief Hash of the last "what's new" message that was shown to the user
      *
      * This property is used in the app to determine if the message has been
      * shown or not.
@@ -179,6 +188,25 @@ public:
      * @param lwnh Property lastWhatsNewHash
      */
     void setLastWhatsNewHash(uint lwnh);
+
+    /*! \brief Hash of the last "what's new in maps" message that was shown to the user
+     *
+     * This property is used in the app to determine if the message has been
+     * shown or not.
+     */
+    Q_PROPERTY(uint lastWhatsNewInMapsHash READ lastWhatsNewInMapsHash WRITE setLastWhatsNewInMapsHash NOTIFY lastWhatsNewInMapsHashChanged)
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @returns Property lastWhatsNewInMapsHash
+     */
+    uint lastWhatsNewInMapsHash() const { return settings.value(QStringLiteral("lastWhatsNewInMapsHash"), 0).toUInt(); }
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @param lwnh Property lastWhatsNewInMapsHash
+     */
+    void setLastWhatsNewInMapsHash(uint lwnh);
 
     /*! \brief Map bearing policy */
     Q_PROPERTY(MapBearingPolicyValues mapBearingPolicy READ mapBearingPolicy WRITE setMapBearingPolicy NOTIFY mapBearingPolicyChanged)
@@ -210,43 +238,6 @@ public:
      */
     void setNightMode(bool newNightMode);
 
-    /*! \brief Set to true is app should be shown in English rather than the
-     * system language */
-    Q_PROPERTY(bool useMetricUnits READ useMetricUnits WRITE setUseMetricUnits NOTIFY useMetricUnitsChanged)
-
-    /*! \brief Getter function for property of the same name
-     *
-     * @returns Property useMetricUnits
-     */
-    bool useMetricUnits() const { return settings.value(QStringLiteral("System/useMetricUnits"), false).toBool(); }
-
-    /*! \brief Getter function for property of the same name
-     *
-     * This function differs from useMetricUnits() only in that it is static.
-     * It uses the globalInstance() to retrieve data.
-     *
-     * @returns Property useMetricUnits
-     */
-    static bool useMetricUnitsStatic();
-
-    /*! \brief Setter function for property of the same name
-     *
-     * Setting this property will switch the horizontal speed unit to km/h
-     * instead of kt.
-     *
-     * @param unitHorizKmh Property unitHorizKmh
-     */
-    void setUseMetricUnits(bool unitHorizKmh);
-
-    /*! \brief Removes/Installs global application translators
-     *
-     * This method can be used to change the GUI language on the fly.
-     * It removes all existing translators and installs new ones.
-     *
-     * @param localeName Name of the locale (such as "de") or an empty string for the system locale.
-     */
-    void installTranslators(const QString &localeName={});
-
 signals:
     /*! Notifier signal */
     void acceptedTermsChanged();
@@ -261,7 +252,13 @@ signals:
     void hideUpperAirspacesChanged();
 
     /*! Notifier signal */
+    void ignoreSSLProblemsChanged();
+
+    /*! Notifier signal */
     void lastWhatsNewHashChanged();
+
+    /*! Notifier signal */
+    void lastWhatsNewInMapsHashChanged();
 
     /*! Notifier signal */
     void mapBearingPolicyChanged();
@@ -269,13 +266,8 @@ signals:
     /*! Notifier signal */
     void nightModeChanged();
 
-    /*! Notifier signal */
-    void useMetricUnitsChanged();
-
 private:
     Q_DISABLE_COPY_MOVE(Settings)
-
-    QPointer<QTranslator> enrouteTranslator {nullptr};
 
     QSettings settings;
 };

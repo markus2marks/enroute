@@ -33,8 +33,8 @@ import "../items"
 Dialog {
     id: waypointDescriptionDialog
 
-    property var waypoint : global.geoMapProvider().createWaypoint()
-    property var weatherStation : global.weatherDataProvider().findWeatherStation( waypoint.ICAOCode )
+    property var waypoint: global.geoMapProvider().createWaypoint()
+    property var weatherStation: global.weatherDataProvider().findWeatherStation( waypoint.ICAOCode )
 
     onWaypointChanged : {
         // Delete old text items
@@ -170,6 +170,9 @@ Dialog {
                             case "B":
                             case "C":
                             case "D":
+                            case "E":
+                            case "F":
+                            case "G":
                                 return "blue";
                             case "CTR":
                                 return "blue";
@@ -196,6 +199,9 @@ Dialog {
                             case "B":
                             case "C":
                             case "D":
+                            case "E":
+                            case "F":
+                            case "G":
                             case "GLD":
                             case "NRA":
                                 return ShapePath.SolidLine;
@@ -275,17 +281,32 @@ Dialog {
 
             Label {
                 Layout.alignment: Qt.AlignHCenter|Qt.AlignBottom
-                text: gridLYO.airspace.upperBound
+                text: {
+                    switch(global.navigator().aircraft.verticalDistanceUnit) {
+                    case Aircraft.Feet:
+                        return gridLYO.airspace.upperBound
+                    case Aircraft.Meters:
+                        return gridLYO.airspace.upperBoundMetric
+                    }
+                }
                 wrapMode: Text.WordWrap
             }
             Rectangle {
+                Layout.alignment: Qt.AlignHCenter
                 color: Material.foreground
                 height: 1
                 width: Qt.application.font.pixelSize*5
             }
             Label {
                 Layout.alignment: Qt.AlignHCenter|Qt.AlignTop
-                text: gridLYO.airspace.lowerBound
+                text: {
+                    switch(global.navigator().aircraft.verticalDistanceUnit) {
+                    case Aircraft.Feet:
+                        return gridLYO.airspace.lowerBound
+                    case Aircraft.Meters:
+                        return gridLYO.airspace.lowerBoundMetric
+                    }
+                }
                 wrapMode: Text.WordWrap
             }
         }
@@ -314,8 +335,8 @@ Dialog {
 
         Label { // Second header line with distance and QUJ
             text: {
-                // Mention useMetricUnits
-                global.settings().useMetricUnits
+                // Mention horizontalDistanceUnit
+                global.navigator().aircraft.horizontalDistanceUnit
 
                 return global.navigator().describeWay(global.positionProvider().positionInfo.coordinate(), waypoint.coordinate)
             }

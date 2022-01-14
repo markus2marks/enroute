@@ -30,14 +30,14 @@ not_null                           | &#x2611;   | restricts a pointer / smart po
 span                               | &#x2611;   | a view over a contiguous sequence of memory. Based on the standardized verison of `std::span`, however `gsl::span` enforces bounds checking. See the [wiki](https://github.com/microsoft/GSL/wiki/gsl::span-and-std::span) for additional information.
 span_p                             | &#x2610;   | spans a range starting from a pointer to the first place for which the predicate is true
 basic_zstring                      | &#x2611;   | A pointer to a C-string (zero-terminated array) with a templated char type
-zstring                            | &#x2611;   | An alias to `basic_zstring` with a char type of char
-czstring                           | &#x2611;   | An alias to `basic_zstring` with a char type of const char
-wzstring                           | &#x2611;   | An alias to `basic_zstring` with a char type of wchar_t
-cwzstring                          | &#x2611;   | An alias to `basic_zstring` with a char type of const wchar_t
-u16zstring                         | &#x2611;   | An alias to `basic_zstring` with a char type of char16_t
-cu16zstring                        | &#x2611;   | An alias to `basic_zstring` with a char type of const char16_t
-u32zstring                         | &#x2611;   | An alias to `basic_zstring` with a char type of char32_t
-cu32zstring                        | &#x2611;   | An alias to `basic_zstring` with a char type of const char32_t
+zstring                            | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of char
+czstring                           | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of const char
+wzstring                           | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of wchar_t
+cwzstring                          | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of const wchar_t
+u16zstring                         | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of char16_t
+cu16zstring                        | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of const char16_t
+u32zstring                         | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of char32_t
+cu32zstring                        | &#x2611;   | An alias to `basic_zstring` with dynamic extent and a char type of const char32_t
 [**2. Owners**][cg-owners]         |            |
 unique_ptr                         | &#x2611;   | an alias to `std::unique_ptr`
 shared_ptr                         | &#x2611;   | an alias to `std::shared_ptr`
@@ -85,17 +85,21 @@ This is based on [CppCoreGuidelines semi-specification](https://github.com/isocp
 [cg-concepts]: https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#gslconcept-concepts
 
 # Quick Start
-## Supported Compilers
-The GSL officially supports the current and previous major release of MSVC, GCC, Clang, and XCode's Apple-Clang.
-See our latest test results for the most up-to-date list of supported configurations.
+## Supported Compilers / Toolsets
+The GSL officially supports the latest and previous major versions of VS with MSVC & LLVM, GCC, Clang, and XCode with Apple-Clang.
+Within these two major versions, we try to target the latest minor updates / revisions (although this may be affected by
+delays between a toolchain's release and when it becomes widely available for use).
+Below is a table showing the versions currently being tested.
 
 Compiler |Toolset Versions Currently Tested
 :------- |--:
- XCode |11.4 & 10.3
- GCC |9 & 8
- Clang |11 &  10
- Visual Studio with MSVC | VS2017 (15.9) & VS2019 (16.4) 
- Visual Studio with LLVM | VS2017 (Clang 9) & VS2019 (Clang 10)
+ XCode | 13.1 & 12.5.1
+ GCC | 11.1.0 & 10.3.0
+ Clang | 11.0.0 & 10.0.0
+ Visual Studio with MSVC | VS2019 (16.11) & VS2022 (17.0)
+ Visual Studio with LLVM | VS2019 (16.11)
+
+- Support for Visual Studio 2022 with LLVM will be added in the near future
 
 ---
 If you successfully port GSL to another platform, we would love to hear from you!

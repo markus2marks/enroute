@@ -21,7 +21,8 @@
 #include <QtGlobal>
 
 #include "FlightRoute_Leg.h"
-#include "Global.h"
+#include "GlobalObject.h"
+#include "navigation/Navigator.h"
 #include "Settings.h"
 
 
@@ -31,7 +32,8 @@ Navigation::FlightRoute::Leg::Leg(const GeoMaps::Waypoint& start, const GeoMaps:
     _start = start;
     _end   = end;
 
-    connect(_aircraft, &Aircraft::valChanged, this, &FlightRoute::Leg::valChanged);
+    connect(_aircraft, &Aircraft::cruiseSpeedChanged, this, &FlightRoute::Leg::valChanged);
+    connect(_aircraft, &Aircraft::fuelConsumptionChanged, this, &FlightRoute::Leg::valChanged);
     connect(_wind, &Weather::Wind::valChanged, this, &FlightRoute::Leg::valChanged);
 }
 
@@ -54,7 +56,7 @@ auto Navigation::FlightRoute::Leg::Fuel() const -> double
         return qQNaN();
     }
 
-    return _aircraft->fuelConsumptionInLPH()*Time().toH();
+    return _aircraft->fuelConsumption().toLPH()*Time().toH();
 }
 
 
@@ -65,12 +67,12 @@ auto Navigation::FlightRoute::Leg::GS() const -> Units::Speed
         return {};
     }
 
-    auto TASInKT = _aircraft->cruiseSpeedInKT();
-    auto WSInKT  = _wind->windSpeedInKT();
-    auto WD      = Units::Angle::fromDEG( _wind->windDirectionInDEG() );
+    auto TASInKN = _aircraft->cruiseSpeed().toKN();
+    auto WSInKN  = _wind->windSpeed().toKN();
+    auto WD      = _wind->windDirection();
 
     // Law of cosine for wind triangle
-    auto GSInKT = qSqrt( TASInKT*TASInKT + WSInKT*WSInKT - 2.0*TASInKT*WSInKT*(WD-TH()).cos() );
+    auto GSInKT = qSqrt( TASInKN*TASInKN + WSInKN*WSInKN - 2.0*TASInKN*WSInKN*(WD-TH()).cos() );
 
     return Units::Speed::fromKN(GSInKT);
 }
@@ -97,9 +99,9 @@ auto Navigation::FlightRoute::Leg::WCA() const -> Units::Angle
         return {};
     }
 
-    Units::Speed TAS = Units::Speed::fromKN( _aircraft->cruiseSpeedInKT() );
-    Units::Speed WS  = Units::Speed::fromKN( _wind->windSpeedInKT() );
-    Units::Angle WD  = Units::Angle::fromDEG( _wind->windDirectionInDEG() );
+    Units::Speed TAS = _aircraft->cruiseSpeed();
+    Units::Speed WS  = _wind->windSpeed();
+    Units::Angle WD  = _wind->windDirection();
 
     // Law of sine for wind triangle
     return Units::Angle::asin(-(TC()-WD).sin() *(WS/TAS));
@@ -125,10 +127,16 @@ auto Navigation::FlightRoute::Leg::description() const -> QString
     }
 
     QString result;
-    if (Global::settings()->useMetricUnits()) {
-        result += QString("%1 km").arg(distance().toKM(), 0, 'f', 1);
-    } else {
-        result += QString("%1 nm").arg(distance().toNM(), 0, 'f', 1);
+    switch(GlobalObject::navigator()->aircraft()->horizontalDistanceUnit()) {
+    case Navigation::Aircraft::Kilometer:
+        result += tr("%1 km").arg(distance().toKM(), 0, 'f', 1);
+        break;
+    case Navigation::Aircraft::NauticalMile:
+        result += tr("%1 nm").arg(distance().toNM(), 0, 'f', 1);
+        break;
+    case Navigation::Aircraft::StatuteMile:
+        result += tr("%1 mil").arg(distance().toMIL(), 0, 'f', 1);
+        break;
     }
     auto _time = Time();
     if (_time.isFinite()) {
@@ -152,20 +160,20 @@ auto Navigation::FlightRoute::Leg::hasDataForWindTriangle() const -> bool
     if ( _aircraft.isNull() ) {
         return false;
     }
-    if ( !qIsFinite(_aircraft->cruiseSpeedInKT()) ) {
+    if ( !_aircraft->cruiseSpeed().isFinite() ) {
         return false;
     }
 
     if (_wind.isNull()) {
         return false;
     }
-    if ( !qIsFinite(_wind->windSpeedInKT()) ) {
+    if ( !_wind->windSpeed().isFinite() ) {
         return false;
     }
-    if ( !qIsFinite(_wind->windDirectionInDEG()) ) {
+    if ( !_wind->windDirection().isFinite() ) {
         return false;
     }
-    if (_wind->windSpeedInKT() > 0.75*_aircraft->cruiseSpeedInKT()) {
+    if (_wind->windSpeed().toKN() > 0.75*_aircraft->cruiseSpeed().toKN() ) {
         return false;
     }
 

@@ -1,20 +1,28 @@
 {
     "app-id": "${APP_ID}",
     "runtime": "org.kde.Platform",
+<<<<<<< HEAD
     "runtime-version": "5.15",
     "base": "io.qt.qtwebengine.BaseApp",
     "base-version": "5.15",
+=======
+    "runtime-version": "5.15-21.08",
+>>>>>>> master
     "sdk": "org.kde.Sdk",
     "command": "${PROJECT_NAME}",
     "finish-args": [
-        "--share=ipc",
+        "--device=dri",
+        "--device=shm",
+	"--share=ipc",
         "--share=network",
-        "--socket=x11",
+        "--socket=fallback-x11",
         "--socket=wayland",
+        "--socket=x11",
         "--system-talk-name=org.freedesktop.GeoClue2",
         "--talk-name=org.freedesktop.Notifications"
     ],
     "modules": [
+<<<<<<< HEAD
 	{
             "name": "qt5-qtwebview",
             "buildsystem": "qmake",
@@ -35,12 +43,18 @@
 		}
 	    ]
         },
+=======
+>>>>>>> master
         {
             "name": "enroute",
             "buildsystem": "cmake-ninja",
             "config-opts": [
+<<<<<<< HEAD
 		"-DCMAKE_BUILD_TYPE=RelWithDebInfo",
 		"-DQt5WebView_DIR=/app/usr/lib/x86_64-linux-gnu/cmake/Qt5WebView"
+=======
+		"-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+>>>>>>> master
 	    ],
             "sources": [
                 {

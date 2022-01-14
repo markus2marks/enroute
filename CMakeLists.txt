@@ -11,7 +11,7 @@ option(BUILD_DOC "Build developer documentation" OFF)
 # Project data
 #
 
-project(enroute VERSION 2.11.2)
+project(enroute VERSION 2.14.4)
 set(APP_ID de.akaflieg_freiburg.enroute)
 math(EXPR PROJECT_VERSION_CODE 10000*${PROJECT_VERSION_MAJOR}+100*${PROJECT_VERSION_MINOR}+${PROJECT_VERSION_PATCH})
 add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
@@ -45,14 +45,9 @@ find_package(Doxygen)
 find_package(Git REQUIRED)
 find_package(Qt5 5.15 COMPONENTS Concurrent Core Gui LinguistTools Positioning Quick QuickWidgets SerialPort Sql Svg WebView REQUIRED)
 if( ANDROID )
-    find_package(Qt5 5.15 COMPONENTS AndroidExtras REQUIRED)
+    find_package(Qt5 5.15 COMPONENTS AndroidExtras WebView REQUIRED)
     find_package(Qt5QuickCompiler)
 else()
-    find_package(ECM REQUIRED NO_MODULE)
-    set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
-    include(KDEInstallDirs)
-
-    find_package(KF5Notifications REQUIRED)
     find_package(Qt5 5.15 COMPONENTS DBus Widgets REQUIRED)
 endif()
 
@@ -84,7 +79,7 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
 
     # Get the latest abbreviated commit hash of the working branch
     execute_process(
-        COMMAND git log -1 --format=%H
+        COMMAND git log -1 --format=%h
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_VARIABLE GIT_COMMIT
         OUTPUT_STRIP_TRAILING_WHITESPACE

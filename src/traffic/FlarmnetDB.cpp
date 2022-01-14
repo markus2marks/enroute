@@ -20,7 +20,7 @@
 
 #include <QCoreApplication>
 
-#include "Global.h"
+#include "GlobalObject.h"
 #include "dataManagement/DataManager.h"
 #include "traffic/FlarmnetDB.h"
 
@@ -39,7 +39,7 @@ void Traffic::FlarmnetDB::clearCache()
 
 void Traffic::FlarmnetDB::deferredInitialization()
 {
-    connect(Global::dataManager()->databases(), &DataManagement::DownloadableGroupWatcher::downloadablesChanged, this, &Traffic::FlarmnetDB::findFlarmnetDBDownloadable);
+    connect(GlobalObject::dataManager()->databases(), &DataManagement::DownloadableGroupWatcher::downloadablesChanged, this, &Traffic::FlarmnetDB::findFlarmnetDBDownloadable);
     findFlarmnetDBDownloadable();
 }
 
@@ -47,12 +47,12 @@ void Traffic::FlarmnetDB::deferredInitialization()
 void Traffic::FlarmnetDB::findFlarmnetDBDownloadable()
 {
     // Find correct downloadable. We do this only if a QCoreApplication
-    // exists, in order to avoid calling Global::mapManager during shutdown.
+    // exists, in order to avoid calling GlobalObject::mapManager during shutdown.
     QPointer<DataManagement::Downloadable> newFlarmnetDBDownloadable;
     if (QCoreApplication::instance() != nullptr) {
-        auto downloadables = Global::dataManager()->databases()->downloadables();
+        auto downloadables = GlobalObject::dataManager()->databases()->downloadables();
         foreach(auto downloadable, downloadables) {
-            if (downloadable->fileName().contains("Flarmnet")) {
+            if (downloadable->fileName().contains("Flarm")) {
                 newFlarmnetDBDownloadable = downloadable;
                 break;
             }
@@ -91,24 +91,18 @@ void Traffic::FlarmnetDB::findFlarmnetDBDownloadable()
 
 auto Traffic::FlarmnetDB::getRegistration(const QString& key) -> QString
 {
-
-    qWarning() << "getRegistration" << key;
-
     if (key.contains("!")) {
         auto result = key.section('!', -1, -1);
-        qWarning() << "  result" << result;
         return result;
     }
 
     // Check if key exists in the cache
     auto* cachedValue = m_cache[key];
     if (cachedValue != nullptr) {
-        qWarning() << "  cached Value" << *cachedValue;
         return *cachedValue;
     }
 
     auto result = getRegistrationFromFile(key);
-    qWarning() << "  result" << result;
     m_cache.insert(key, new QString(result));
     return result;
 }
@@ -116,8 +110,6 @@ auto Traffic::FlarmnetDB::getRegistration(const QString& key) -> QString
 
 auto Traffic::FlarmnetDB::getRegistrationFromFile(const QString& key) -> QString
 {
-
-    qWarning() << "getRegistrationFromFile" << key;
 
     // If not in the cache, try to find the values in the file.
     if (flarmnetDBDownloadable == nullptr) {
@@ -127,6 +119,8 @@ auto Traffic::FlarmnetDB::getRegistrationFromFile(const QString& key) -> QString
     QFile dataFile(flarmnetDBDownloadable->fileName());
     if (!dataFile.open(QIODevice::ReadOnly)) {
         dataFile.open(QIODevice::WriteOnly);
+        dataFile.write(tr("Placeholder file.").toLatin1());
+        dataFile.flush();
         dataFile.setFileTime(QDateTime( QDate(2021, 8, 21), QTime(13, 0)), QFileDevice::FileModificationTime);
         return {};
     }

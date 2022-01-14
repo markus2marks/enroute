@@ -31,17 +31,20 @@
 #include <QTranslator>
 #include <QtWebView/QtWebView>
 
-#if !defined(Q_OS_ANDROID)
+#if defined(Q_OS_ANDROID)
+#include <QtWebView/QtWebView>
+#else
 #include <QApplication>
 #include <kdsingleapplication.h>
 #endif
 
 #include "DemoRunner.h"
-#include "Global.h"
+#include "GlobalObject.h"
 #include "Librarian.h"
 #include "MobileAdaptor.h"
 #include "Settings.h"
 #include "dataManagement/DataManager.h"
+#include "dataManagement/SSLErrorHandler.h"
 #include "geomaps/Airspace.h"
 #include "geomaps/GeoMapProvider.h"
 #include "navigation/Aircraft.h"
@@ -57,6 +60,8 @@
 #include "units/Distance.h"
 #include "units/Speed.h"
 #include "units/Time.h"
+#include "units/Volume.h"
+#include "units/VolumeFlow.h"
 #include "weather/WeatherDataProvider.h"
 #include "weather/Wind.h"
 #include <chrono>
@@ -73,16 +78,19 @@ auto main(int argc, char *argv[]) -> int
     qRegisterMetaType<Units::Distance>();
     qRegisterMetaType<Units::Speed>();
     qRegisterMetaType<Units::Time>();
+    qRegisterMetaType<Units::Volume>();
+    qRegisterMetaType<Units::VolumeFlow>();
     qRegisterMetaType<GeoMaps::Airspace>();
     qRegisterMetaType<GeoMaps::Waypoint>();
     qRegisterMetaType<Positioning::PositionInfo>();
     qRegisterMetaType<Traffic::Warning>();
 
     qRegisterMetaType<MobileAdaptor::FileFunction>("MobileAdaptor::FileFunction");
-    qRegisterMetaType<Platform::Notifier::Notifications>("Platform::Notifier::Notifications");
+    qRegisterMetaType<Platform::Notifier::NotificationTypes>("Platform::Notifier::Notifications");
     qmlRegisterUncreatableType<DemoRunner>("enroute", 1, 0, "DemoRunner", "DemoRunner objects cannot be created in QML");
     qmlRegisterType<Navigation::Aircraft>("enroute", 1, 0, "Aircraft");
     qmlRegisterType<Navigation::Clock>("enroute", 1, 0, "Clock");
+    qmlRegisterUncreatableType<DataManagement::SSLErrorHandler>("enroute", 1, 0, "SSLErrorHandler", "SSLErrorHandler objects cannot be created in QML");
     qmlRegisterType<DataManagement::DownloadableGroup>("enroute", 1, 0, "DownloadableGroup");
     qmlRegisterType<DataManagement::DownloadableGroupWatcher>("enroute", 1, 0, "DownloadableGroupWatcher");
     qmlRegisterUncreatableType<Librarian>("enroute", 1, 0, "Librarian", "Librarian objects cannot be created in QML");
@@ -101,7 +109,9 @@ auto main(int argc, char *argv[]) -> int
     qmlRegisterType<Weather::Station>("enroute", 1, 0, "WeatherStation");
 
     // Initialize web view on platforms where we use it
+#if defined(Q_OS_ANDROID)
     QtWebView::initialize();
+#endif
 
     // Set up application
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -118,6 +128,22 @@ auto main(int argc, char *argv[]) -> int
 #if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
     QGuiApplication::setDesktopFileName("de.akaflieg_freiburg.enroute");
 #endif
+
+    // Install translator
+    auto* enrouteTranslator = new QTranslator(&app);
+    if (enrouteTranslator->load(QString(":enroute_%1.qm").arg(QLocale::system().name().left(2)))) {
+        QCoreApplication::installTranslator(enrouteTranslator);
+    } else {
+        delete enrouteTranslator;
+    }
+
+
+    // Workaround for crappy Hauwei and Samsung devices.
+    //
+    // On Huawei devices, set the environment variable "QT_ANDROID_NO_EXIT_CALL", which
+    // prevents an exit() call, and thereby prevents a crash on these devices. Same problem on Samsung Galaxy S21 devices with Android 12.
+    qputenv("QT_ANDROID_NO_EXIT_CALL", "1");
+
 
     // Command line parsing
     QCommandLineParser parser;
@@ -148,36 +174,28 @@ auto main(int argc, char *argv[]) -> int
 
     // Create mobile platform adaptor. We do this before creating the application engine because this also asks for permissions
     if (positionalArguments.length() == 1) {
-        Global::mobileAdaptor()->processFileOpenRequest(positionalArguments[0]);
+        GlobalObject::mobileAdaptor()->processFileOpenRequest(positionalArguments[0]);
     }
-    QTimer::singleShot(4s, Global::mobileAdaptor(), &MobileAdaptor::hideSplashScreen);
+    QTimer::singleShot(4s, GlobalObject::mobileAdaptor(), &MobileAdaptor::hideSplashScreen);
 #if !defined(Q_OS_ANDROID)
-    QObject::connect(&kdsingleapp, SIGNAL(messageReceived(QByteArray)), Global::mobileAdaptor(), SLOT(processFileOpenRequest(QByteArray)));
+    QObject::connect(&kdsingleapp, SIGNAL(messageReceived(QByteArray)), GlobalObject::mobileAdaptor(), SLOT(processFileOpenRequest(QByteArray)));
 #endif
 
     /*
      * Set up ApplicationEngine for QML
      */
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("angle", QVariant::fromValue(Units::Angle()) );
     engine.rootContext()->setContextProperty("manual_location", MANUAL_LOCATION );
-    engine.rootContext()->setContextProperty("global", new Global(&engine) );
+    engine.rootContext()->setContextProperty("global", new GlobalObject(&engine) );
+    engine.rootContext()->setContextProperty("speed", QVariant::fromValue(Units::Speed()) );
     engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
 
     if (parser.isSet(screenshotOption)) {
-        new DemoRunner(&app);
+        GlobalObject::demoRunner()->setEngine(&engine);
+        QTimer::singleShot(1s, GlobalObject::demoRunner(), &DemoRunner::run);
     }
 
     // Load GUI and enter event loop
     return QGuiApplication::exec();
-
-    // Ensure that things get deleted in the right order
-//    delete demoRunner;
-//    Global::destruct();
-
-    // We exit(…) and do not return here. The reason is that the deconstruction of the qApp object
-    // freezes sporadically (for unclear reasons) whenever a connection to a traffic data receiver exists.
-    //
-    // BAD IDEA: exit causes crash reports. Again I do not know why.
-    //
-    //exit(0);
 }

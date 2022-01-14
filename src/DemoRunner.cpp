@@ -21,28 +21,27 @@
 #include <QApplication>
 #include <QDebug>
 #include <QEventLoop>
-#include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
+#include <QTranslator>
 #include <chrono>
 
 #include "DemoRunner.h"
-#include "Global.h"
+#include "GlobalObject.h"
 #include "Settings.h"
 #include "geomaps/GeoMapProvider.h"
 #include "navigation/Navigator.h"
 #include "traffic/TrafficDataProvider.h"
 #include "traffic/TrafficDataSource_Simulate.h"
 #include "traffic/TrafficFactor_WithPosition.h"
+#include "weather/WeatherDataProvider.h"
 
 using namespace std::chrono_literals;
 
 
 DemoRunner::DemoRunner(QObject *parent) : QObject(parent) {
-    qWarning() << "DemoRunner Initialisation";
 
-    QTimer::singleShot(1s, this, &DemoRunner::run);
 }
 
 
@@ -71,20 +70,19 @@ auto findQQuickItem(const QString &objectName, QQmlApplicationEngine* engine) ->
 
 void DemoRunner::run()
 {
-    auto *engine = qobject_cast<QQmlApplicationEngine*>(parent());
-    Q_ASSERT(engine != nullptr);
+    Q_ASSERT(m_engine != nullptr);
 
     // Obtain pointers to QML items
-    auto* applicationWindow =  qobject_cast<QQuickWindow*>(findQQuickItem("applicationWindow", engine));
+    auto* applicationWindow = qobject_cast<QQuickWindow*>(findQQuickItem("applicationWindow", m_engine));
     Q_ASSERT(applicationWindow != nullptr);
-    auto* flightMap = findQQuickItem("flightMap", engine);
+    auto* flightMap = findQQuickItem("flightMap", m_engine);
     Q_ASSERT(flightMap != nullptr);
-    auto *waypointDescription = findQQuickItem("waypointDescription", engine);
+    auto *waypointDescription = findQQuickItem("waypointDescription", m_engine);
     Q_ASSERT(waypointDescription != nullptr);
 
     // Set up traffic simulator
     auto* trafficSimulator = new Traffic::TrafficDataSource_Simulate();
-    Global::trafficDataProvider()->addDataSource( trafficSimulator );
+    GlobalObject::trafficDataProvider()->addDataSource( trafficSimulator );
     trafficSimulator->connectToTrafficReceiver();
     delay(10s);
 
@@ -96,11 +94,62 @@ void DemoRunner::run()
     applicationWindow->setProperty("height", 600);
 
     // Set language
-    Global::settings()->installTranslators("en");
-    engine->retranslate();
+    auto* enrouteTranslator = new QTranslator(qApp);
+    if (enrouteTranslator->load(QString(":enroute_en.qm"))) {
+        foreach(auto translator, qApp->findChildren<QTranslator*>()) {
+            if (QCoreApplication::removeTranslator(translator)) {
+                delete translator;
+            }
+        }
+        if (QCoreApplication::installTranslator(enrouteTranslator)) {
+            m_engine->retranslate();
+        }
+    } else {
+        delete enrouteTranslator;
+    }
 
     // Clear flight route
-    Global::navigator()->flightRoute()->clear();
+    GlobalObject::navigator()->flightRoute()->clear();
+
+    // Nearby waypoints
+    {
+        qWarning() << "Demo Mode" << "Aircraft Page";
+        emit requestOpenAircraftPage();
+        delay(4s);
+        applicationWindow->grabWindow().save("01-03-04-Aircraft.png");
+        emit requestClosePages();
+    }
+
+    // Nearby waypoints
+    {
+        qWarning() << "Demo Mode" << "Nearby Waypoints Page";
+        emit requestOpenNearbyPage();
+        delay(4s);
+        applicationWindow->grabWindow().save("02-02-01-Nearby.png");
+        emit requestClosePages();
+    }
+
+    // Weather
+    {
+        qWarning() << "Demo Mode" << "Weather Page";
+        emit requestOpenWeatherPage();
+        delay(1s);
+        applicationWindow->grabWindow().save("02-03-01-Weather.png");
+    }
+
+    // Weather Dialog
+    {
+        qWarning() << "Demo Mode" << "Weather Page";
+        auto *weatherReport = findQQuickItem("weatherReport", m_engine);
+        Q_ASSERT(weatherReport != nullptr);
+        auto station = GlobalObject::weatherDataProvider()->findWeatherStation("LFSB");
+        weatherReport->setProperty("weatherStation", QVariant::fromValue(station));
+        Q_ASSERT(station != nullptr);
+        QMetaObject::invokeMethod(weatherReport, "open", Qt::QueuedConnection);
+        delay(4s);
+        applicationWindow->grabWindow().save("02-03-02-WeatherDialog.png");
+        emit requestClosePages();
+    }
 
     // EDTF Taxiway
     {
@@ -111,7 +160,7 @@ void DemoRunner::run()
         trafficSimulator->setGS( Units::Speed::fromKN(5) );
         flightMap->setProperty("zoomLevel", 13);
         flightMap->setProperty("followGPS", true);
-        Global::settings()->setMapBearingPolicy(Settings::NUp);
+        GlobalObject::settings()->setMapBearingPolicy(Settings::NUp);
         delay(4s);
         applicationWindow->grabWindow().save("01-03-01-ground.png");
     }
@@ -124,7 +173,7 @@ void DemoRunner::run()
         trafficSimulator->setTT( Units::Angle::fromDEG(170) );
         trafficSimulator->setGS( Units::Speed::fromKN(90) );
         flightMap->setProperty("zoomLevel", 11);
-        Global::settings()->setMapBearingPolicy(Settings::TTUp);
+        GlobalObject::settings()->setMapBearingPolicy(Settings::TTUp);
         delay(4s);
         applicationWindow->grabWindow().save("01-03-02-flight.png");
     }
@@ -132,11 +181,11 @@ void DemoRunner::run()
     // Egelsbach Airport Info
     {
         qWarning() << "Demo Mode" << "EDFE Info Page";
-        auto waypoint = Global::geoMapProvider()->findByID("EDFE");
+        auto waypoint = GlobalObject::geoMapProvider()->findByID("EDFE");
         Q_ASSERT(waypoint.isValid());
         waypointDescription->setProperty("waypoint", QVariant::fromValue(waypoint));
         QMetaObject::invokeMethod(waypointDescription, "open", Qt::QueuedConnection);
-        Global::settings()->setMapBearingPolicy(Settings::NUp);
+        GlobalObject::settings()->setMapBearingPolicy(Settings::NUp);
         delay(4s);
         applicationWindow->grabWindow().save("01-03-03-EDFEinfo.png");
         QMetaObject::invokeMethod(waypointDescription, "close", Qt::QueuedConnection);
@@ -152,7 +201,7 @@ void DemoRunner::run()
         trafficSimulator->setGS( Units::Speed::fromKN(92) );
         flightMap->setProperty("zoomLevel", 13);
         flightMap->setProperty("followGPS", true);
-        Global::settings()->setMapBearingPolicy(Settings::TTUp);
+        GlobalObject::settings()->setMapBearingPolicy(Settings::TTUp);
         QGeoCoordinate trafficPosition(48.0103, 7.7952, 540);
         QGeoPositionInfo trafficInfo;
         trafficInfo.setCoordinate(trafficPosition);

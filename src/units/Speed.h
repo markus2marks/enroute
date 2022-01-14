@@ -24,6 +24,7 @@
 #include <QtMath>
 #include <QObject>
 
+
 namespace Units {
 
     /*! \brief Convenience class for speed computations
@@ -34,14 +35,14 @@ namespace Units {
     class Speed {
         Q_GADGET
 
-    public:
+    public:        
         /*! \brief Constructs a speed
          *
          * @param speedInFPM speed in feet per minute
          *
          * @returns speed
          */
-        static Speed fromFPM(double speedInFPM)
+        Q_INVOKABLE static constexpr Units::Speed fromFPM(double speedInFPM)
         {
             Speed result;
             result._speedInMPS = speedInFPM/FPM_per_MPS;
@@ -54,10 +55,24 @@ namespace Units {
          *
          * @returns speed
          */
-        static Speed fromMPS(double speedInMPS)
+        Q_INVOKABLE static constexpr Units::Speed fromMPS(double speedInMPS)
         {
             Speed result;
             result._speedInMPS = speedInMPS;
+            return result;
+        }
+
+
+        /*! \brief Constructs a speed
+         *
+         * @param speedInMPH speed in statute miles per hous
+         *
+         * @returns speed
+         */
+        Q_INVOKABLE static constexpr Units::Speed fromMPH(double speedInMPH)
+        {
+            Speed result;
+            result._speedInMPS = speedInMPH*MPS_per_MPH;
             return result;
         }
 
@@ -67,7 +82,7 @@ namespace Units {
          *
          * @returns speed
          */
-        static Speed fromKN(double speedInKT)
+        Q_INVOKABLE static constexpr Units::Speed fromKN(double speedInKT)
         {
             Speed result;
             result._speedInMPS = speedInKT / KN_per_MPS;
@@ -80,7 +95,7 @@ namespace Units {
          *
          * @returns speed
          */
-        static Speed fromKMH(double speedInKMH)
+        Q_INVOKABLE static constexpr Units::Speed fromKMH(double speedInKMH)
         {
             Speed result;
             result._speedInMPS = speedInKMH / KMH_per_MPS;
@@ -118,6 +133,17 @@ namespace Units {
             return _speedInMPS / rhs._speedInMPS;
         }
 
+        /*! \brief Adds two speeds
+         *
+         * @param rhs Denominator of the division
+         *
+         * @returns Quotient as a dimension-less number
+         */
+        Q_INVOKABLE Units::Speed operator+(Units::Speed rhs)
+        {
+            return Units::Speed::fromMPS(_speedInMPS + rhs._speedInMPS);
+        }
+
         /*! \brief Equality check
          *
          *  @param rhs Right hand side of the comparison
@@ -140,6 +166,27 @@ namespace Units {
             return _speedInMPS != rhs._speedInMPS;
         }
 
+        /*! \brief Comparison
+         *
+         *  @param rhs Right hand side of the comparison
+         *
+         *  @returns Result of the comparison
+         */
+        Q_INVOKABLE bool operator<(Units::Speed rhs) const
+        {
+            return _speedInMPS < rhs._speedInMPS;
+        }
+
+        /*! \brief Comparison
+         *
+         *  @param rhs Right hand side of the comparison
+         *
+         *  @returns Result of the comparison
+         */
+        Q_INVOKABLE bool operator>(Units::Speed rhs) const
+        {
+            return _speedInMPS > rhs._speedInMPS;
+        }
 
         /*! \brief Convert to feet per minute
          *
@@ -157,6 +204,15 @@ namespace Units {
         Q_INVOKABLE double toMPS() const
         {
             return _speedInMPS;
+        }
+
+        /*! \brief Convert to meters per second
+         *
+         * @returns speed in status miles per hour
+         */
+        Q_INVOKABLE double toMPH() const
+        {
+            return _speedInMPS/MPS_per_MPH;
         }
 
         /*! \brief Convert to knots
@@ -177,17 +233,11 @@ namespace Units {
             return _speedInMPS * KMH_per_MPS;
         }
 
-        /*! \brief Print speed as a string
-         *
-         * Depending on the user's preference, this method describes the speed
-         * as a string.
-         *
-         * @returns A string of the form "12 kt" or "19 km/h".
-         */
-        Q_INVOKABLE QString toString() const;
-
-        /*! \brief Unitless constant: one feett per minute / meters per second */
+        /*! \brief Unitless constant: one feet per minute / meters per second */
         static constexpr double FPM_per_MPS = 196.85039370079;
+
+        /*! \brief Unitless constant: one mile per hour / meters per second */
+        static constexpr double MPS_per_MPH = 0.44704;
 
         /*! \brief Unitless constant: one km/h / meters per second */
         static constexpr double KMH_per_MPS = 3.6;
@@ -195,15 +245,35 @@ namespace Units {
         /*! \brief Unitless constant: one knot / meters per second */
         static constexpr double KN_per_MPS = 1.943844;
 
+
+
         /*! \brief Unitless constant: one km/h / knot */
         static constexpr double KMH_per_KT = KMH_per_MPS / KN_per_MPS;
 
     private:
         // Speed in meters per second
-        double _speedInMPS{qQNaN()};
+        double _speedInMPS{ NAN };
     };
 
 };
+
+
+//
+// Operations
+//
+
+/*! \brief Scalar multiplication
+ *
+ *  @param lhs Scalar
+ *
+ *  @param rhs Speed
+ *
+ *  @returns Multiplies speed
+ */
+inline Units::Speed operator*(double lhs, Units::Speed rhs )
+{
+    return Units::Speed::fromMPS( lhs*rhs.toMPS() );
+}
 
 
 /*! \brief Serialization of a speed object into a QDataStream

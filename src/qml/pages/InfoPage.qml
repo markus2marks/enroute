@@ -48,7 +48,6 @@ Page {
 
     SwipeView {
         id: sv
- 
         
         anchors.top: bar.bottom
         anchors.left: parent.left
@@ -59,7 +58,6 @@ Page {
         
         ScrollView {
             clip: true
-    
             // The label that we really want to show is wrapped into an Item. This allows
             // to set implicitHeight, and thus compute the implicitHeight of the Dialog
             // without binding loops
@@ -81,6 +79,11 @@ Page {
                     onLinkActivated: Qt.openUrlExternally(link)
                 }
             }
+        }
+        
+        ScrollView {
+            clip: true
+
             // The label that we really want to show is wrapped into an Item. This allows
             // to set implicitHeight, and thus compute the implicitHeight of the Dialog
             // without binding loops
@@ -100,6 +103,10 @@ Page {
                     onLinkActivated: Qt.openUrlExternally(link)
                 }
             }
+        }
+
+        ScrollView {
+            clip: true
 
             // The label that we really want to show is wrapped into an Item. This allows
             // to set implicitHeight, and thus compute the implicitHeight of the Dialog
@@ -121,8 +128,9 @@ Page {
                     onLinkActivated: Qt.openUrlExternally(link)
                 }
             }
-            
         }
+
+
     } // StackView
     Keys.onPressed: 
     {

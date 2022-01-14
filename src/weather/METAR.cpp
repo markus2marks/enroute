@@ -18,10 +18,12 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "Global.h"
+#include "GlobalObject.h"
 #include "Settings.h"
+#include "navigation/Aircraft.h"
 #include "navigation/Navigator.h"
 #include "navigation/Clock.h"
+#include "navigation/Navigator.h"
 #include "weather/METAR.h"
 
 
@@ -222,10 +224,10 @@ auto Weather::METAR::relativeObservationTime() const -> QString
 void Weather::METAR::setupSignals() const
 {
     // Emit notifier signals whenever the time changes
-    connect(Global::navigator()->clock(), &Navigation::Clock::timeChanged, this, &Weather::METAR::summaryChanged);
-    connect(Global::navigator()->clock(), &Navigation::Clock::timeChanged, this, &Weather::METAR::relativeObservationTimeChanged);
+    connect(GlobalObject::navigator()->clock(), &Navigation::Clock::timeChanged, this, &Weather::METAR::summaryChanged);
+    connect(GlobalObject::navigator()->clock(), &Navigation::Clock::timeChanged, this, &Weather::METAR::relativeObservationTimeChanged);
 
-    connect(Global::settings(), &Settings::useMetricUnitsChanged, this, &Weather::METAR::summaryChanged);
+    connect(GlobalObject::navigator()->aircraft(), &Navigation::Aircraft::horizontalDistanceUnitChanged, this, &Weather::METAR::summaryChanged);
 }
 
 
@@ -256,9 +258,29 @@ auto Weather::METAR::summary() const -> QString {
 
     // Wind and Gusts
     if (_gust.toKN() > 15) {
-        resultList << tr("gusts of %1").arg(_gust.toString() );
+        switch (GlobalObject::navigator()->aircraft()->horizontalDistanceUnit()) {
+        case Navigation::Aircraft::Kilometer:
+            resultList << tr("gusts of %1 km/h").arg( qRound(_gust.toKMH()) );
+            break;
+        case Navigation::Aircraft::StatuteMile:
+            resultList << tr("gusts of %1 mph").arg( qRound(_gust.toMPH()) );
+            break;
+        case Navigation::Aircraft::NauticalMile:
+            resultList << tr("gusts of %1 kn").arg( qRound(_gust.toKN()) );
+            break;
+        }
     } else if (_wind.toKN() > 10) {
-        resultList << tr("wind at %1").arg(_wind.toString());
+        switch (GlobalObject::navigator()->aircraft()->horizontalDistanceUnit()) {
+        case Navigation::Aircraft::Kilometer:
+            resultList << tr("wind at %1 km/h").arg( qRound(_wind.toKMH()) );
+            break;
+        case Navigation::Aircraft::StatuteMile:
+            resultList << tr("wind at %1 mph").arg( qRound(_wind.toMPH()) );
+            break;
+        case Navigation::Aircraft::NauticalMile:
+            resultList << tr("wind at %1 kn").arg( qRound(_wind.toKN()) );
+            break;
+        }
     }
 
     // Weather

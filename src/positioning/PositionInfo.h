@@ -85,6 +85,24 @@ public:
      */
     Q_INVOKABLE Units::Distance positionErrorEstimate() const;
 
+    /*! \brief Timestamp
+     *
+     *  @returns Timestamp of the position info.
+     */
+    Q_INVOKABLE QDateTime timestamp() const
+    {
+        return m_positionInfo.timestamp().toUTC();
+    }
+
+    /*! \brief Timestamp string
+     *
+     *  @returns Timestamp of the position info, as a string.
+     */
+    Q_INVOKABLE QString timestampString() const
+    {
+        return m_positionInfo.timestamp().toUTC().time().toString("HH:mm:ss")+ " UTC";
+    }
+
     /*! \brief True Altitude
      *
      *  @returns True altitude with geoid correction taken into account or NaN

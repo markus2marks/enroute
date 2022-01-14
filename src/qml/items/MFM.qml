@@ -54,7 +54,7 @@ Item {
     FlightMap {
         id: flightMap
         objectName: "flightMap"
-		focus: true
+        focus: true
         anchors.fill: parent
 
         geoJSON: global.geoMapProvider().geoJSON
@@ -154,17 +154,16 @@ Item {
             interval: 410  // little more than time for animation
             onTriggered: centerBindingAnimation.enabled = true
         }
-		MapCircle {
-			id:flarm
-		 	
-	        center {
-	            latitude:  global.positionProvider().lastValidCoordinate.latitude
-	            longitude: global.positionProvider().lastValidCoordinate.longitude
-	        }
-	        radius: 5000.0
-	        color: 'transparent'
-	         opacity: 0.05
-        visible: true
+        MapCircle {
+  	    id:flarm
+            center {
+                latitude:  global.positionProvider().lastValidCoordinate.latitude
+                longitude: global.positionProvider().lastValidCoordinate.longitude
+            }
+	    radius: 5000.0
+	    color: 'transparent'
+	    opacity: 0.05
+            visible: true
     	}
 	
 
@@ -265,7 +264,15 @@ Item {
             anchorPoint.x: fiveMinuteBarBaseRect.width/2
             anchorPoint.y: fiveMinuteBarBaseRect.height
             coordinate: global.positionProvider().lastValidCoordinate
-            visible: (global.navigator().isInFlight) && (global.positionProvider().positionInfo.trueTrack().isFinite())
+            visible: {
+                if (!global.positionProvider().positionInfo.trueTrack().isFinite())
+                    return false
+                if (!global.positionProvider().positionInfo.groundSpeed().isFinite())
+                    return false
+                if (global.positionProvider().positionInfo.groundSpeed().toMPS() < 2.0)
+                    return false
+                return true
+            }
 
             Connections {
                 // This is a workaround against a bug in Qt 5.15.2.  The position of the MapQuickItem
@@ -279,7 +286,11 @@ Item {
                 Rectangle {
                     id: fiveMinuteBarBaseRect
 
-                    property real animatedGroundSpeedInMetersPerSecond: (global.navigator().isInFlight) ? global.positionProvider().positionInfo.groundSpeed().toMPS() : 0.0
+                    property real animatedGroundSpeedInMetersPerSecond: {
+                        if (!global.positionProvider().positionInfo.groundSpeed().isFinite())
+                            return 0.0
+                        return global.positionProvider().positionInfo.groundSpeed().toMPS()
+                    }
                     Behavior on animatedGroundSpeedInMetersPerSecond {NumberAnimation {duration: 400}}
 
                     rotation: flightMap.animatedTrack-flightMap.bearing
@@ -448,6 +459,8 @@ Item {
                 var wp = global.geoMapProvider().closestWaypoint(flightMap.toCoordinate(Qt.point(mouse.x,mouse.y)),
                                                         flightMap.toCoordinate(Qt.point(mouse.x+25,mouse.y)),
                                                         global.navigator().flightRoute)
+                if (!wp.isValid)
+                    return
                 waypointDescription.waypoint = wp
                 waypointDescription.open()
             }

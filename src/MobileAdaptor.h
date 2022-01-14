@@ -52,7 +52,7 @@ public:
     */
     explicit MobileAdaptor(QObject *parent = nullptr);
 
-    ~MobileAdaptor();
+    ~MobileAdaptor() = default;
 
     /*! \brief Function and type of a file that we have been requested to
      * open */
@@ -73,6 +73,12 @@ public:
     };
     Q_ENUM(NotificationType)
 
+    /*! \brief Device manufacturer
+     *
+     * @returns On Android, returns device manufacturer. On other systems, always returns an empty string.
+    */
+    Q_INVOKABLE static QString manufacturer();
+
     /*! \brief Checks if all requred permissions have been granted
      *
      * On Android, the app requirs certain permissions to run. This method can
@@ -82,6 +88,7 @@ public:
      * been granted. On other systems, always returns 'false'
     */
     Q_INVOKABLE bool missingPermissionsExist();
+
 
     /*! \brief Export content to file or to file sending app
      *
@@ -182,7 +189,7 @@ public slots:
 
     /*! \brief Make the device briefly vibrate
      *
-     * On Android, make the device briefly vibrate.
+     * On Android, make the device briefly vibrate if haptic feedback is enabled in the system settings.
      *
      * On other platforms, this does nothing.
     */
@@ -232,7 +239,7 @@ signals:
 
 private slots:
     // Intializations that are moved out of the constructor, in order to avoid
-    // nested uses of globalInstance().
+    // nested uses of Global.
     void deferredInitialization();
 
 private:

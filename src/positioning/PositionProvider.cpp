@@ -18,11 +18,13 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <QApplication>
 #include <QSettings>
 
-#include "Global.h"
+#include "GlobalObject.h"
 #include "positioning/PositionProvider.h"
 #include "traffic/TrafficDataProvider.h"
+#include "units/Units.h"
 
 
 Positioning::PositionProvider::PositionProvider(QObject *parent) : PositionInfoSource_Abstract(parent)
@@ -54,6 +56,7 @@ Positioning::PositionProvider::PositionProvider(QObject *parent) : PositionInfoS
     saveTimer->setInterval(1min + 57s);
     saveTimer->setSingleShot(false);
     connect(saveTimer, &QTimer::timeout, this, &Positioning::PositionProvider::savePositionAndTrack);
+    connect(qApp, &QApplication::aboutToQuit, this, &Positioning::PositionProvider::savePositionAndTrack);
     saveTimer->start();
 
     // Update properties
@@ -61,17 +64,12 @@ Positioning::PositionProvider::PositionProvider(QObject *parent) : PositionInfoS
 }
 
 
-Positioning::PositionProvider::~PositionProvider()
-{
-    savePositionAndTrack();
-}
-
 
 void Positioning::PositionProvider::deferredInitialization() const
 {
 
-    connect(Global::trafficDataProvider(), &Traffic::TrafficDataProvider::positionInfoChanged, this, &PositionProvider::onPositionUpdated);
-    connect(Global::trafficDataProvider(), &Traffic::TrafficDataProvider::pressureAltitudeChanged, this, &PositionProvider::onPressureAltitudeUpdated);
+    connect(GlobalObject::trafficDataProvider(), &Traffic::TrafficDataProvider::positionInfoChanged, this, &PositionProvider::onPositionUpdated);
+    connect(GlobalObject::trafficDataProvider(), &Traffic::TrafficDataProvider::pressureAltitudeChanged, this, &PositionProvider::onPressureAltitudeUpdated);
 
 }
 
@@ -85,7 +83,7 @@ void Positioning::PositionProvider::onPositionUpdated()
     QString source;
 
     // Priority #1: Traffic data provider
-    auto* trafficDataProvider = Global::trafficDataProvider();
+    auto* trafficDataProvider = GlobalObject::trafficDataProvider();
     if (trafficDataProvider != nullptr) {
         info = trafficDataProvider->positionInfo();
         source = trafficDataProvider->sourceName();
@@ -95,6 +93,21 @@ void Positioning::PositionProvider::onPositionUpdated()
     if (!info.isValid()) {
         info = satelliteSource.positionInfo();
         source = satelliteSource.sourceName();
+    }
+
+    // If no vertical speed has been provided by the system, we compute our own.
+    if (!info.verticalSpeed().isFinite() && info.trueAltitude().isFinite() && positionInfo().trueAltitude().isFinite()) {
+        auto deltaV = (info.trueAltitude() - positionInfo().trueAltitude());
+        auto deltaT = Units::Time::fromMS( positionInfo().timestamp().msecsTo(info.timestamp()) );
+        auto vSpeed = deltaV/deltaT;
+        if (vSpeed.isFinite()) {
+            if (positionInfo().verticalSpeed().isFinite()) {
+                vSpeed = 0.8*vSpeed + 0.2*positionInfo().verticalSpeed();
+            }
+            QGeoPositionInfo tmp = info;
+            tmp.setAttribute(QGeoPositionInfo::VerticalSpeed, vSpeed.toMPS());
+            info = PositionInfo(tmp);
+        }
     }
 
     // Set new info
@@ -114,7 +127,7 @@ void Positioning::PositionProvider::onPressureAltitudeUpdated()
     Units::Distance pAlt;
 
     // Priority #1: Traffic data provider
-    auto* trafficDataProvider = Global::trafficDataProvider();
+    auto* trafficDataProvider = GlobalObject::trafficDataProvider();
     if (trafficDataProvider != nullptr) {
         pAlt = trafficDataProvider->pressureAltitude();
     }
@@ -171,7 +184,7 @@ void Positioning::PositionProvider::setLastValidTT(Units::Angle newTT)
 
 auto Positioning::PositionProvider::lastValidCoordinate() -> QGeoCoordinate
 {
-    auto *positionProvider = Global::positionProvider();
+    auto *positionProvider = GlobalObject::positionProvider();
     if (positionProvider == nullptr) {
         return {};
     }
@@ -181,7 +194,7 @@ auto Positioning::PositionProvider::lastValidCoordinate() -> QGeoCoordinate
 
 auto Positioning::PositionProvider::lastValidTT() -> Units::Angle
 {
-    auto *positionProvider = Global::positionProvider();
+    auto *positionProvider = GlobalObject::positionProvider();
     if (positionProvider == nullptr) {
         return {};
     }

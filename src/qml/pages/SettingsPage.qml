@@ -37,6 +37,7 @@ Page {
         focus: true
         anchors.fill: parent
         anchors.topMargin: Qt.application.font.pixelSize
+        contentWidth: availableWidth
 
         ColumnLayout {
     
@@ -95,7 +96,7 @@ Page {
             SwitchDelegate {
                 id: hideGlidingSectors
                 KeyNavigation.up: hideUpperAsp
-                KeyNavigation.down: useMetricUnits
+                KeyNavigation.down: nightMode
                 text: qsTr("Hide Gliding Sectors") + (
                           global.settings().hideGlidingSectors ? (
                                                                   `<br><font color="#606060" size="2">`
@@ -140,42 +141,9 @@ Page {
             }
 
             SwitchDelegate {
-                id: useMetricUnits
-                KeyNavigation.up: hideGlidingSectors
-                KeyNavigation.down: nightMode
-                text: qsTr("Use metric units")
-                      + `<br><font color="#606060" size="2">`
-                      + ( global.settings().useMetricUnits ?
-                             qsTr("Speed in km/h, distance in km") :
-                             qsTr("Speed in kn, distance in nm")
-                         )
-                      + "</font>"
-                icon.source: "/icons/material/ic_speed.svg"
-                Layout.fillWidth: true
-                Component.onCompleted: useMetricUnits.checked = global.settings().useMetricUnits
-                onCheckedChanged: {
-                    global.mobileAdaptor().vibrateBrief()
-                    global.settings().useMetricUnits = useMetricUnits.checked
-                }
-                //remote control
-                Keys.onPressed: {
-                    if (event.key == Qt.Key_Return) 
-                    { 
-                        useMetricUnits.toggle()
-                        useMetricUnits.toggled()
-                    } 
-                    else if (event.key == Qt.Key_Left) 
-                    {
-                        //stackView.push("InfoMenu.qml")
-                        stackView.pop()
-                    }
-                }
-            }
-
-            SwitchDelegate {
                 id: nightMode
-                KeyNavigation.up: useMetricUnits
-                KeyNavigation.down: flarm 
+                KeyNavigation.up: hideGlidingSectors
+                KeyNavigation.down: ignoreSSL 
                 text: qsTr("Night mode")
                 icon.source: "/icons/material/ic_brightness_3.svg"
                 Layout.fillWidth: true
@@ -201,44 +169,27 @@ Page {
                 }
             }
 
+            SwitchDelegate {
+                id: ignoreSSL
+                text: qsTr("Ignore network security errors")
+                icon.source: "/icons/material/ic_lock.svg"
+                Layout.fillWidth: true
+                visible: global.settings().ignoreSSLProblems
+                Component.onCompleted: {
+                    ignoreSSL.checked = global.settings().ignoreSSLProblems
+                }
+                onToggled: {
+                    global.mobileAdaptor().vibrateBrief()
+                    global.settings().ignoreSSLProblems = ignoreSSL.checked
+                }
+            }
+
             WordWrappingItemDelegate {
                 Layout.fillWidth: true
                 icon.source: "/icons/material/ic_lock.svg"
                 text: `<font size="4">` + qsTr("Clear password storage") + "</font>"
                 onClicked: clearPasswordDialog.open()
                 visible: !global.passwordDB().empty
-            }
-            
-            Label {
-                Layout.leftMargin: Qt.application.font.pixelSize
-                text: qsTr("Devices")
-                font.pixelSize: Qt.application.font.pixelSize*1.2
-                font.bold: true
-                color: Material.accent
-            }
-            
-            WordWrappingItemDelegate {
-                id: flarm
-                KeyNavigation.up: nightMode
-                Layout.fillWidth: true
-                icon.source: "/icons/material/flarm.svg"
-                text: qsTr("Flarm")
-                onClicked: {
-                    //stackView.pop()
-                    stackView.push("FlarmManager.qml")
-                }
-                //remote control
-                Keys.onPressed: {
-                    if (event.key == Qt.Key_Return) 
-                    { 
-                        stackView.push("FlarmManager.qml") 
-                    } 
-                    else if (event.key == Qt.Key_Left) 
-                    {
-                        //stackView.push("InfoMenu.qml")
-                        stackView.pop()
-                    }
-                }
             }
 
             Label {
@@ -253,14 +204,14 @@ Page {
                 Layout.fillWidth: true
                 icon.source: "/icons/material/ic_info_outline.svg"
                 text: qsTr("How to connect your traffic receiver…")
-                onClicked: stackView.push("Manual.qml", {"fileName": "02-steps/traffic.html"})
+                onClicked: openManual("02-steps/traffic.html")
             }
 
             WordWrappingItemDelegate {
                 Layout.fillWidth: true
                 icon.source: "/icons/material/ic_info_outline.svg"
                 text: qsTr("How to connect your flight simulator…")
-                onClicked: stackView.push("Manual.qml", {"fileName": "02-steps/simulator.html"})
+                onClicked: openManual("02-steps/simulator.html")
             }
 
             Item { // Spacer
@@ -322,5 +273,6 @@ Page {
             stackView.pop()
         }
     } 
+
 
 } // Page

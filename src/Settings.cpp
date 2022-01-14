@@ -23,18 +23,12 @@
 #include <QLocale>
 #include <QSettings>
 
-#include "Global.h"
+#include "GlobalObject.h"
 #include "Settings.h"
 
 
 Settings::Settings(QObject *parent)
     : QObject(parent)
-{
-    installTranslators();
-}
-
-
-Settings::~Settings()
 {
     // Save some values
     settings.setValue("lastVersion", PROJECT_VERSION);
@@ -43,13 +37,13 @@ Settings::~Settings()
 
 auto Settings::acceptedWeatherTermsStatic() -> bool
 {
-    return Global::settings()->acceptedWeatherTerms();
+    return GlobalObject::settings()->acceptedWeatherTerms();
 }
 
 
 auto Settings::hideUpperAirspacesStatic() -> bool
 {
-    return Global::settings()->hideUpperAirspaces();
+    return GlobalObject::settings()->hideUpperAirspaces();
 }
 
 
@@ -93,6 +87,16 @@ void Settings::setHideUpperAirspaces(bool hide)
 }
 
 
+void Settings::setIgnoreSSLProblems(bool ignore)
+{
+    if (ignore == ignoreSSLProblems()) {
+        return;
+    }
+    settings.setValue("ignoreSSLProblems", ignore);
+    emit ignoreSSLProblemsChanged();
+}
+
+
 void Settings::setLastWhatsNewHash(uint lwnh)
 {
     if (lwnh == lastWhatsNewHash()) {
@@ -100,6 +104,16 @@ void Settings::setLastWhatsNewHash(uint lwnh)
     }
     settings.setValue("lastWhatsNewHash", lwnh);
     emit lastWhatsNewHashChanged();
+}
+
+
+void Settings::setLastWhatsNewInMapsHash(uint lwnh)
+{
+    if (lwnh == lastWhatsNewInMapsHash()) {
+        return;
+    }
+    settings.setValue("lastWhatsNewInMapsHash", lwnh);
+    emit lastWhatsNewInMapsHashChanged();
 }
 
 
@@ -151,46 +165,4 @@ void Settings::setNightMode(bool newNightMode)
 
     settings.setValue("Map/nightMode", newNightMode);
     emit nightModeChanged();
-}
-
-
-void Settings::setUseMetricUnits(bool unitHorizKmh)
-{
-    if (unitHorizKmh == useMetricUnits()) {
-        return;
-    }
-
-    settings.setValue("System/useMetricUnits", unitHorizKmh);
-    emit useMetricUnitsChanged();
-}
-
-
-auto Settings::useMetricUnitsStatic() -> bool
-{
-    return Global::settings()->useMetricUnits();
-}
-
-
-void Settings::installTranslators(const QString &localeName)
-{
-    // Remove existing translators
-    if (enrouteTranslator != nullptr) {
-        QCoreApplication::removeTranslator(enrouteTranslator);
-        delete enrouteTranslator;
-    }
-
-    // If desired, install new translators
-    if (localeName.isEmpty()) {
-        QLocale::setDefault(QLocale::system());
-    } else {
-        QLocale::setDefault(localeName);
-    }
-
-    enrouteTranslator = new QTranslator(this);
-    if (localeName.isEmpty()) {
-        enrouteTranslator->load(QString(":enroute_%1.qm").arg(QLocale::system().name().left(2)));
-    } else {
-        enrouteTranslator->load(QString(":enroute_%1.qm").arg(localeName));
-    }
-    QCoreApplication::installTranslator(enrouteTranslator);
 }

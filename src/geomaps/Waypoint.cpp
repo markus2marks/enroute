@@ -20,6 +20,7 @@
 
 
 #include <QJsonArray>
+#include <QUrl>
 
 #include "Waypoint.h"
 #include "units/Distance.h"
@@ -217,6 +218,14 @@ auto GeoMaps::Waypoint::isNear(const Waypoint& other) const -> bool
     }
 
     return m_coordinate.distanceTo(other.m_coordinate) < 2000;
+}
+
+
+auto GeoMaps::Waypoint::relocated(const QGeoCoordinate& newCoordinate) const -> GeoMaps::Waypoint
+{
+    Waypoint copy(*this);
+    copy.m_coordinate = newCoordinate;
+    return copy;
 }
 
 

@@ -81,9 +81,13 @@ void Positioning::PositionInfoSource_Satellite::onPositionUpdated(const QGeoPosi
     if (info.coordinate().type() == QGeoCoordinate::Coordinate3D) {
         auto geoidCorrection = Geoid::separation(info.coordinate());
         if (geoidCorrection.isFinite()) {
-            correctedInfo.setCoordinate( correctedInfo.coordinate().atDistanceAndAzimuth(0, 0, -geoidCorrection.toM()) );
+            correctedInfo.setCoordinate( correctedInfo.coordinate().atDistanceAndAzimuth(0.0, 0.0, -geoidCorrection.toM()) );
         }
     }
+
+    // It seems that some devices do not report valid time.
+    // Therefore, set the current time as a timestamp.
+    correctedInfo.setTimestamp( QDateTime::currentDateTimeUtc() );
 
     setPositionInfo( Positioning::PositionInfo(correctedInfo) );
     updateStatusString();

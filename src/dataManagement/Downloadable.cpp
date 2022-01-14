@@ -25,7 +25,8 @@
 #include <utility>
 
 #include "Downloadable.h"
-#include "Global.h"
+#include "GlobalObject.h"
+#include "Settings.h"
 
 DataManagement::Downloadable::Downloadable(QUrl url, const QString &fileName, QObject *parent)
     : QObject(parent), _url(std::move(url)) {
@@ -202,7 +203,7 @@ void DataManagement::Downloadable::startInfoDownload() {
     }
 
     // Start the download process for the remote file info
-    _networkReplyDownloadHeader = Global::networkAccessManager()->head(QNetworkRequest(_url));
+    _networkReplyDownloadHeader = GlobalObject::networkAccessManager()->head(QNetworkRequest(_url));
     connect(_networkReplyDownloadHeader, &QNetworkReply::finished, this,
             &Downloadable::downloadHeaderFinished);
 
@@ -236,15 +237,11 @@ void DataManagement::Downloadable::startFileDownload() {
 
     // Start download
     QNetworkRequest request(_url);
-    _networkReplyDownloadFile = Global::networkAccessManager()->get(request);
+    _networkReplyDownloadFile = GlobalObject::networkAccessManager()->get(request);
     connect(_networkReplyDownloadFile, &QNetworkReply::finished, this, &Downloadable::downloadFileFinished);
     connect(_networkReplyDownloadFile, &QNetworkReply::readyRead, this, &Downloadable::downloadFilePartialDataReceiver);
     connect(_networkReplyDownloadFile, &QNetworkReply::downloadProgress, this, &Downloadable::downloadFileProgressReceiver);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     connect(_networkReplyDownloadFile, &QNetworkReply::errorOccurred, this, &Downloadable::downloadFileErrorReceiver);
-#else
-    connect(_networkReplyDownloadFile, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error), this, &Downloadable::downloadFileErrorReceiver);
-#endif
     _downloadProgress = 0;
 
     // Emit signals as appropriate
@@ -284,7 +281,8 @@ void DataManagement::Downloadable::stopFileDownload() {
 }
 
 
-void DataManagement::Downloadable::downloadFileErrorReceiver(QNetworkReply::NetworkError code) {
+void DataManagement::Downloadable::downloadFileErrorReceiver(QNetworkReply::NetworkError code)
+{
 
     // Do nothing if there is no error
     if (code == QNetworkReply::NoError) {
@@ -293,6 +291,12 @@ void DataManagement::Downloadable::downloadFileErrorReceiver(QNetworkReply::Netw
 
     // Stop the download
     stopFileDownload();
+
+    // Do not do anything about SSL errors; this has already been handled by the SSLErrorHandler
+    if ((code == QNetworkReply::SslHandshakeFailedError) &&
+        !GlobalObject::settings()->ignoreSSLProblems()) {
+        return;
+    }
 
     // Come up with a message…
     QString message;
@@ -321,8 +325,7 @@ void DataManagement::Downloadable::downloadFileErrorReceiver(QNetworkReply::Netw
         break;
 
     case QNetworkReply::SslHandshakeFailedError:
-        message += tr("the SSL/TLS handshake failed and the encrypted channel could not be "
-                      "established. The sslErrors() signal should have been emitted");
+        message += tr("the SSL/TLS handshake failed and the encrypted channel could not be established.");
         break;
 
     case QNetworkReply::TemporaryNetworkFailureError:

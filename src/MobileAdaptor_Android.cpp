@@ -27,7 +27,7 @@
 #include <QtAndroidExtras/QAndroidJniObject>
 #include <QTimer>
 
-#include "Global.h"
+#include "GlobalObject.h"
 #include "MobileAdaptor.h"
 #include "geomaps/GeoMapProvider.h"
 #include "platform/Notifier.h"
@@ -80,6 +80,15 @@ auto MobileAdaptor::getSSID() -> QString
 }
 
 
+
+auto MobileAdaptor::manufacturer() -> QString
+{
+    QAndroidJniObject stringObject = QAndroidJniObject::callStaticObjectMethod("de/akaflieg_freiburg/enroute/MobileAdaptor",
+                                                                               "manufacturer", "()Ljava/lang/String;");
+    return stringObject.toString();
+}
+
+
 extern "C" {
 
 JNIEXPORT void JNICALL Java_de_akaflieg_1freiburg_enroute_MobileAdaptor_onWifiConnected(JNIEnv* /*unused*/, jobject /*unused*/)
@@ -89,12 +98,9 @@ JNIEXPORT void JNICALL Java_de_akaflieg_1freiburg_enroute_MobileAdaptor_onWifiCo
     // and thus before a QApplication instance has been constructed.
     // In these cases, the methods of the Global class must not be called
     // and we simply return.
-    if (QCoreApplication::instance() == nullptr) {
-        return;
+    if (GlobalObject::canConstruct()) {
+        GlobalObject::mobileAdaptor()->emitWifiConnected();
     }
-
-    Global::mobileAdaptor()->emitWifiConnected();
-
 }
 
 // This method is called from Java to indicate that the user has clicked into the Android
@@ -107,12 +113,9 @@ JNIEXPORT void JNICALL Java_de_akaflieg_1freiburg_enroute_MobileAdaptor_onNotifi
     // and thus before a QApplication instance has been constructed.
     // In these cases, the methods of the Global class must not be called
     // and we simply return.
-    if (QCoreApplication::instance() == nullptr) {
-        return;
+    if (GlobalObject::canConstruct()) {
+        GlobalObject::notifier()->emitNotificationClicked((Platform::Notifier::NotificationTypes)notifyID);
     }
-
-    Global::notifier()->emitNotificationClicked((Platform::Notifier::Notifications)notifyID);
-
 }
 
-}
+} // extern "C"
