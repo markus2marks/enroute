@@ -7,13 +7,13 @@
 	url = https://github.com/KDAB/android_openssl.git
 [submodule "3rdParty/qhttpengine"]
 	path = 3rdParty/qhttpengine
-	url = ../qhttpengine.git
+	url = https://github.com/Akaflieg-Freiburg/qhttpengine.git
 [submodule "3rdParty/osm-liberty"]
 	path = 3rdParty/osm-liberty
 	url = https://github.com/maputnik/osm-liberty.git
 [submodule "3rdParty/enrouteText"]
 	path = 3rdParty/enrouteText
-	url = ../enrouteText
+	url = https://github.com/Akaflieg-Freiburg/enrouteText.git
 [submodule "3rdParty/KDSingleApplication"]
 	path = 3rdParty/KDSingleApplication
 	url = https://github.com/KDAB/KDSingleApplication.git
@@ -25,7 +25,4 @@
 	url = https://gitlab.com/nnaumenko/metaf.git
 [submodule "3rdParty/GSL"]
 	path = 3rdParty/GSL
-	url = https://github.com/microsoft/GSL.git
-[submodule "GSL"]
-	path = GSL
 	url = https://github.com/microsoft/GSL.git
