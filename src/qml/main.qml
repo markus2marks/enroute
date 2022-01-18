@@ -70,29 +70,6 @@ ApplicationWindow {
                     color: Material.primary
                 }
 
-
-                Label {
-                    Layout.fillWidth: true
-                    leftPadding: 16
-                    rightPadding: 16
-
-                    text: "Enroute Flight Navigation " + Qt.application.version
-                    color: "white"
-                    font.pixelSize: 20
-                    font.weight: Font.Medium
-
-                    background: Rectangle {
-                        color: Material.primary
-                    }
-                }
-
-                Rectangle {
-                    height: 4
-
-                    Layout.fillWidth: true
-                    color: Material.primary
-                }
-
                 Label {
                     Layout.fillWidth: true
                     leftPadding: 16
@@ -322,20 +299,6 @@ ApplicationWindow {
 			     drawer.close()
     		        } 
     	            }
-                }
-
-                ItemDelegate { // Manual
-                    id: menuItemManual
-                    KeyNavigation.up: menuItemInformation
-                    KeyNavigation.down: menuItemBugReport
-                    text: qsTr("Manual")
-                    icon.source: "/icons/material/ic_book.svg"
-                    Layout.fillWidth: true
-
-                    onClicked: {
-                        global.mobileAdaptor().vibrateBrief()
-                        manualMenu.popup()
-                    }
 
 
                     AutoSizingMenu { // Info Menu
