@@ -30,6 +30,7 @@
 #include <QSettings>
 #include <QTranslator>
 #include <QtWebView/QtWebView>
+#include <QtMultimedia/QtMultimedia>
 
 #if defined(Q_OS_ANDROID)
 #include <QtWebView/QtWebView>
@@ -65,8 +66,11 @@
 #include "weather/WeatherDataProvider.h"
 #include "weather/Wind.h"
 #include <chrono>
+#include <pulse/pulseaudio.h>
+#include "variometer/Variometer.h"
 
 using namespace std::chrono_literals;
+
 
 auto main(int argc, char *argv[]) -> int
 {
@@ -196,6 +200,8 @@ auto main(int argc, char *argv[]) -> int
         QTimer::singleShot(1s, GlobalObject::demoRunner(), &DemoRunner::run);
     }
 
+    Variometer vario;
+    vario.start();
     // Load GUI and enter event loop
     return QGuiApplication::exec();
 }

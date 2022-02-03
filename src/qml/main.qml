@@ -119,7 +119,7 @@ ApplicationWindow {
                     text: qsTr("Aircraft")
                     icon.source: "/icons/material/ic_airplanemode_active.svg"
                     Layout.fillWidth: true
-
+                    KeyNavigation.down: menuItemRoute
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -133,7 +133,8 @@ ApplicationWindow {
                     text: qsTr("Route and Wind")
                     icon.source: "/icons/material/ic_directions.svg"
                     Layout.fillWidth: true
-		    KeyNavigation.down: menuItemNearby
+                    KeyNavigation.up: menuItemAircraft
+		            KeyNavigation.down: menuItemNearby
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -150,7 +151,7 @@ ApplicationWindow {
                     icon.source: "/icons/material/ic_my_location.svg"
                     Layout.fillWidth: true
                     KeyNavigation.up: menuItemRoute
-		    KeyNavigation.down: weatherItem
+		            KeyNavigation.down: weatherItem
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         stackView.pop()
@@ -291,13 +292,13 @@ ApplicationWindow {
                         aboutMenu.popup()
                     }
                     Keys.onPressed: {
-			if (event.key == Qt.Key_Return) {
-    			    event.accepted = true;
-    			    //aboutMenu.open()
-    			     stackView.pop()
-			     stackView.push("pages/InfoMenu.qml")
-			     drawer.close()
-    		        } 
+			            if (event.key == Qt.Key_Return) {
+    			            event.accepted = true;
+    			            //aboutMenu.open()
+    			            stackView.pop()
+			                stackView.push("pages/InfoMenu.qml")
+			                drawer.close()
+    		            } 
     	            }
 
 

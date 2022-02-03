@@ -9,8 +9,7 @@
 #define SRC_TRAFFIC_TRAFFICDATASOURCE_SERIAL_H_
 
 #include <QPointer>
-#include <QtSerialPort/QSerialPort>
-#include <QtSerialPort/QSerialPortInfo>
+#include <QtSerialPort/QtSerialPort>
 #include <QtCore>
 #include <QDebug>
 #include <QList>

@@ -20,17 +20,15 @@ struct sensorData
 			int32_t sensor1;
 			int32_t sensor2;
 			int32_t sensor3;
-			int32_t sensor4;
-			int32_t sensor5;
-			int32_t sensor6;
-			int32_t sensor7;
 			int32_t temp1;
 			int32_t temp2;
 			int32_t temp3;
-			int32_t temp4;
-			int32_t temp5;
-			int32_t temp6;
-			int32_t temp7;
+			float ax;
+			float ay;
+			float az;
+			float gx;
+			float gy;
+			float gz;
 };
 
 
@@ -41,6 +39,7 @@ class DataSwitch : public QObject
 
 		DataSwitch(UdpConnection* udpConnection);
 		bool sendData(void* data);
+		void openConnection();
 	public slots:
 		void setData(QByteArray data);
 	signals:

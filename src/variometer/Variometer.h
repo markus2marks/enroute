@@ -11,6 +11,7 @@
 #include "KalmanFilter.h"
 #include "DataSwitch.h"
 #include <QThreadPool>
+#include <QMutex>
 
 #define Z_VARIANCE          200.0f
 #define ZACCEL_VARIANCE     100.0f
@@ -27,6 +28,7 @@ class Variometer : public QThread
 		Variometer();
 		void startVario();
 		void run() override;
+		float calculateAltitude(float pressure);
 
 	public slots:
 		void readSensordata(struct sensorData* sensordata);
@@ -34,8 +36,9 @@ class Variometer : public QThread
 	private:
 		KalmanFilter* m_kalmanfilter;
 		DataSwitch* m_dataswitch;
-		int32_t m_sensorValue;
+		sensorData m_sensorData;
 		bool newDataAvailable;
+		QMutex m_mutex;
 };
 
 

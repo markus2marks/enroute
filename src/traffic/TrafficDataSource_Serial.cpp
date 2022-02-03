@@ -17,16 +17,16 @@ Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QObject *parent) :
 	m_serialPort = new QSerialPort(this);
 	QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
 	qInfo() << "Flarm init \n" << ports.length();
-	/*for(uint8_t i = 0;i < ports.length(); i++)
+	for(uint8_t i = 0;i < ports.length(); i++)
 	{
 		qInfo()<< "Port: " << ports.takeAt(i).portName() << "\n";
 
-		if(ports.takeAt(i).portName().compare("ttyAMA0"))
+		if(ports.takeAt(i).portName().compare("ttyUSB0"))
 		{
 		    m_serialPort->setPort(ports.takeAt(i));
 		}
-	}*/
-m_serialPort->setPort(ports.takeAt(1));
+	}
+//m_serialPort->setPort(ports.takeAt(0));
 
     m_serialPort->setBaudRate(QSerialPort::Baud19200,QSerialPort::AllDirections);
     m_serialPort->setStopBits(QSerialPort::OneStop);

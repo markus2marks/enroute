@@ -65,7 +65,7 @@ Traffic::TrafficDataProvider::TrafficDataProvider(QObject *parent) : Positioning
 //    addDataSource( new Traffic::TrafficDataSource_Tcp("192.168.10.1", 2000, this) );
 //    addDataSource( new Traffic::TrafficDataSource_Udp(4000, this) );
 //    addDataSource( new Traffic::TrafficDataSource_Udp(49002, this));
-    //addDataSource( new Traffic::TrafficDataSource_Serial(this));
+    addDataSource( new Traffic::TrafficDataSource_Serial(this));
 
     // Bindings for status string
     connect(this, &Traffic::TrafficDataProvider::positionInfoChanged, this, &Traffic::TrafficDataProvider::updateStatusString);

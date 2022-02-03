@@ -19,23 +19,24 @@ DataSwitch::DataSwitch(UdpConnection* udpConnection):m_udpConnection(udpConnecti
 }
 
 /*
+ *
+ */
+void DataSwitch::openConnection()
+{
+    m_udpConnection->initSocket();
+}
+/*
  * get Data from Network and analyse this
  */
 void DataSwitch::setData(QByteArray data)
 {
 	m_sensorData = (struct sensorData*) data.data();
 
-	/*qInfo() << "timestamp: " << m_sensorData->timestamp << \
+	qInfo() << "timestamp: " << m_sensorData->timestamp << \
 	"\tp1: " << m_sensorData->sensor1 << \
 	"\tp2: " << m_sensorData->sensor2 << \
 	"\tp3: " << m_sensorData->sensor3 << \
-	"\tp4: " << m_sensorData->sensor4 << \
-	"\tp5: " << m_sensorData->sensor5 << \
-	"\tp6: " << m_sensorData->sensor6 << \
-	"\tp7: " << m_sensorData->sensor7 << \
-	"\ttemp: " << m_sensorData->temp2 << \
-	"\tout2: " << filterValue2 << \
-	"\tout5: " << filterValue5 ;
-	qInfo() << " ";*/
+	"\ttemp: " << m_sensorData->temp2 ;
+	qInfo() << " ";
 	emit sensorDataAvailable(m_sensorData);
 }
