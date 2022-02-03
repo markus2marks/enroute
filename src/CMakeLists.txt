@@ -126,6 +126,12 @@ set(SOURCES
     weather/TAF.h
     weather/WeatherDataProvider.h
     weather/Wind.h
+    variometer/DataSwitch.h
+    variometer/DiagSensorboard.h
+    variometer/KalmanFilter.h
+    variometer/UdpConnection.h
+    variometer/Variometer.h
+    
 
     # C++ files
     dataManagement/DataManager.cpp
@@ -187,6 +193,11 @@ set(SOURCES
     weather/TAF.cpp
     weather/WeatherDataProvider.cpp
     weather/Wind.cpp
+    variometer/DataSwitch.cpp
+    variometer/DiagSensorboard.cpp
+    variometer/KalmanFilter.cpp
+    variometer/UdpConnection.cpp
+    variometer/Variometer.cpp
 
     ${HEADERS}
     )
