@@ -29,6 +29,10 @@ struct sensorData
 			float gx;
 			float gy;
 			float gz;
+			float quat_w;
+			float quat_x;
+			float quat_y;
+			float quat_z;
 };
 
 

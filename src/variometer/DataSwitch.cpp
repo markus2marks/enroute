@@ -36,6 +36,7 @@ void DataSwitch::setData(QByteArray data)
 	"\tp1: " << m_sensorData->sensor1 << \
 	"\tp2: " << m_sensorData->sensor2 << \
 	"\tp3: " << m_sensorData->sensor3 << \
+	"\taz: " << m_sensorData->az << \
 	"\ttemp: " << m_sensorData->temp2 ;
 	qInfo() << " ";
 	emit sensorDataAvailable(m_sensorData);

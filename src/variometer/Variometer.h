@@ -13,9 +13,9 @@
 #include <QThreadPool>
 #include <QMutex>
 
-#define Z_VARIANCE          200.0f
-#define ZACCEL_VARIANCE     100.0f
-#define ZACCELBIAS_VARIANCE 1.0f
+#define Z_VARIANCE          20.0f
+#define ZACCEL_VARIANCE     10.0f
+#define ZACCELBIAS_VARIANCE 0.1f
 
 
 class Variometer : public QThread
@@ -29,6 +29,7 @@ class Variometer : public QThread
 		void startVario();
 		void run() override;
 		float calculateAltitude(float pressure);
+		float imu_gravityCompensatedAccel(float ax, float ay, float az, float q0, float q1, float q2, float q3);
 
 	public slots:
 		void readSensordata(struct sensorData* sensordata);
