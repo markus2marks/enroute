@@ -131,7 +131,8 @@ set(SOURCES
     variometer/KalmanFilter.h
     variometer/UdpConnection.h
     variometer/Variometer.h
-    
+    variometer/Display.h
+    variometer/qcgaugewidget.h
 
     # C++ files
     dataManagement/DataManager.cpp
@@ -198,6 +199,8 @@ set(SOURCES
     variometer/KalmanFilter.cpp
     variometer/UdpConnection.cpp
     variometer/Variometer.cpp
+    variometer/Display.cpp
+    variometer/qcgaugewidget.cpp
 
     ${HEADERS}
     )
@@ -290,7 +293,7 @@ if (NOT ANDROID)
 
     # Add executable and libraries
     add_executable(${PROJECT_NAME} ${SOURCES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::DBus Qt5::Positioning Qt5::Quick Qt5::SerialPort Qt5::Multimedia Qt5::Sql Qt5::Svg qhttpengine kdsingleapplication sunset)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Widgets Qt5::Core Qt5::DBus Qt5::Positioning Qt5::Quick Qt5::SerialPort Qt5::Multimedia Qt5::Sql Qt5::Svg qhttpengine kdsingleapplication sunset)
     target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/3rdParty/sunset/src ${CMAKE_SOURCE_DIR}/3rdParty/GSL/include)
     target_precompile_headers(${PROJECT_NAME} PRIVATE
         <QObject>

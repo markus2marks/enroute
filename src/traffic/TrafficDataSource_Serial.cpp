@@ -23,7 +23,9 @@ Traffic::TrafficDataSource_Serial::TrafficDataSource_Serial(QObject *parent) :
 
 		if(ports.takeAt(i).portName().compare("ttyUSB0"))
 		{
-		    m_serialPort->setPort(ports.takeAt(i));
+
+			m_serialPort->setPortName("ttyUSB0");
+			//qInfo()<< "set port" << ports.takeAt(i).portName();
 		}
 	}
 //m_serialPort->setPort(ports.takeAt(0));

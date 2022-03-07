@@ -18,6 +18,8 @@ Variometer::Variometer ()
     m_dataswitch->openConnection();
     connect(m_dataswitch, &DataSwitch::sensorDataAvailable,this, &Variometer::readSensordata);
     newDataAvailable = false;
+    m_display = new Display();
+    m_display->show();
 }
 
 
@@ -49,6 +51,9 @@ void Variometer::run()
     float pV = 0.0f;
     int tmp_timestamp = 0;
     float a = 0;
+
+    float sinValue = 0.0f;
+    bool b = true;
     while(true)
     {
         if(newDataAvailable)
@@ -63,6 +68,22 @@ void Variometer::run()
             m_mutex.unlock();
 
         }
+
+        	m_display->valueChanged(5 * sin(sinValue));
+
+        	if((sinValue < 1.0) && (b == true))
+        	{
+        	   sinValue += 0.01f;
+            }
+            else if(sinValue > -1.0)
+            {
+            	sinValue -= 0.01f;
+            	b = false;
+            }
+            else
+            {
+            	b = true;
+            }
         QThread::msleep(20);
     }
 }

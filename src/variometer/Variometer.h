@@ -12,6 +12,7 @@
 #include "DataSwitch.h"
 #include <QThreadPool>
 #include <QMutex>
+#include "Display.h"
 
 #define Z_VARIANCE          20.0f
 #define ZACCEL_VARIANCE     10.0f
@@ -40,6 +41,7 @@ class Variometer : public QThread
 		sensorData m_sensorData;
 		bool newDataAvailable;
 		QMutex m_mutex;
+		Display* m_display;
 };
 
 
