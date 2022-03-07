@@ -43,7 +43,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Doxygen)
 find_package(Git REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Concurrent Core Gui LinguistTools Positioning Quick QuickWidgets Multimedia SerialPort Sql Svg WebView REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Concurrent Core Gui LinguistTools Positioning Quick QuickWidgets Multimedia SerialPort Widgets Sql Svg WebView REQUIRED)
 if( ANDROID )
     find_package(Qt5 5.15 COMPONENTS AndroidExtras WebView REQUIRED)
     find_package(Qt5QuickCompiler)
