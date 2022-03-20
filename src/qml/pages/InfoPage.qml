@@ -23,11 +23,10 @@ import QtQuick.Controls 2.15
 import QtQuick.Controls.Material 2.15
 import QtQuick.Layouts 1.15
 
-
 import "../items"
 
 Page {
-     id: page
+    id: pg
     title: qsTr("About Enroute Flight Navigation")
 
     header: StandardHeader {}

@@ -334,12 +334,7 @@ Dialog {
         }
 
         Label { // Second header line with distance and QUJ
-            text: {
-                // Mention horizontalDistanceUnit
-                global.navigator().aircraft.horizontalDistanceUnit
-
-                return global.navigator().describeWay(global.positionProvider().positionInfo.coordinate(), waypoint.coordinate)
-            }
+            text: global.navigator().aircraft.describeWay(global.positionProvider().positionInfo.coordinate(), waypoint.coordinate)
             visible: (text !== "")
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignRight
@@ -462,7 +457,6 @@ Dialog {
         onAccepted: {
             global.mobileAdaptor().vibrateBrief()
             global.navigator().flightRoute.clear()
-            global.navigator().flightRoute.append(global.positionProvider().lastValidCoordinate)
             global.navigator().flightRoute.append(waypoint)
             close()
             toast.doToast(qsTr("New flight route: direct to %1.").arg(waypoint.extendedName))

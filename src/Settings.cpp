@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,34 +18,72 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <QCoreApplication>
-#include <QLibraryInfo>
-#include <QLocale>
-#include <QSettings>
-
-#include "GlobalObject.h"
 #include "Settings.h"
 
+
+//
+// Constructor and destructor
+//
 
 Settings::Settings(QObject *parent)
     : QObject(parent)
 {
     // Save some values
     settings.setValue("lastVersion", PROJECT_VERSION);
+
+    // Convert old setting to new system
+    if (settings.contains("Map/hideUpperAirspaces")) {
+        auto hide = settings.value(QStringLiteral("Map/hideUpperAirspaces"), false).toBool();
+        if (hide) {
+            setAirspaceAltitudeLimit( Units::Distance::fromFT(10000) );
+        } else {
+            setAirspaceAltitudeLimit( Units::Distance::fromFT(qInf()) );
+        }
+        settings.remove("Map/hideUpperAirspaces");
+    }
 }
 
 
-auto Settings::acceptedWeatherTermsStatic() -> bool
+//
+// Getter Methods
+//
+
+auto Settings::airspaceAltitudeLimit() const -> Units::Distance
 {
-    return GlobalObject::settings()->acceptedWeatherTerms();
+    auto aspAlttLimit = Units::Distance::fromFT( settings.value(QStringLiteral("Map/airspaceAltitudeLimit_ft"), qQNaN()).toDouble() );
+    if (aspAlttLimit < airspaceAltitudeLimit_min) {
+        aspAlttLimit = airspaceAltitudeLimit_min;
+    }
+    if (aspAlttLimit > airspaceAltitudeLimit_max) {
+        aspAlttLimit = Units::Distance::fromFT( qInf() );
+    }
+    return aspAlttLimit;
 }
 
 
-auto Settings::hideUpperAirspacesStatic() -> bool
+auto Settings::lastValidAirspaceAltitudeLimit() const -> Units::Distance
 {
-    return GlobalObject::settings()->hideUpperAirspaces();
+    auto result = Units::Distance::fromFT(settings.value(QStringLiteral("Map/lastValidAirspaceAltitudeLimit_ft"), 99999).toInt() );
+    return qBound(airspaceAltitudeLimit_min, result, airspaceAltitudeLimit_max);
 }
 
+
+auto Settings::mapBearingPolicy() const -> Settings::MapBearingPolicy
+{
+    auto intVal = settings.value("Map/bearingPolicy", 0).toInt();
+    if (intVal == 0) {
+        return NUp;
+    }
+    if (intVal == 1) {
+        return TTUp;
+    }
+    return UserDefinedBearingUp;
+}
+
+
+//
+// Setter Methods
+//
 
 void Settings::setAcceptedTerms(int terms)
 {
@@ -67,6 +105,28 @@ void Settings::setAcceptedWeatherTerms(bool terms)
 }
 
 
+void Settings::setAirspaceAltitudeLimit(Units::Distance newAirspaceAltitudeLimit)
+{
+    if (newAirspaceAltitudeLimit < airspaceAltitudeLimit_min) {
+        newAirspaceAltitudeLimit = airspaceAltitudeLimit_min;
+    }
+    if (!newAirspaceAltitudeLimit.isFinite() || (newAirspaceAltitudeLimit > airspaceAltitudeLimit_max)) {
+        newAirspaceAltitudeLimit = Units::Distance();
+    }
+
+    if (newAirspaceAltitudeLimit != airspaceAltitudeLimit()) {
+        settings.setValue("Map/airspaceAltitudeLimit_ft", newAirspaceAltitudeLimit.toFeet());
+        emit airspaceAltitudeLimitChanged();
+    }
+
+    if (newAirspaceAltitudeLimit.isFinite() &&
+            (newAirspaceAltitudeLimit != lastValidAirspaceAltitudeLimit())) {
+        settings.setValue("Map/lastValidAirspaceAltitudeLimit_ft", newAirspaceAltitudeLimit.toFeet());
+        emit lastValidAirspaceAltitudeLimitChanged();
+    }
+}
+
+
 void Settings::setHideGlidingSectors(bool hide)
 {
     if (hide == hideGlidingSectors()) {
@@ -74,16 +134,6 @@ void Settings::setHideGlidingSectors(bool hide)
     }
     settings.setValue("Map/hideGlidingSectors", hide);
     emit hideGlidingSectorsChanged();
-}
-
-
-void Settings::setHideUpperAirspaces(bool hide)
-{
-    if (hide == hideUpperAirspaces()) {
-        return;
-    }
-    settings.setValue("Map/hideUpperAirspaces", hide);
-    emit hideUpperAirspacesChanged();
 }
 
 
@@ -117,20 +167,7 @@ void Settings::setLastWhatsNewInMapsHash(uint lwnh)
 }
 
 
-auto Settings::mapBearingPolicy() const -> Settings::MapBearingPolicyValues
-{
-    auto intVal = settings.value("Map/bearingPolicy", 0).toInt();
-    if (intVal == 0) {
-        return NUp;
-    }
-    if (intVal == 1) {
-        return TTUp;
-    }
-    return UserDefinedBearingUp;
-}
-
-
-void Settings::setMapBearingPolicy(MapBearingPolicyValues policy)
+void Settings::setMapBearingPolicy(MapBearingPolicy policy)
 {
     if (policy == mapBearingPolicy()) {
         return;
@@ -151,12 +188,6 @@ void Settings::setMapBearingPolicy(MapBearingPolicyValues policy)
 }
 
 
-auto Settings::nightMode() const -> bool
-{
-    return settings.value("Map/nightMode", false).toBool();
-}
-
-
 void Settings::setNightMode(bool newNightMode)
 {
     if (newNightMode == nightMode()) {
@@ -165,4 +196,15 @@ void Settings::setNightMode(bool newNightMode)
 
     settings.setValue("Map/nightMode", newNightMode);
     emit nightModeChanged();
+}
+
+
+void Settings::setPositioningByTrafficDataReceiver(bool newPositioningByTrafficDataReceiver)
+{
+    if (newPositioningByTrafficDataReceiver == positioningByTrafficDataReceiver()) {
+        return;
+    }
+
+    settings.setValue("positioningByTrafficDataReceiver", newPositioningByTrafficDataReceiver);
+    emit positioningByTrafficDataReceiverChanged();
 }

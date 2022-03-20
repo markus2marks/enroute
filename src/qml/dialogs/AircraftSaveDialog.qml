@@ -209,11 +209,7 @@ Dialog {
 
         onAccepted: {
             global.mobileAdaptor().vibrateBrief()
-<<<<<<< HEAD:src/qml/dialogs/FlightRouteOpenDialog.qml
-            dlg.openFromLibrary()
-=======
             dlg.saveToLibrary()
->>>>>>> master:src/qml/dialogs/AircraftSaveDialog.qml
         }
 
         onRejected: {

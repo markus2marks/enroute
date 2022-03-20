@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -28,8 +28,6 @@ ItemDelegate {
     id: itemDelegate
 
     contentItem: RowLayout {
-        height: Math.max(a.height, b.height)
-
         Icon { // Icon
             id: a
             source: itemDelegate.icon.source

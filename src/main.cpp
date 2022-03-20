@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -29,7 +29,6 @@
 #include <QQuickItem>
 #include <QSettings>
 #include <QTranslator>
-#include <QtWebView/QtWebView>
 #include <QtMultimedia/QtMultimedia>
 
 #if defined(Q_OS_ANDROID)
@@ -88,11 +87,12 @@ auto main(int argc, char *argv[]) -> int
     qRegisterMetaType<GeoMaps::Waypoint>();
     qRegisterMetaType<Positioning::PositionInfo>();
     qRegisterMetaType<Traffic::Warning>();
+    qRegisterMetaType<Platform::Notifier::NotificationActions>();
 
     qRegisterMetaType<MobileAdaptor::FileFunction>("MobileAdaptor::FileFunction");
     qRegisterMetaType<Platform::Notifier::NotificationTypes>("Platform::Notifier::Notifications");
     qmlRegisterUncreatableType<DemoRunner>("enroute", 1, 0, "DemoRunner", "DemoRunner objects cannot be created in QML");
-    qmlRegisterType<Navigation::Aircraft>("enroute", 1, 0, "Aircraft");
+    qmlRegisterUncreatableType<Navigation::Aircraft>("enroute", 1, 0, "Aircraft", "Aircraft objects cannot be created in QML");
     qmlRegisterType<Navigation::Clock>("enroute", 1, 0, "Clock");
     qmlRegisterUncreatableType<DataManagement::SSLErrorHandler>("enroute", 1, 0, "SSLErrorHandler", "SSLErrorHandler objects cannot be created in QML");
     qmlRegisterType<DataManagement::DownloadableGroup>("enroute", 1, 0, "DownloadableGroup");
@@ -199,7 +199,7 @@ auto main(int argc, char *argv[]) -> int
         GlobalObject::demoRunner()->setEngine(&engine);
         QTimer::singleShot(1s, GlobalObject::demoRunner(), &DemoRunner::run);
     }
-
+    qDebug() << "Number of screens:" << QGuiApplication::screens().size();
     Variometer vario;
     vario.start();
     // Load GUI and enter event loop

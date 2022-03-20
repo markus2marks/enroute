@@ -80,7 +80,8 @@ GeoMaps::Airspace::Airspace(const QJsonObject &geoJSONObject) {
 }
 
 
-auto GeoMaps::Airspace::estimatedLowerBoundInFtMSL() const -> double {
+auto GeoMaps::Airspace::estimatedLowerBoundMSL() const -> Units::Distance
+{
     double result = 0.0;
     bool ok = false;
 
@@ -89,9 +90,9 @@ auto GeoMaps::Airspace::estimatedLowerBoundInFtMSL() const -> double {
     if (AL.startsWith("FL", Qt::CaseInsensitive)) {
         result = AL.remove(0, 2).toDouble(&ok);
         if (ok) {
-            return 100 * result;
+            return Units::Distance::fromFT(100*result);
         }
-        return 0.0;
+        return Units::Distance::fromFT(0.0);
     }
 
     if (AL.endsWith("msl")) {
@@ -109,26 +110,9 @@ auto GeoMaps::Airspace::estimatedLowerBoundInFtMSL() const -> double {
 
     result = AL.toDouble(&ok);
     if (ok) {
-        return result;
+        return Units::Distance::fromFT(result);
     }
-    return 0.0;
-}
-
-
-auto GeoMaps::Airspace::isUpper() const -> bool {
-    QString AL = _lowerBound.simplified();
-
-    if (!AL.startsWith("FL", Qt::CaseInsensitive)) {
-        return false;
-    }
-
-    bool ok = false;
-    double fl = AL.remove(0, 2).toDouble(&ok);
-    if (!ok) {
-        return false;
-    }
-
-    return fl >= 100.0;
+    return Units::Distance::fromFT(0.0);
 }
 
 
@@ -159,4 +143,26 @@ QString GeoMaps::Airspace::makeMetric(const QString& standard) const
     }
     list[0] = QString("%1 m").arg(qRound(Units::Distance::fromFT(feetHeight).toM()));
     return list.join(' ');
+}
+
+
+bool GeoMaps::operator==(const GeoMaps::Airspace& A, const GeoMaps::Airspace& B)
+{
+    return ((A._name == B._name) &&
+            (A._CAT == B._CAT) &&
+            (A._upperBound == B._upperBound) &&
+            (A._lowerBound == B._lowerBound) &&
+            (A._polygon == B._polygon) );
+}
+
+
+uint GeoMaps::qHash(const GeoMaps::Airspace& A)
+{
+    uint result = 0;
+    result += qHash(A.name());
+    result += qHash(A.CAT());
+    result += qHash(A.upperBound());
+    result += qHash(A.lowerBound());
+    result += qHash(A.polygon().path());
+    return result;
 }

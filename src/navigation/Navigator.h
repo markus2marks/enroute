@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -21,8 +21,10 @@
 #pragma once
 
 #include "FlightRoute.h"
+#include "GlobalObject.h"
 #include "navigation/Clock.h"
 #include "navigation/FlightRoute.h"
+#include "navigation/RemainingRouteInfo.h"
 #include "positioning/PositionInfo.h"
 
 
@@ -35,35 +37,36 @@ namespace Navigation {
  *  The methods in this class are reentrant, but not thread safe.
  */
 
-class Navigator : public QObject
+class Navigator : public GlobalObject
 {
     Q_OBJECT
 
 public:
+
+    /*! \brief FlightStatus */
+    enum FlightStatus
+      {
+        Ground, /*!< Device is on the ground */
+        Flight, /*!< Device is flying */
+        Unknown /*!< Unknown */
+      };
+    Q_ENUM(FlightStatus)
+
+    //
+    // Constructors and destructors
+    //
+
     /*! \brief Standard constructor
      *
      * @param parent The standard QObject parent pointer
      */
     explicit Navigator(QObject *parent = nullptr);
 
-    /*! \brief Standard destructor
-     *
-     */
-    ~Navigator();
+    /*! \brief Standard destructor */
+    ~Navigator() = default;
 
-    //
-    // METHODS
-    //
-
-    /*! \brief Description of the way between two points
-     *
-     * @param from Starting point of the way
-     *
-     * @param to Endpoint of the way
-     *
-     * @returns A string such as "DIST 65.2 nm • QUJ 276°" or (depending on the global settings) "DIST 65.2 km • QUJ 276°".  If the way cannot be described (e.g. because one of the coordinates is invalid), then an empty string is returned.
-     */
-    Q_INVOKABLE static QString describeWay(const QGeoCoordinate &from, const QGeoCoordinate &to);
+    // deferred initialization
+    void deferredInitialization();
 
 
     //
@@ -75,13 +78,7 @@ public:
      *  The aircraft returned here is owned by this class and must not be deleted.
      *  QML ownership has been set to QQmlEngine::CppOwnership.
      */
-    Q_PROPERTY(Navigation::Aircraft* aircraft READ aircraft CONSTANT)
-
-    /*! \brief Getter function for the property with the same name
-     *
-     *  @returns Property aircraft
-     */
-    Navigation::Aircraft* aircraft();
+    Q_PROPERTY(Navigation::Aircraft aircraft READ aircraft WRITE setAircraft NOTIFY aircraftChanged)
 
     /*! \brief Global clock
      *
@@ -90,12 +87,6 @@ public:
      */
     Q_PROPERTY(Navigation::Clock* clock READ clock CONSTANT)
 
-    /*! \brief Getter function for the property with the same name
-     *
-     *  @returns Property clock
-     */
-    Navigation::Clock* clock();
-
     /*! \brief Current flight route
      *
      *  This flight route returned here is owned by this class and must not be deleted.
@@ -103,76 +94,134 @@ public:
      */
     Q_PROPERTY(FlightRoute* flightRoute READ flightRoute CONSTANT)
 
+    /*! \brief Estimate whether the device is flying or on the ground
+     *
+     *  This property holds an estimate, as to whether the device is flying or
+     *  on the ground.
+     */
+    Q_PROPERTY(FlightStatus flightStatus READ flightStatus NOTIFY flightStatusChanged)
+
+    /*! \brief Up-to-date information about the remaining route */
+    Q_PROPERTY(Navigation::RemainingRouteInfo remainingRouteInfo READ remainingRouteInfo NOTIFY remainingRouteInfoChanged)
+
+    /*! \brief Current wind */
+    Q_PROPERTY(Weather::Wind wind READ wind WRITE setWind NOTIFY windChanged)
+
+
+    //
+    // Getter Methods
+    //
+
+    /*! \brief Getter function for the property with the same name
+     *
+     *  @returns Property aircraft
+     */
+    Navigation::Aircraft aircraft() const { return m_aircraft; }
+
+    /*! \brief Getter function for the property with the same name
+     *
+     *  @returns Property clock
+     */
+    Navigation::Clock* clock();
+
     /*! \brief Getter function for the property with the same name
      *
      *  @returns Property flightRoute
      */
     FlightRoute* flightRoute();
 
-    /*! \brief Estimate whether the device is flying or on the ground
+    /*! \brief Getter function for the property with the same name
      *
-     *  This property holds an estimate, as to whether the device is flying or
-     *  on the ground.  The current implementation considers the device is
-     *  flying if the groundspeed can be read and is greater then 30 knots.
+     *  @returns Property flightStatus
      */
-    Q_PROPERTY(bool isInFlight READ isInFlight NOTIFY isInFlightChanged)
+    FlightStatus flightStatus() const { return m_flightStatus; }
 
     /*! \brief Getter function for the property with the same name
      *
-     *  @returns Property isInFlight
+     *  @returns Property remaining route info
      */
-    bool isInFlight() const
-    {
-        return m_isInFlight;
-    }
-
-    /*! \brief Current wind
-     *
-     *  The wind returned here is owned by this class and must not be deleted.
-     *  QML ownership has been set to QQmlEngine::CppOwnership.
-     */
-    Q_PROPERTY(Weather::Wind* wind READ wind CONSTANT)
+    Navigation::RemainingRouteInfo remainingRouteInfo() const { return m_remainingRouteInfo; }
 
     /*! \brief Getter function for the property with the same name
      *
      *  @returns Property wind
      */
-    Weather::Wind* wind();
+    Weather::Wind wind() const { return m_wind; }
+
+
+    //
+    // Setter Methods
+    //
+
+    /*! \brief Setter function for property of the same name
+     *
+     *  @param newAircraft Property aircraft
+     */
+    void setAircraft(const Navigation::Aircraft& newAircraft);
+
+    /*! \brief Setter function for property of the same name
+     *
+     *  @param newWind Property wind
+     */
+    void setWind(const Weather::Wind& newWind);
 
 signals:
     /*! \brief Notifier signal */
-    void isInFlightChanged();
+    void aircraftChanged();
+
+    /*! \brief Emitted when the airspaceAltitudeLimit is adjusted
+     *
+     *  To ensure that all relevant airspaces are visible on the moving map,
+     *  the navigator class will automatically adjust the property airspaceAltitudeLimit
+     *  of the global settings object whenever (ownship true altitude + 1000ft)
+     *  is higher than the present airspaceAltitudeLimit.
+     *
+     *  This signal is emitted whenever that happens.
+     */
+    void airspaceAltitudeLimitAdjusted();
+
+    /*! \brief Notifier signal */
+    void flightStatusChanged();
+
+    /*! \brief Notifier signal */
+    void remainingRouteInfoChanged();
+
+    /*! \brief Notifier signal */
+    void windChanged();
 
 private slots:
-    // Connected to sources, in order to receive new data
-    void onPositionUpdated(const Positioning::PositionInfo& info);
+    // Check if altitude limit for flight maps needs to be lifted. Connected to positioning source.
+    void updateAltitudeLimit(const Positioning::PositionInfo& info);
 
-    // Intializations that are moved out of the constructor, in order to avoid
-    // nested uses of constructors in Global.
-    void deferredInitialization() const;
+    // Update flight status. Connected to positioning source.
+    void updateFlightStatus(const Positioning::PositionInfo& info);
 
-    // Save current aircraft to standard location
-    void saveAircraft() const;
+    // Setter method. Only use this method to write to m_remainingRouteInfo
+    void setRemainingRouteInfo(const Navigation::RemainingRouteInfo& rrInfo);
+
+    // Re-computes the Remaining Route Info. The argument must be the current position info of the own aircraft.
+    void updateRemainingRouteInfo(const Positioning::PositionInfo& info);
 
 private:
     Q_DISABLE_COPY_MOVE(Navigator)
 
-    // Setter function for the property with the same name
-    void setIsInFlight(bool newIsInFlight);
+    // Updater function for the property with the same name
+    void setFlightStatus(FlightStatus newFlightStatus);
 
-    // Aircraft is considered flying if speed is at least this high
-    static constexpr double minFlightSpeedInKN = 30.0;
     // Hysteresis for flight speed
-    static constexpr double flightSpeedHysteresisInKn = 5.0;
+    static constexpr auto flightSpeedHysteresis = Units::Speed::fromKN(5.0);
 
-    bool m_isInFlight {false};
+    FlightStatus m_flightStatus {Unknown};
 
-    QPointer<Aircraft> m_aircraft {nullptr};
+    Aircraft m_aircraft {};
     QPointer<Clock> m_clock {nullptr};
     QPointer<FlightRoute> m_flightRoute {nullptr};
-    QPointer<Weather::Wind> m_wind {nullptr};
+    Weather::Wind m_wind {};
 
     QString m_aircraftFileName;
+
+    // RemainingRouteInfo only use the setter method to write to m_remainingRouteInfo
+    RemainingRouteInfo m_remainingRouteInfo;
 };
 
 }

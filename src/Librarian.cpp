@@ -275,8 +275,14 @@ auto Librarian::getStringFromRessource(const QString &name) -> QString
     }
 
     if (name == ":text/whatsnew.html") {
-        return tr("<p>As requested by our users, <strong>Enroute Flight Navigation</strong> now supports more units of measurement. Go to the new 'Aircraft' entry in the main menu to choose your preferred units.</p>")
-                + tr("<p><strong>Innovation Award 2021</strong> The readers of the German aviation magazine 'Aerokurier' have named <strong>Enroute Flight Navigation</strong> as one of the top three innovations of the year in the category 'Avionics'. Thanks to everybody who made this success possible!</p>");
+        return tr("<p>If you are following a route, the app will now show the remaining distances to the next and the final waypoint, "
+                  "as well as ETE and ETA.</p>") +
+                tr("<p><strong>Please test this new feature and report any issues!</strong></p>") +
+                tr("<p>Users can now choose the primary position data source. "
+                  "<strong>If you use this app together with a flight simulator, you must select the 'traffic data receiver' as the primary position data source.</strong> "
+                  "Open the 'Settings' page in the main menu to make the choice.</p>") +
+                tr("<p>The openAIP aviation database has seen a major update, and much of our infrastructure had to be rebuilt. "
+                   "<strong>Please contact us if you spot any inconsistencies and errors!</strong></p>");
     }
 
     QFile file(name);

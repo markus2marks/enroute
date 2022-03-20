@@ -53,30 +53,34 @@ Page {
                 color: Material.accent
             }
 
-            SwitchDelegate {
+            WordWrappingItemDelegate {
                 focus: true
                 id: hideUpperAsp
                 KeyNavigation.down: hideGlidingSectors
-                text: qsTr("Hide Airspaces ≥ FL100") + (
-                          global.settings().hideUpperAirspaces ? (
-                                                                  `<br><font color="#606060" size="2">`
-                                                                  + qsTr("Upper airspaces hidden")
-                                                                  +"</font>"
-                                                                  ) : (
-                                                                  `<br><font color="#606060" size="2">`
-                                                                  + qsTr("All airspaces shown")
-                                                                  + `</font>`
-                                                                  )
-                          )
+                text: {
+                    var secondLineString = ""
+                    var altitudeLimit = global.settings().airspaceAltitudeLimit
+                    if (!altitudeLimit.isFinite()) {
+                        secondLineString = qsTr("No limit, all airspaces shown")
+                    } else {
+                        // Mention
+                        global.navigator().aircraft.verticalDistanceUnit
+
+                        var airspaceAltitudeLimit = global.settings().airspaceAltitudeLimit
+                        var airspaceAltitudeLimitString = global.navigator().aircraft.verticalDistanceToString(airspaceAltitudeLimit)
+                        secondLineString = qsTr("Showing airspaces up to %1").arg(airspaceAltitudeLimitString)
+                    }
+                    return qsTr("Airspace Altitude Limit") +
+                            `<br><font color="#606060" size="2">` +
+                            secondLineString +
+                            `</font>`
+
+                }
                 icon.source: "/icons/material/ic_map.svg"
                 Layout.fillWidth: true
-                Component.onCompleted: {
-                    hideUpperAsp.checked = global.settings().hideUpperAirspaces
-                }
-                onToggled: {
+                onClicked: {
                     global.mobileAdaptor().vibrateBrief()
-                    global.settings().hideUpperAirspaces = hideUpperAsp.checked
-                   
+                    heightLimitDialog.open()
                 }
                 //remote control
                 Keys.onPressed: {
@@ -93,21 +97,9 @@ Page {
                 }
             }
 
-            SwitchDelegate {
+            WordWrappingSwitchDelegate {
                 id: hideGlidingSectors
-                KeyNavigation.up: hideUpperAsp
-                KeyNavigation.down: nightMode
-                text: qsTr("Hide Gliding Sectors") + (
-                          global.settings().hideGlidingSectors ? (
-                                                                  `<br><font color="#606060" size="2">`
-                                                                  + qsTr("Gliding sectors hidden")
-                                                                  +"</font>"
-                                                                  ) : (
-                                                                  `<br><font color="#606060" size="2">`
-                                                                  + qsTr("Gliding sectors shown")
-                                                                  + `</font>`
-                                                                  )
-                          )
+                text: qsTr("Hide Gliding Sectors")
                 icon.source: "/icons/material/ic_map.svg"
                 Layout.fillWidth: true
                 Component.onCompleted: {
@@ -140,7 +132,29 @@ Page {
                 color: Material.accent
             }
 
-            SwitchDelegate {
+            WordWrappingItemDelegate {
+                id: trafficDataReceiverPositioning
+                text: {
+                    var secondLineString = ""
+                    if (global.settings().positioningByTrafficDataReceiver) {
+                        secondLineString = qsTr("Traffic data receiver")
+                    } else {
+                        secondLineString = qsTr("Built-in satnav receiver")
+                    }
+                    return qsTr("Primary position data source") +
+                            `<br><font color="#606060" size="2">` +
+                            secondLineString +
+                            `</font>`
+                }
+                icon.source: "/icons/material/ic_satellite.svg"
+                Layout.fillWidth: true
+                onClicked: {
+                    global.mobileAdaptor().vibrateBrief()
+                    primaryPositionDataSourceDialog.open()
+                }
+            }
+
+            WordWrappingSwitchDelegate {
                 id: nightMode
                 KeyNavigation.up: hideGlidingSectors
                 KeyNavigation.down: ignoreSSL 
@@ -169,7 +183,7 @@ Page {
                 }
             }
 
-            SwitchDelegate {
+            WordWrappingSwitchDelegate {
                 id: ignoreSSL
                 text: qsTr("Ignore network security errors")
                 icon.source: "/icons/material/ic_lock.svg"
@@ -187,7 +201,7 @@ Page {
             WordWrappingItemDelegate {
                 Layout.fillWidth: true
                 icon.source: "/icons/material/ic_lock.svg"
-                text: `<font size="4">` + qsTr("Clear password storage") + "</font>"
+                text: qsTr("Clear password storage")
                 onClicked: clearPasswordDialog.open()
                 visible: !global.passwordDB().empty
             }
@@ -226,7 +240,6 @@ Page {
 
         // Size is chosen so that the dialog does not cover the parent in full
         width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
-        height: Math.min(parent.height-Qt.application.font.pixelSize, implicitHeight)
 
         // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
         // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
@@ -234,12 +247,15 @@ Page {
         x: (parent.width-width)/2.0
         y: (parent.height-height)/2.0
 
+        topMargin: Qt.application.font.pixelSize/2.0
+        bottomMargin: Qt.application.font.pixelSize/2.0
+
         modal: true
 
         title: qsTr("Clear password storage?")
 
         Label {
-            anchors.fill: parent
+            width: heightLimitDialog.availableWidth
 
             text: qsTr("Once the storage is cleared, the passwords can no longer be retrieved.")
             wrapMode: Text.Wrap

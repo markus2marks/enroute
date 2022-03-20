@@ -2,11 +2,12 @@
  * Variometer.cpp
  *
  *  Created on: 11.12.2020
- *      Author: markus
+ *      Author: markusx
  */
 #include "Variometer.h"
-
-
+#include "QWindow"
+#include <QApplication>
+#include <QScreen>
 
 Variometer::Variometer ()
 {
@@ -19,7 +20,23 @@ Variometer::Variometer ()
     connect(m_dataswitch, &DataSwitch::sensorDataAvailable,this, &Variometer::readSensordata);
     newDataAvailable = false;
     m_display = new Display();
-    m_display->show();
+    m_display->setFixedSize(480,480);
+//    QScreen * s = QGuiApplication::screens()[1];
+//    qDebug() << "size " << s->size().height();
+//    m_display->show();
+//    QWindow *test =m_display->windowHandle();
+//    m_display->windowHandle()->setScreen(s);
+//    QScreen * s2 = test->screen();
+//    qDebug() << "size 2 " << s2->size().height();
+    if(QGuiApplication::screens().size() >= 2)
+    {
+        m_display->move(2500,0);
+        m_display->showFullScreen();
+    }
+    else
+    {
+        m_display->show();
+    }
 }
 
 

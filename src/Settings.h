@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,11 +20,9 @@
 
 #pragma once
 
-#include <QFile>
-#include <QLocale>
-#include <QObject>
-#include <QPointer>
 #include <QSettings>
+
+#include "units/Distance.h"
 
 
 /*! \brief Global Settings Manager
@@ -44,20 +42,30 @@ class Settings : public QObject
     Q_OBJECT
 
 public:
+    /*! \brief Possible map bearing policies */
+    enum MapBearingPolicy
+    {
+        NUp, /*!< North is up. */
+        TTUp, /*!< True Track is up.  */
+        UserDefinedBearingUp /*!< User-defined bearing is up. */
+    };
+    Q_ENUM(MapBearingPolicy)
+
+
+    //
+    // Constructor and destructor
+    //
+
     /*! \brief Standard constructor
      *
      * @param parent The standard QObject parent pointer
      */
     explicit Settings(QObject *parent = nullptr);
 
-    /*! \brief Possible map bearing policies */
-    enum MapBearingPolicyValues
-    {
-        NUp, /*!< North is up. */
-        TTUp, /*!< True Track is up.  */
-        UserDefinedBearingUp /*!< User-defined bearing is up. */
-    };
-    Q_ENUM(MapBearingPolicyValues)
+
+    //
+    // Properties
+    //
 
     /*! \brief Find out if Terms & Conditions have been accepted
      *
@@ -68,18 +76,6 @@ public:
      */
     Q_PROPERTY(int acceptedTerms READ acceptedTerms WRITE setAcceptedTerms NOTIFY acceptedTermsChanged)
 
-    /*! \brief Getter function for property of the same name
-     *
-     * @returns Property acceptedTerms
-     */
-    int acceptedTerms() const { return settings.value(QStringLiteral("acceptedTerms"), 0).toInt(); }
-
-    /*! \brief Setter function for property of the same name
-     *
-     * @param terms Property acceptedTerms
-     */
-    void setAcceptedTerms(int terms);
-
     /*! \brief Find out if Weather Terms have been accepted
      *
      * This property says if the user has agreed to share its location and route
@@ -87,6 +83,69 @@ public:
      * If nothing has been accepted yet, false is returned.
      */
     Q_PROPERTY(bool acceptedWeatherTerms READ acceptedWeatherTerms WRITE setAcceptedWeatherTerms NOTIFY acceptedWeatherTermsChanged)
+
+    /*! \brief Airspace altitude limit for map display
+     *
+     * This property holds an altitude. The moving map will ony display airspaces whose lower
+     * boundary is lower than this altitude. The altitude value lies in the range [airspaceHeightLimit_min, airspaceHeightLimit_max]
+     * or takes a non-finite value to indicate that all airspaces shall be shown.
+     */
+    Q_PROPERTY(Units::Distance airspaceAltitudeLimit READ airspaceAltitudeLimit WRITE setAirspaceAltitudeLimit NOTIFY airspaceAltitudeLimitChanged)
+
+    /*! \brief Minimum acceptable value for property airspaceAltitudeLimit
+     *
+     *  This is currently set to 3.000 ft
+     */
+    Q_PROPERTY(Units::Distance airspaceAltitudeLimit_min MEMBER airspaceAltitudeLimit_min CONSTANT)
+
+    /*! \brief Maximum acceptable value for property airspaceAltitudeLimit
+     *
+     *  This is currently set to 15.000 ft
+     */
+    Q_PROPERTY(Units::Distance airspaceAltitudeLimit_max MEMBER airspaceAltitudeLimit_max CONSTANT)
+
+    /*! \brief Hide gliding sectors */
+    Q_PROPERTY(bool hideGlidingSectors READ hideGlidingSectors WRITE setHideGlidingSectors NOTIFY hideGlidingSectorsChanged)
+
+    /*! \brief Ignore SSL security problems */
+    Q_PROPERTY(bool ignoreSSLProblems READ ignoreSSLProblems WRITE setIgnoreSSLProblems NOTIFY ignoreSSLProblemsChanged)
+
+    /*! \brief Last finite value of airspaceAltitudeLimit */
+    Q_PROPERTY(Units::Distance lastValidAirspaceAltitudeLimit READ lastValidAirspaceAltitudeLimit NOTIFY lastValidAirspaceAltitudeLimitChanged)
+
+    /*! \brief Hash of the last "what's new" message that was shown to the user
+     *
+     * This property is used in the app to determine if the message has been
+     * shown or not.
+     */
+    Q_PROPERTY(uint lastWhatsNewHash READ lastWhatsNewHash WRITE setLastWhatsNewHash NOTIFY lastWhatsNewHashChanged)
+
+    /*! \brief Hash of the last "what's new in maps" message that was shown to the user
+     *
+     * This property is used in the app to determine if the message has been
+     * shown or not.
+     */
+    Q_PROPERTY(uint lastWhatsNewInMapsHash READ lastWhatsNewInMapsHash WRITE setLastWhatsNewInMapsHash NOTIFY lastWhatsNewInMapsHashChanged)
+
+    /*! \brief Map bearing policy */
+    Q_PROPERTY(MapBearingPolicy mapBearingPolicy READ mapBearingPolicy WRITE setMapBearingPolicy NOTIFY mapBearingPolicyChanged)
+
+    /*! \brief Night mode */
+    Q_PROPERTY(bool nightMode READ nightMode WRITE setNightMode NOTIFY nightModeChanged)
+
+    /*! \brief Use traffic data receiver for positioning */
+    Q_PROPERTY(bool positioningByTrafficDataReceiver READ positioningByTrafficDataReceiver WRITE setPositioningByTrafficDataReceiver NOTIFY positioningByTrafficDataReceiverChanged)
+
+
+    //
+    // Getter Methods
+    //
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @returns Property acceptedTerms
+     */
+    int acceptedTerms() const { return settings.value(QStringLiteral("acceptedTerms"), 0).toInt(); }
 
     /*! \brief Getter function for property of the same name
      *
@@ -96,29 +155,9 @@ public:
 
     /*! \brief Getter function for property of the same name
      *
-     * This function differs from acceptedWeatherTerms() only in that it is static.
-     *
-     * @returns Property acceptedWeatherTerms
+     * @returns Property airspaceAltitudeLimit
      */
-    static bool acceptedWeatherTermsStatic();
-
-    /*! \brief Setter function for property of the same name
-     *
-     * @param terms Property acceptedWeatherTerms
-     */
-    void setAcceptedWeatherTerms(bool terms);
-
-    /*! \brief True if translation files exist for the system language */
-    Q_PROPERTY(bool hasTranslation READ hasTranslation CONSTANT)
-
-    /*! \brief Getter function for property with the same name
-     *
-     * @returns Property hasTranslation
-     */
-    bool hasTranslation() const { return QFile::exists(QStringLiteral(":enroute_%1.qm").arg(QLocale::system().name().left(2))); }
-
-    /*! \brief Hide gliding sectors */
-    Q_PROPERTY(bool hideGlidingSectors READ hideGlidingSectors WRITE setHideGlidingSectors NOTIFY hideGlidingSectorsChanged)
+    Units::Distance airspaceAltitudeLimit() const;
 
     /*! \brief Getter function for property of the same name
      *
@@ -126,56 +165,17 @@ public:
      */
     bool hideGlidingSectors() const { return settings.value(QStringLiteral("Map/hideGlidingSectors"), true).toBool(); }
 
-    /*! \brief Setter function for property of the same name
-     *
-     * @param hide Property hideGlidingSectors
-     */
-    void setHideGlidingSectors(bool hide);
-
-    /*! \brief Hide airspaces with lower bound FL100 or above */
-    Q_PROPERTY(bool hideUpperAirspaces READ hideUpperAirspaces WRITE setHideUpperAirspaces NOTIFY hideUpperAirspacesChanged)
-
-    /*! \brief Getter function for property of the same name
-     *
-     * @returns Property hideUpperAirspaces
-     */
-    bool hideUpperAirspaces() const { return settings.value(QStringLiteral("Map/hideUpperAirspaces"), false).toBool(); }
-
-    /*! \brief Getter function for property of the same name
-     *
-     * This function differs from hideUpperAirspaces() only in that it is static.
-     *
-     * @returns Property hideUpperAirspaces
-     */
-    static bool hideUpperAirspacesStatic();
-
-    /*! \brief Setter function for property of the same name
-     *
-     * @param hide Property hideUpperAirspaces
-     */
-    void setHideUpperAirspaces(bool hide);
-
-    /*! \brief Ignore SSL securitry problems */
-    Q_PROPERTY(bool ignoreSSLProblems READ ignoreSSLProblems WRITE setIgnoreSSLProblems NOTIFY ignoreSSLProblemsChanged)
-
     /*! \brief Getter function for property of the same name
      *
      * @returns Property ignoreSSLProblems
      */
     bool ignoreSSLProblems() const { return settings.value(QStringLiteral("ignoreSSLProblems"), false).toBool(); }
 
-    /*! \brief Setter function for property of the same name
+    /*! \brief Getter function for property with the same name
      *
-     * @param ignore Property ignoreSSLProblems
+     * @returns Property hasTranslation
      */
-    void setIgnoreSSLProblems(bool ignore);
-
-    /*! \brief Hash of the last "what's new" message that was shown to the user
-     *
-     * This property is used in the app to determine if the message has been
-     * shown or not.
-     */
-    Q_PROPERTY(uint lastWhatsNewHash READ lastWhatsNewHash WRITE setLastWhatsNewHash NOTIFY lastWhatsNewHashChanged)
+    Units::Distance lastValidAirspaceAltitudeLimit() const;
 
     /*! \brief Getter function for property of the same name
      *
@@ -185,22 +185,72 @@ public:
 
     /*! \brief Getter function for property of the same name
      *
-     * @param lwnh Property lastWhatsNewHash
-     */
-    void setLastWhatsNewHash(uint lwnh);
-
-    /*! \brief Hash of the last "what's new in maps" message that was shown to the user
-     *
-     * This property is used in the app to determine if the message has been
-     * shown or not.
-     */
-    Q_PROPERTY(uint lastWhatsNewInMapsHash READ lastWhatsNewInMapsHash WRITE setLastWhatsNewInMapsHash NOTIFY lastWhatsNewInMapsHashChanged)
-
-    /*! \brief Getter function for property of the same name
-     *
      * @returns Property lastWhatsNewInMapsHash
      */
     uint lastWhatsNewInMapsHash() const { return settings.value(QStringLiteral("lastWhatsNewInMapsHash"), 0).toUInt(); }
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @returns Property mapBearingPolicy
+     */
+    MapBearingPolicy mapBearingPolicy() const;
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @returns Property night mode
+     */
+    bool nightMode() const { return settings.value("Map/nightMode", false).toBool(); }
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @returns Property positioningByTrafficDataReceiver
+     */
+    bool positioningByTrafficDataReceiver() const { return settings.value("positioningByTrafficDataReceiver", false).toBool(); }
+
+
+    //
+    // Setter Methods
+    //
+
+    /*! \brief Setter function for property of the same name
+     *
+     * @param terms Property acceptedTerms
+     */
+    void setAcceptedTerms(int terms);
+
+    /*! \brief Setter function for property of the same name
+     *
+     * @param terms Property acceptedWeatherTerms
+     */
+    void setAcceptedWeatherTerms(bool terms);
+
+    /*! \brief Setter function for property of the same name
+     *
+     *  If newAirspaceAltitudeLimit is less than airspaceHeightLimit_min, then
+     *  airspaceHeightLimit_min will be set. If newAirspaceAltitudeLimit is higher than
+     *  airspaceHeightLimit_max, then airspaceHeightLimit_max will be set.
+     *
+     * @param newAirspaceAltitudeLimit Property airspaceAltitudeLimit
+     */
+    void setAirspaceAltitudeLimit(Units::Distance newAirspaceAltitudeLimit);
+
+    /*! \brief Setter function for property of the same name
+     *
+     * @param hide Property hideGlidingSectors
+     */
+    void setHideGlidingSectors(bool hide);
+
+    /*! \brief Setter function for property of the same name
+     *
+     * @param ignore Property ignoreSSLProblems
+     */
+    void setIgnoreSSLProblems(bool ignore);
+
+    /*! \brief Getter function for property of the same name
+     *
+     * @param lwnh Property lastWhatsNewHash
+     */
+    void setLastWhatsNewHash(uint lwnh);
 
     /*! \brief Getter function for property of the same name
      *
@@ -208,29 +258,11 @@ public:
      */
     void setLastWhatsNewInMapsHash(uint lwnh);
 
-    /*! \brief Map bearing policy */
-    Q_PROPERTY(MapBearingPolicyValues mapBearingPolicy READ mapBearingPolicy WRITE setMapBearingPolicy NOTIFY mapBearingPolicyChanged)
-
-    /*! \brief Getter function for property of the same name
-     *
-     * @returns Property mapBearingPolicy
-     */
-    MapBearingPolicyValues mapBearingPolicy() const;
-
     /*! \brief Setter function for property of the same name
      *
      * @param policy Property mapBearingPolicy
      */
-    void setMapBearingPolicy(MapBearingPolicyValues policy);
-
-    /*! \brief Night mode */
-    Q_PROPERTY(bool nightMode READ nightMode WRITE setNightMode NOTIFY nightModeChanged)
-
-    /*! \brief Getter function for property of the same name
-     *
-     * @returns Property night mode
-     */
-    bool nightMode() const;
+    void setMapBearingPolicy(MapBearingPolicy policy);
 
     /*! \brief Setter function for property of the same name
      *
@@ -238,33 +270,53 @@ public:
      */
     void setNightMode(bool newNightMode);
 
+    /*! \brief Setter function for property of the same name
+     *
+     * @param newPositioningByTrafficDataReceiver Property positioningByTrafficDataReceiver
+     */
+    void setPositioningByTrafficDataReceiver(bool newPositioningByTrafficDataReceiver);
+
+
+    //
+    // Constants
+    //
+
+    static constexpr Units::Distance airspaceAltitudeLimit_min = Units::Distance::fromFT(3000);
+    static constexpr Units::Distance airspaceAltitudeLimit_max = Units::Distance::fromFT(15000);
+
 signals:
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
     void acceptedTermsChanged();
 
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
     void acceptedWeatherTermsChanged();
 
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
+    void airspaceAltitudeLimitChanged();
+
+    /*! \brief Notifier signal */
     void hideGlidingSectorsChanged();
 
-    /*! Notifier signal */
-    void hideUpperAirspacesChanged();
-
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
     void ignoreSSLProblemsChanged();
 
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
+    void lastValidAirspaceAltitudeLimitChanged();
+
+    /*! \brief Notifier signal */
     void lastWhatsNewHashChanged();
 
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
     void lastWhatsNewInMapsHashChanged();
 
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
     void mapBearingPolicyChanged();
 
-    /*! Notifier signal */
+    /*! \brief Notifier signal */
     void nightModeChanged();
+
+    /*! \brief Notifier signal */
+    void positioningByTrafficDataReceiverChanged();
 
 private:
     Q_DISABLE_COPY_MOVE(Settings)

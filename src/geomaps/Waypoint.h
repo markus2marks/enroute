@@ -38,6 +38,12 @@ class Waypoint
 {
     Q_GADGET
 
+    /*! \brief Comparison */
+    friend bool operator==(const GeoMaps::Waypoint&, const GeoMaps::Waypoint&);
+
+    /*! \brief Comparison */
+    friend bool operator!=(const GeoMaps::Waypoint&, const GeoMaps::Waypoint&);
+
 public:
     /*! \brief Constructs an invalid way point
      *
@@ -96,17 +102,6 @@ public:
      *  @returns True if both waypoints are valid and if tge distance between them is less than 2km
      */
     Q_INVOKABLE bool isNear(const GeoMaps::Waypoint& other) const;
-
-    /*! \brief Equality check
-     *
-     * @param other Right hand side of the equality check
-     *
-     * @returns True if the coordinates and all properties agree.
-     */
-    bool operator==(const Waypoint &other) const
-    {
-        return (m_coordinate == other.m_coordinate) && (m_properties == other.m_properties);
-    }
 
     /*! \brief Copy waypoint and change location
      *
@@ -244,6 +239,23 @@ public:
         return m_properties.value("NAM").toString();
     }
 
+    /*! \brief Short name of the waypoint
+     *
+     *  This property holds the ICAO code if it exists, or else the name of the waypoint.
+     */
+    Q_PROPERTY(QString shortName READ shortName CONSTANT)
+
+    /*! \brief Getter method for property with same name
+     *
+     *  @returns Property shortName
+     */
+    QString shortName() const
+    {
+        if (ICAOCode().isEmpty())
+            return name();
+        return ICAOCode();
+    }
+
     /* \brief Verbose description of waypoint properties
      *
      * This property holds a list of strings in meaningful order that describe the
@@ -302,6 +314,20 @@ protected:
     QGeoCoordinate m_coordinate;
     QMultiMap<QString, QVariant> m_properties;
 };
+
+/*! \brief Comparison */
+bool operator==(const GeoMaps::Waypoint&, const GeoMaps::Waypoint&);
+
+/*! \brief Comparison */
+bool operator!=(const GeoMaps::Waypoint&, const GeoMaps::Waypoint&);
+
+/*! \brief Hash function for airspaces
+ *
+ * @param wp Waypoint
+ *
+ * @returns Hash value
+ */
+uint qHash(const GeoMaps::Waypoint& wp);
 
 }
 
