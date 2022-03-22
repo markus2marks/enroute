@@ -164,25 +164,6 @@ Page {
                 AutoSizingMenu {
                     id: cptMenu
 
-<<<<<<< HEAD
-                    Action {
-                        id: openAction
-                        text: qsTr("Open …")
-                        onTriggered: {
-                            global.mobileAdaptor().vibrateBrief()
-                            finalFileName = modelData
-                            if (global.navigator().flightRoute.size > 0)
-                                overwriteDialog.open()
-                            else
-                                openFromLibrary()
-                        }
-
-                    } // openAction
-
-                    MenuSeparator { }
-
-=======
->>>>>>> master
                     AutoSizingMenu {
                         title: Qt.platform.os === "android" ? qsTr("Share …") : qsTr("Export …")
 
@@ -194,11 +175,7 @@ Page {
                                 highlighted = false
                                 parent.highlighted = false
 
-<<<<<<< HEAD
-                                var errorString = global.mobileAdaptor().exportContent(global.librarian().flightRouteGet(modelData).toGeoJSON(), "application/geo+json", global.librarian().flightRouteGet(modelData).suggestedFilename())
-=======
                                 var errorString = global.mobileAdaptor().exportContent(global.librarian().get(Librarian.Routes, modelData).toGeoJSON(), "application/geo+json", global.librarian().get(Librarian.Routes, modelData).suggestedFilename())
->>>>>>> master
                                 if (errorString === "abort") {
                                     toast.doToast(qsTr("Aborted"))
                                     return
@@ -223,11 +200,7 @@ Page {
                                 highlighted = false
                                 parent.highlighted = false
 
-<<<<<<< HEAD
-                                var errorString = global.mobileAdaptor().exportContent(global.librarian().flightRouteGet(modelData).toGpx(), "application/gpx+xml", global.librarian().flightRouteGet(modelData).suggestedFilename())
-=======
                                 var errorString = global.mobileAdaptor().exportContent(global.librarian().get(Librarian.Routes, modelData).toGpx(), "application/gpx+xml", global.librarian().get(Librarian.Routes, modelData).suggestedFilename())
->>>>>>> master
                                 if (errorString === "abort") {
                                     toast.doToast(qsTr("Aborted"))
                                     return
@@ -256,11 +229,7 @@ Page {
                                 highlighted = false
                                 parent.highlighted = false
 
-<<<<<<< HEAD
-                                var errorString = global.mobileAdaptor().viewContent(global.librarian().flightRouteGet(modelData).toGeoJSON(), "application/geo+json", "FlightRoute-%1.geojson")
-=======
                                 var errorString = global.mobileAdaptor().viewContent(global.librarian().get(Librarian.Routes, modelData).toGeoJSON(), "application/geo+json", "FlightRoute-%1.geojson")
->>>>>>> master
                                 if (errorString !== "") {
                                     shareErrorDialogLabel.text = errorString
                                     shareErrorDialog.open()
@@ -277,11 +246,7 @@ Page {
                                 highlighted = false
                                 parent.highlighted = false
 
-<<<<<<< HEAD
-                                var errorString = global.mobileAdaptor().viewContent(global.librarian().flightRouteGet(modelData).toGpx(), "application/gpx+xml", "FlightRoute-%1.gpx")
-=======
                                 var errorString = global.mobileAdaptor().viewContent(global.librarian().get(Librarian.Routes, modelData).toGpx(), "application/gpx+xml", "FlightRoute-%1.gpx")
->>>>>>> master
                                 if (errorString !== "") {
                                     shareErrorDialogLabel.text = errorString
                                     shareErrorDialog.open()
@@ -332,11 +297,7 @@ Page {
 
         clip: true
 
-<<<<<<< HEAD
-        model: global.librarian().flightRoutes(textInput.displayText)
-=======
         model: global.librarian().entries(Librarian.Routes, textInput.displayText)
->>>>>>> master
         delegate: flightRouteDelegate
         ScrollIndicator.vertical: ScrollIndicator {}
     }
@@ -363,17 +324,14 @@ Page {
     property string finalFileName;
 
     function openFromLibrary() {
-<<<<<<< HEAD
-        var errorString = global.navigator().flightRoute.loadFromGeoJSON(global.librarian().flightRouteFullPath(finalFileName))
-=======
         var errorString = global.navigator().flightRoute.loadFromGeoJSON(global.librarian().fullPath(Librarian.Routes, finalFileName))
->>>>>>> master
         if (errorString !== "") {
             lbl.text = errorString
             fileError.open()
             return
         }
-        stackView.push("FlightRouteEditor.qml")
+        toast.doToast( qsTr("Loading flight route <strong>%1</strong>").arg(finalFileName) )
+        stackView.pop()
     }
 
     function reloadFlightRouteList() {
@@ -437,17 +395,17 @@ Page {
         standardButtons: Dialog.Ok
 
         title: qsTr("Flight Route Library")
-<<<<<<< HEAD
-        text: global.librarian().getStringFromRessource(":text/flightRouteLibraryInfo.html").arg(global.librarian().flightRouteDirectory())
-=======
         text: global.librarian().getStringFromRessource(":text/flightRouteLibraryInfo.html").arg(global.librarian().directory(Librarian.Routes))
->>>>>>> master
     }
 
     Dialog {
         id: overwriteDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Overwrite current flight route?")
 
@@ -480,8 +438,12 @@ Page {
 
     Dialog {
         id: removeDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Remove from device?")
 
@@ -503,11 +465,7 @@ Page {
 
         onAccepted: {
             global.mobileAdaptor().vibrateBrief()
-<<<<<<< HEAD
-            global.librarian().flightRouteRemove(page.finalFileName)
-=======
             global.librarian().remove(Librarian.Routes, page.finalFileName)
->>>>>>> master
             page.reloadFlightRouteList()
             toast.doToast(qsTr("Flight route removed from device"))
         }
@@ -520,8 +478,12 @@ Page {
 
     Dialog {
         id: renameDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Rename Flight Route")
 
@@ -566,24 +528,15 @@ Page {
                 id: renameButton
 
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-<<<<<<< HEAD
-                enabled: (renameName.displayText !== "") && !global.librarian().flightRouteExists(renameName.displayText)
-=======
                 enabled: (renameName.text !== "") && !(global.librarian().exists(Librarian.Routes, renameName.text))
->>>>>>> master
                 text: qsTr("Rename")
             }
         }
 
         onAccepted: {
             global.mobileAdaptor().vibrateBrief()
-<<<<<<< HEAD
-            if ((renameName.text !== "") && !global.librarian().flightRouteExists(renameName.text)) {
-                global.librarian().flightRouteRename(finalFileName, renameName.text)
-=======
             if ((renameName.text !== "") && !global.librarian().exists(Librarian.Routes, renameName.text)) {
                 global.librarian().rename(Librarian.Routes, finalFileName, renameName.text)
->>>>>>> master
                 page.reloadFlightRouteList()
                 close()
                 toast.doToast(qsTr("Flight route renamed"))
@@ -598,8 +551,12 @@ Page {
 
     Dialog {
         id: shareErrorDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Error exporting data…")
         width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)

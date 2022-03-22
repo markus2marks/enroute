@@ -193,57 +193,19 @@ ApplicationWindow {
 
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
-                        libraryMenu.popup()
+                        stackView.pop()
+                        stackView.push("pages/LibraryMenu.qml")
+                        drawer.close()
                     }
-
-                    AutoSizingMenu {
-                        id: libraryMenu                        
-
-                        ItemDelegate {
-                            text: qsTr("Aircraft")
-                            icon.source: "/icons/material/ic_airplanemode_active.svg"
-                            Layout.fillWidth: true
-
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.push("pages/AircraftLibrary.qml")
-                                libraryMenu.close()
-                                drawer.close()
-                            }
-                        }
-
-                        ItemDelegate {
-                            text: qsTr("Flight Routes")
-                            icon.source: "/icons/material/ic_directions.svg"
-                            Layout.fillWidth: true
-
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.push("pages/FlightRouteLibrary.qml")
-                                libraryMenu.close()
-                                drawer.close()
-                            }
-                        }
-
-
-                        ItemDelegate {
-                            text: qsTr("Maps and Data")
-                                  + (global.dataManager().geoMaps.updatable ? `<br><font color="#606060" size="2">` +qsTr("Updates available") + "</font>" : "")
-                                  + (global.navigator().isInFlight ? `<br><font color="#606060" size="2">` +qsTr("Item not available in flight") + "</font>" : "")
-                            icon.source: "/icons/material/ic_map.svg"
-                            Layout.fillWidth: true
-
-                            enabled: !global.navigator().isInFlight
-                            onClicked: {
-                                global.mobileAdaptor().vibrateBrief()
-                                stackView.push("pages/DataManager.qml")
-                                libraryMenu.close()
-                                drawer.close()
-                            }
-                        }
-
+                    Keys.onPressed: {
+                        if (event.key == Qt.Key_Return) {
+                            event.accepted = true;
+                            //aboutMenu.open()
+                            stackView.pop()
+                            stackView.push("pages/LibraryMenu.qml")
+                            drawer.close()
+                        } 
                     }
-
                 }
 
                 ItemDelegate {
@@ -504,7 +466,7 @@ ApplicationWindow {
                     height: 1
                     Layout.fillWidth: true
                     color: Material.primary
-                    visible: !global.navigator().isInFlight
+                    visible: global.navigator().flightStatus !== Navigator.Flight
                 }
 
                 ItemDelegate { // Exit
@@ -517,7 +479,7 @@ ApplicationWindow {
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
                         drawer.close()
-                        if (global.navigator().isInFlight)
+                        if (global.navigator().flightStatus === Navigator.Flight)
                             exitDialog.open()
                         else
                             Qt.quit()
@@ -577,24 +539,18 @@ ApplicationWindow {
             // Start accepting files
             global.mobileAdaptor().startReceiveOpenFileRequests()
 
-            if ((global.settings().lastWhatsNewHash !== global.librarian().getStringHashFromRessource(":text/whatsnew.html")) && !global.navigator().isInFlight) {
+            if ((global.settings().lastWhatsNewHash !== global.librarian().getStringHashFromRessource(":text/whatsnew.html")) && (global.navigator().flightStatus !== Navigator.Flight)) {
                 whatsNewDialog.open()
                 return
             }
 
             if ((global.settings().lastWhatsNewInMapsHash !== global.dataManager().whatsNewHash) &&
                     (global.dataManager().whatsNew !== "") &&
-                    !global.navigator().isInFlight) {
+                    (global.navigator().flightStatus !== Navigator.Flight)) {
                 whatsNewInMapsDialog.open()
                 return
             }
 
-            if (global.dataManager().geoMaps.updatable && !global.navigator().isInFlight) {
-                dialogLoader.active = false
-                dialogLoader.source = "dialogs/UpdateMapDialog.qml"
-                dialogLoader.active = true
-                return
-            }
         }
 
         Keys.onReleased: {
@@ -602,7 +558,7 @@ ApplicationWindow {
                 if (stackView.depth > 1)
                     stackView.pop()
                 else {
-                    if (global.navigator().isInFlight)
+                    if (global.navigator().flightStatus === Navigator.Flight)
                         exitDialog.open()
                     else
                         Qt.quit()
@@ -627,6 +583,11 @@ ApplicationWindow {
             function onRequestOpenNearbyPage() {
                 stackView.pop()
                 stackView.push("pages/Nearby.qml")
+            }
+
+            function onRequestOpenRoutePage() {
+                stackView.pop()
+                stackView.push("pages/FlightRouteEditor.qml")
             }
 
             function onRequestOpenWeatherPage() {
@@ -771,14 +732,39 @@ ApplicationWindow {
     }
 
     Connections { // Notifier
+        target: global.navigator()
+
+        function onAirspaceAltitudeLimitAdjusted() {
+            var airspaceAltitudeLimit = global.settings().airspaceAltitudeLimit
+            if (airspaceAltitudeLimit.isFinite()) {
+                var airspaceAltitudeLimitString = global.navigator().aircraft.verticalDistanceToString(airspaceAltitudeLimit)
+                toast.doToast(qsTr("Now showing airspaces up to %1.").arg(airspaceAltitudeLimitString))
+            } else {
+                toast.doToast(qsTr("Now showing all airspaces."))
+            }
+        }
+
+    }
+
+    Connections { // Notifier
         target: global.notifier()
 
-        function onNotificationClicked(notifyID) {
-            if ((notifyID === 0) && (stackView.currentItem.objectName !== "DataManagerPage")) {
+        function onAction(act) {
+            if ((act === Notifier.DownloadInfo_Clicked) && (stackView.currentItem.objectName !== "DataManagerPage")) {
                 stackView.push("pages/DataManager.qml")
             }
-            if ((notifyID === 1) && (stackView.currentItem.objectName !== "TrafficReceiverPage")) {
+            if ((act === Notifier.TrafficReceiverSelfTestError_Clicked) && (stackView.currentItem.objectName !== "TrafficReceiverPage")) {
                 stackView.push("pages/TrafficReceiver.qml")
+            }
+            if ((act === Notifier.TrafficReceiverRuntimeError_Clicked) && (stackView.currentItem.objectName !== "TrafficReceiverPage")) {
+                stackView.push("pages/TrafficReceiver.qml")
+            }
+            if ((act === Notifier.GeoMapUpdatePending_Clicked) && (stackView.currentItem.objectName !== "DataManagerPage")) {
+                stackView.push("pages/DataManager.qml")
+            }
+            if (act === Notifier.GeoMapUpdatePending_UpdateRequested) {
+                global.dataManager().geoMaps.updateAll()
+                toast.doToast(qsTr("Starting map update"))
             }
         }
 

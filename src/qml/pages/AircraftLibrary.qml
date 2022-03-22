@@ -153,13 +153,16 @@ Page {
     property string finalFileName;
 
     function openFromLibrary() {
-        var errorString = global.navigator().aircraft.loadFromJSON(global.librarian().fullPath(Librarian.Aircraft, finalFileName))
+        var acft = global.navigator().aircraft.clone() // Get a copy of the current aircraft that we can modify and write back
+        var errorString = acft.loadFromJSON(global.librarian().fullPath(Librarian.Aircraft, finalFileName))
         if (errorString !== "") {
             lbl.text = errorString
             fileError.open()
             return
         }
-        stackView.push("Aircraft.qml")
+        global.navigator().aircraft = acft
+        toast.doToast( qsTr("Loading aircraft <strong>%1</strong>").arg(finalFileName) )
+        stackView.pop()
     }
 
     function reloadFlightRouteList() {
@@ -220,8 +223,12 @@ Page {
 
     Dialog {
         id: overwriteDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Overwrite current aircraft?")
 
@@ -253,8 +260,12 @@ Page {
 
     Dialog {
         id: removeDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Remove from device?")
 
@@ -289,8 +300,12 @@ Page {
 
     Dialog {
         id: renameDialog
-        anchors.centerIn: parent
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
         parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
 
         title: qsTr("Rename Aircraft")
 

@@ -57,23 +57,10 @@ Page {
                 var nFilesTotal;
                 var mapTypeString;
                 if (sv.currentIndex == 0) {  // swipe view shows aviation maps
-<<<<<<< HEAD
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
->>>>>>> master
                     nFilesTotal = global.dataManager().aviationMaps.numberOfFilesTotal();
                     mapTypeString = qsTr("aviation maps")
                 } else {  // swipe view shows base maps
                     nFilesTotal = global.dataManager().baseMaps.numberOfFilesTotal();
-<<<<<<< HEAD
-=======
-========
-                    nFilesTotal = global.mapManager().aviationMaps.numberOfFilesTotal();
-                    mapTypeString = qsTr("aviation maps")
-                } else {  // swipe view shows base maps
-                    nFilesTotal = global.mapManager().baseMaps.numberOfFilesTotal();
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                     mapTypeString = qsTr("base maps")
                 }
 
@@ -162,27 +149,12 @@ Page {
                         Action {
                             id: infoAction
 
-<<<<<<< HEAD
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
->>>>>>> master
                             text: qsTr("Info")
 
                             onTriggered: {
                                 global.mobileAdaptor().vibrateBrief()
                                 infoDialog.title = model.modelData.objectName
                                 infoDialog.text = global.dataManager().describeMapFile(model.modelData.fileName)
-<<<<<<< HEAD
-=======
-========
-                            text: qsTr("Map Info")
-
-                            onTriggered: {
-                                global.mobileAdaptor().vibrateBrief()
-                                infoDialog.title = qsTr("Map Info: ") + model.modelData.objectName
-                                infoDialog.text = global.geoMapProvider().describeMapFile(model.modelData.fileName)
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                                 infoDialog.open()
                             }
                         }
@@ -204,10 +176,6 @@ Page {
             Connections {
                 target: model.modelData
                 function onError(objectName, message) {
-<<<<<<< HEAD
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
->>>>>>> master
                     dialogLoader.active = false
                     dialogLoader.title = qsTr("Download Error")
                     dialogLoader.text = qsTr("<p>Failed to download <strong>%1</strong>.</p><p>Reason: %2.</p>").arg(objectName).arg(message)
@@ -326,11 +294,6 @@ Page {
             Connections {
                 target: model.modelData
                 function onError(objectName, message) {
-<<<<<<< HEAD
-=======
-========
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                     dialogLoader.active = false
                     dialogLoader.title = qsTr("Download Error")
                     dialogLoader.text = qsTr("<p>Failed to download <strong>%1</strong>.</p><p>Reason: %2.</p>").arg(objectName).arg(message)
@@ -406,15 +369,7 @@ Page {
                 onTriggered: {
                     global.mobileAdaptor().vibrateBrief()
                     highlighted = false
-<<<<<<< HEAD
                     global.dataManager().updateGeoMapList()
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                    global.dataManager().updateGeoMapList()
-========
-                    global.mapManager().updateGeoMapList()
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                 }
             }
 
@@ -422,28 +377,12 @@ Page {
                 id: downloadUpdatesMenu
 
                 text: qsTr("Download all updates…")
-<<<<<<< HEAD
                 enabled: global.dataManager().geoMaps.updatable
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                enabled: global.dataManager().geoMaps.updatable
-========
-                enabled: global.mapManager().geoMaps.updatable
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
 
                 onTriggered: {
                     global.mobileAdaptor().vibrateBrief()
                     highlighted = false
-<<<<<<< HEAD
                     global.dataManager().geoMaps.updateAll()
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                    global.dataManager().geoMaps.updateAll()
-========
-                    global.mapManager().geoMaps.updateAll()
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                 }
             }
 
@@ -489,15 +428,7 @@ Page {
 
             ListView {
                 clip: true
-<<<<<<< HEAD
                 model: global.dataManager().aviationMaps.downloadablesAsObjectList
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                model: global.dataManager().aviationMaps.downloadablesAsObjectList
-========
-                model: global.mapManager().aviationMaps.downloadablesAsObjectList
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                 delegate: mapItem
                 ScrollIndicator.vertical: ScrollIndicator {}
 
@@ -524,15 +455,7 @@ Page {
                             standardButtons: Dialog.Ok
 
                             title: qsTr("Request additional aviation maps")
-<<<<<<< HEAD
                             text: global.librarian().getStringFromRessource(":text/aviationMapMissing.html")
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                            text: global.librarian().getStringFromRessource(":text/aviationMapMissing.html")
-========
-                            text: librarian.getStringFromRessource(":text/aviationMapMissing.html")
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                         }
 
                     }
@@ -551,15 +474,7 @@ Page {
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
                         global.mobileAdaptor().vibrateBrief()
-<<<<<<< HEAD
                         global.dataManager().updateGeoMapList()
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                        global.dataManager().updateGeoMapList()
-========
-                        global.mapManager().updateGeoMapList()
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                     }
                 }
             } // ListView
@@ -568,15 +483,7 @@ Page {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 clip: true
-<<<<<<< HEAD
                 model: global.dataManager().baseMaps.downloadablesAsObjectList
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                model: global.dataManager().baseMaps.downloadablesAsObjectList
-========
-                model: global.mapManager().baseMaps.downloadablesAsObjectList
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                 delegate: mapItem
                 ScrollIndicator.vertical: ScrollIndicator {}
 
@@ -591,10 +498,6 @@ Page {
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
                         global.mobileAdaptor().vibrateBrief()
-<<<<<<< HEAD
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
->>>>>>> master
                         global.dataManager().updateGeoMapList()
                     }
                 }
@@ -620,12 +523,6 @@ Page {
                     if ( atYBeginning && refreshFlick ) {
                         global.mobileAdaptor().vibrateBrief()
                         global.dataManager().updateGeoMapList()
-<<<<<<< HEAD
-=======
-========
-                        global.mapManager().updateGeoMapList()
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                     }
                 }
             } // ListView
@@ -644,39 +541,20 @@ Page {
         anchors.bottom: parent.bottom
 
         color: "white"
-<<<<<<< HEAD
         visible: !global.dataManager().downloadingGeoMapList && !global.dataManager().hasGeoMapList
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-        visible: !global.dataManager().downloadingGeoMapList && !global.dataManager().hasGeoMapList
-========
-        visible: !global.mapManager().downloadingGeoMapList && !global.mapManager().hasGeoMapList
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
 
         Label {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.topMargin: Qt.application.font.pixelSize*2
-<<<<<<< HEAD
-=======
             anchors.leftMargin: Qt.application.font.pixelSize*2
             anchors.rightMargin: Qt.application.font.pixelSize*2
->>>>>>> master
 
             horizontalAlignment: Text.AlignHCenter
-            textFormat: Text.StyledText
+            textFormat: Text.RichText
             wrapMode: Text.Wrap
-<<<<<<< HEAD
-            text: qsTr("<h3>Sorry!</h3><p>The list of available maps has not yet been downloaded from the server. You can restart the download manually using the item 'Update' from the menu. You find the menu at the top right corner of the screen.</p>")
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
             text: qsTr("<h3>Sorry!</h3><p>The list of available maps has not yet been downloaded from the server. You can restart the download manually using button below.</p>")
-========
-            text: qsTr("<h3>Sorry!</h3><p>The list of available maps has not yet been downloaded from the server. You can restart the download manually using the item 'Update' from the menu.  To find the menu, look for the symbol '&#8942;' at the top right corner of the screen.</p>")
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
         }
     }
 
@@ -689,15 +567,7 @@ Page {
         anchors.bottom: parent.bottom
 
         color: "white"
-<<<<<<< HEAD
         visible: global.dataManager().downloadingGeoMapList
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-        visible: global.dataManager().downloadingGeoMapList
-========
-        visible: global.mapManager().downloadingGeoMapList
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
 
         Label {
             id: downloadIndicatorLabel
@@ -706,25 +576,14 @@ Page {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.topMargin: Qt.application.font.pixelSize*2
-<<<<<<< HEAD
-=======
             anchors.leftMargin: Qt.application.font.pixelSize*2
             anchors.rightMargin: Qt.application.font.pixelSize*2
->>>>>>> master
 
             horizontalAlignment: Text.AlignHCenter
-            textFormat: Text.StyledText
+            textFormat: Text.RichText
             wrapMode: Text.Wrap
             text: qsTr("<h3>Download in progress…</h3><p>Please stand by while we download the list of available maps from the server…</p>")
-<<<<<<< HEAD
-        } // downloadIndicatorLabel
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
         }
-========
-        } // downloadIndicatorLabel
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
 
         BusyIndicator {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -736,21 +595,9 @@ Page {
         // Without this, the downaloadIndication would not be visible on very quick downloads, leaving the user
         // without any feedback if the download did actually take place.
         Connections {
-<<<<<<< HEAD
             target: global.dataManager()
             function onDownloadingGeoMapListChanged () {
                 if (global.dataManager().downloadingGeoMapList) {
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-            target: global.dataManager()
-            function onDownloadingGeoMapListChanged () {
-                if (global.dataManager().downloadingGeoMapList) {
-========
-            target: global.mapManager()
-            function onDownloadingGeoMapListChanged () {
-                if (global.mapManager().downloadingGeoMapList) {
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
                     downloadIndicator.visible = true
                     downloadIndicator.opacity = 1.0
                 } else
@@ -769,10 +616,6 @@ Page {
         width: parent.width
 
         Material.elevation: 3
-<<<<<<< HEAD
-        visible: !global.dataManager().geoMaps.downloading && global.dataManager().geoMaps.updatable
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
         visible: (!global.dataManager().downloadingGeoMapList && !global.dataManager().hasGeoMapList) || (!global.dataManager().geoMaps.downloading && global.dataManager().geoMaps.updatable)
         contentHeight: Math.max(downloadMapListActionButton.height, downloadUpdatesActionButton.height)
 
@@ -789,49 +632,25 @@ Page {
                 global.dataManager().updateGeoMapList()
             }
         }
-========
-        visible: !global.mapManager().geoMaps.downloading && global.mapManager().geoMaps.updatable
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
 
         ToolButton {
             id: downloadUpdatesActionButton
             anchors.centerIn: parent
-<<<<<<< HEAD
-            text: qsTr("Download all updates…")
-=======
             visible: !global.dataManager().geoMaps.downloading && global.dataManager().geoMaps.updatable
 
             text: qsTr("Update")
->>>>>>> master
             icon.source: "/icons/material/ic_file_download.svg"
 
             onClicked: {
                 global.mobileAdaptor().vibrateBrief()
-<<<<<<< HEAD
                 global.dataManager().geoMaps.updateAll()
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-                global.dataManager().geoMaps.updateAll()
-========
-                global.mapManager().geoMaps.updateAll()
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
             }
         }
     }
 
     // Show error when list of maps cannot be downloaded
     Connections {
-<<<<<<< HEAD
         target: global.dataManager()
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-        target: global.dataManager()
-========
-        target: global.mapManager()
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
         function onError (message) {
             dialogLoader.active = false
             dialogLoader.title = qsTr("Download Error")
@@ -841,25 +660,11 @@ Page {
         }
     }
 
-<<<<<<< HEAD
-
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
-========
-
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
     LongTextDialog {
         id: infoDialog
 
         text: ""
         standardButtons: Dialog.Ok
     }
-<<<<<<< HEAD
-=======
-<<<<<<<< HEAD:src/qml/pages/DataManager.qml
 
-========
->>>>>>>> master:src/qml/pages/MapManager.qml
->>>>>>> master
 } // Page

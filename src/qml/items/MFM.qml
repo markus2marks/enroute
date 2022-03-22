@@ -112,7 +112,7 @@ Item {
             when: flightMap.followGPS === true
             value: {
                 // If not in flight, then aircraft stays in center of display
-                if (!global.navigator().isInFlight)
+                if (global.navigator().flightStatus !== Navigator.Flight)
                     return global.positionProvider().lastValidCoordinate
                 if (!global.positionProvider().lastValidTT.isFinite())
                     return global.positionProvider().lastValidCoordinate
@@ -345,7 +345,7 @@ Item {
 
                 FlightVector {
                     groundSpeedInMetersPerSecond: global.positionProvider().positionInfo.groundSpeed().toMPS()
-                    visible: (global.navigator().isInFlight) && (global.positionProvider().positionInfo.trueTrack().isFinite())
+                    visible: (global.navigator().flightStatus === Navigator.Flight) && (global.positionProvider().positionInfo.trueTrack().isFinite())
                 }
 
                 Image {
@@ -381,6 +381,16 @@ Item {
             path: global.navigator().flightRoute.geoPath
             opacity: (flightMap.zoomLevel < 11.0) ? 1.0 : 0.3
         }
+
+        MapPolyline {
+            id: toNextWP
+            visible: global.positionProvider().lastValidCoordinate.isValid && global.navigator().remainingRouteInfo.nextWP.coordinate.isValid
+            line.width: 2
+            line.color: '#800000' //'green'
+            path: visible ? [global.positionProvider().lastValidCoordinate, global.navigator().remainingRouteInfo.nextWP.coordinate] : undefined
+            opacity: (flightMap.zoomLevel < 11.0) ? 1.0 : 0.3
+        }
+
 
         MapItemView { // Traffic opponents
             model: global.trafficDataProvider().trafficObjects4QML
@@ -506,11 +516,56 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         }
     }
 
+    RemainingRoute {
+        id: remainingRoute
+
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+    }
+
+    Label {
+        id: airspaceAltLimitLabel
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: remainingRoute.bottom
+        anchors.topMargin: 0.4*Qt.application.font.pixelSize
+
+        text: {
+            // Mention
+            global.navigator().aircraft.verticalDistanceUnit
+
+            var airspaceAltitudeLimit = global.settings().airspaceAltitudeLimit
+            var airspaceAltitudeLimitString = global.navigator().aircraft.verticalDistanceToString(airspaceAltitudeLimit)
+            return " "+qsTr("Airspaces up to %1").arg(airspaceAltitudeLimitString)+" "
+        }
+        background: Rectangle { color: "white"; opacity: Material.theme === Material.Dark ? 0.1 : 0.8}
+        visible: global.settings().airspaceAltitudeLimit.isFinite()
+    }
+
+    RoundButton {
+        id: menuButton
+        icon.source: "/icons/material/ic_menu.svg"
+
+        anchors.left: parent.left
+        anchors.leftMargin: 0.5*Qt.application.font.pixelSize
+        anchors.top: remainingRoute.bottom
+        anchors.topMargin: 0.5*Qt.application.font.pixelSize
+
+        height: 66
+        width: 66
+
+        onClicked: {
+            global.mobileAdaptor().vibrateBrief()
+            drawer.open()
+        }
+    }
+
     RoundButton {
         id: northButton
 
         anchors.horizontalCenter: zoomIn.horizontalCenter
-        anchors.top: page.top
+        anchors.top: remainingRoute.bottom
         anchors.topMargin: 0.5*Qt.application.font.pixelSize
 
         height: 66

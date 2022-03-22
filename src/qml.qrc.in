@@ -50,5 +50,6 @@
         <file alias="pages/WeatherPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/WeatherPage.qml</file>
         <file alias="pages/InfoMenu.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/InfoMenu.qml</file>
         <file alias="pages/FlarmManager.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/FlarmManager.qml</file>
+        <file alias="pages/LibraryMenu.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/LibraryMenu.qml</file>
     </qresource>
 </RCC>

@@ -180,8 +180,9 @@ Page {
                 Layout.alignment: Qt.AlignBaseline
                 KeyNavigation.tab: verticalUOM
 
-                currentIndex: global.navigator().aircraft.horizontalDistanceUnit
-                onCurrentIndexChanged: global.navigator().aircraft.horizontalDistanceUnit = currentIndex
+
+                Component.onCompleted: currentIndex = global.navigator().aircraft.horizontalDistanceUnit
+                onActivated: global.navigator().aircraft.horizontalDistanceUnit = currentIndex
 
                 model: [ qsTr("Nautical Miles"), qsTr("Kilometers"), qsTr("Statute Miles") ]
             }
@@ -196,8 +197,8 @@ Page {
                 Layout.alignment: Qt.AlignBaseline
                 KeyNavigation.tab: volumeUOM
 
-                currentIndex: global.navigator().aircraft.verticalDistanceUnit
-                onCurrentIndexChanged: global.navigator().aircraft.verticalDistanceUnit = currentIndex
+                Component.onCompleted: currentIndex = global.navigator().aircraft.verticalDistanceUnit
+                onActivated: global.navigator().aircraft.verticalDistanceUnit = currentIndex
 
                 model: [ qsTr("Feet"), qsTr("Meters") ]
             }
@@ -212,8 +213,8 @@ Page {
                 Layout.alignment: Qt.AlignBaseline
                 KeyNavigation.tab: cruiseSpeed
 
-                currentIndex: global.navigator().aircraft.fuelConsumptionUnit
-                onCurrentIndexChanged: global.navigator().aircraft.fuelConsumptionUnit = currentIndex
+                Component.onCompleted: currentIndex = global.navigator().aircraft.fuelConsumptionUnit
+                onActivated: global.navigator().aircraft.fuelConsumptionUnit = currentIndex
 
                 model: [ qsTr("Liters"), qsTr("U.S. Gallons") ]
             }
