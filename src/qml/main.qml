@@ -35,9 +35,8 @@ ApplicationWindow {
 
     visible: true
     title: "Enroute Flight Navigation"
-    width: 800
-    height: 800
-
+    visibility: ApplicationWindow.FullScreen 
+    
     Material.theme: global.settings().nightMode ? Material.Dark : Material.Light
     Material.primary: Material.theme === Material.Dark ? Qt.darker("teal") : "teal"
     Material.accent: Material.theme === Material.Dark ? Qt.lighter("teal") : "teal"
