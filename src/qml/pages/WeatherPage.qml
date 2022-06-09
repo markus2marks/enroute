@@ -142,11 +142,7 @@ Page {
                 text: {
                     var result = model.modelData.twoLineTitle
 
-<<<<<<< HEAD
-                    var wayTo  = model.modelData.wayTo(positionProvider.positionInfo.coordinate(), global.settings().useMetricUnits)
-=======
-                    var wayTo  = model.modelData.wayTo(global.positionProvider().positionInfo.coordinate())
->>>>>>> master
+                    var wayTo  = global.navigator().aircraft.describeWay(global.positionProvider().positionInfo.coordinate(), model.modelData.coordinate)
                     if (wayTo !== "")
                         result = result + "<br>" + wayTo
 
@@ -194,9 +190,9 @@ Page {
                     anchors.right: parent.right
                     anchors.top: parent.top
 
-                    leftPadding: Qt.application.font.pixelSize
-                    rightPadding: Qt.application.font.pixelSize
-                    topPadding: 2*Qt.application.font.pixelSize
+                    leftPadding: view.font.pixelSize
+                    rightPadding: view.font.pixelSize
+                    topPadding: 2*view.font.pixelSize
 
                     horizontalAlignment: Text.AlignHCenter
                     textFormat: Text.StyledText
@@ -235,7 +231,7 @@ Page {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.topMargin: Qt.application.font.pixelSize*2
+            anchors.topMargin: view.font.pixelSize*2
 
             horizontalAlignment: Text.AlignHCenter
             textFormat: Text.StyledText
@@ -283,9 +279,9 @@ Page {
                 id: t1
                 width: parent.width
                 text: global.librarian().getStringFromRessource(":text/weatherPermissions.html")
-                leftPadding: Qt.application.font.pixelSize
-                rightPadding: Qt.application.font.pixelSize
-                topPadding: 2*Qt.application.font.pixelSize
+                leftPadding: view.font.pixelSize
+                rightPadding: view.font.pixelSize
+                topPadding: 2*view.font.pixelSize
                 wrapMode: Text.Wrap
                 onLinkActivated: Qt.openUrlExternally(link)
             }

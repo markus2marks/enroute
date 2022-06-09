@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -36,9 +36,9 @@ Page {
         id: sectionHeading
 
         Label {
-            x: Qt.application.font.pixelSize
+            x: view.font.pixelSize
             text: section
-            font.pixelSize: Qt.application.font.pixelSize*1.2
+            font.pixelSize: view.font.pixelSize*1.2
             font.bold: true
             color: Material.accent
         }
@@ -98,7 +98,12 @@ Page {
                     onClicked: {
                         if (!model.modelData.downloading && (!model.modelData.hasFile || model.modelData.updatable)) {
                             global.mobileAdaptor().vibrateBrief()
-                            startFileDownload()
+
+                            if (model.modelData.fileName.endsWith("mbtiles") && global.dataManager().baseMapsRaster.hasFile) {
+                                uninstallRasterMapDialog.vectorMap = element
+                                uninstallRasterMapDialog.open()
+                            } else
+                                startFileDownload()
                         }
                     }
                 }
@@ -109,7 +114,7 @@ Page {
                     visible: !model.modelData.hasFile && !model.modelData.downloading
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
-                        startFileDownload()
+                        model.modelData.startFileDownload()
                     }
                 }
 
@@ -119,7 +124,7 @@ Page {
                     visible: model.modelData.updatable
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
-                        startFileDownload()
+                        model.modelData.startFileDownload()
                     }
                 }
 
@@ -154,7 +159,7 @@ Page {
                             onTriggered: {
                                 global.mobileAdaptor().vibrateBrief()
                                 infoDialog.title = model.modelData.objectName
-                                infoDialog.text = global.dataManager().describeMapFile(model.modelData.fileName)
+                                infoDialog.text = global.dataManager().describeDataItem(model.modelData.fileName)
                                 infoDialog.open()
                             }
                         }
@@ -227,7 +232,7 @@ Page {
                     visible: !model.modelData.hasFile && !model.modelData.downloading
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
-                        startFileDownload()
+                        model.modelData.startFileDownload()
                     }
                 }
 
@@ -237,7 +242,7 @@ Page {
                     visible: model.modelData.updatable
                     onClicked: {
                         global.mobileAdaptor().vibrateBrief()
-                        startFileDownload()
+                        model.modelData.startFileDownload()
                     }
                 }
 
@@ -272,7 +277,7 @@ Page {
                             onTriggered: {
                                 global.mobileAdaptor().vibrateBrief()
                                 infoDialog.title = model.modelData.objectName
-                                infoDialog.text = global.dataManager().describeMapFile(model.modelData.fileName)
+                                infoDialog.text = global.dataManager().describeDataItem(model.modelData.fileName)
                                 infoDialog.open()
                             }
                         }
@@ -369,7 +374,7 @@ Page {
                 onTriggered: {
                     global.mobileAdaptor().vibrateBrief()
                     highlighted = false
-                    global.dataManager().updateGeoMapList()
+                    global.dataManager().updateRemoteDataItemList()
                 }
             }
 
@@ -377,12 +382,12 @@ Page {
                 id: downloadUpdatesMenu
 
                 text: qsTr("Download all updates…")
-                enabled: global.dataManager().geoMaps.updatable
+                enabled: global.dataManager().items.updatable
 
                 onTriggered: {
                     global.mobileAdaptor().vibrateBrief()
                     highlighted = false
-                    global.dataManager().geoMaps.updateAll()
+                    global.dataManager().items.updateAll()
                 }
             }
 
@@ -417,7 +422,7 @@ Page {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
 
-        anchors.topMargin: Qt.application.font.pixelSize*0.2
+        anchors.topMargin: view.font.pixelSize*0.2
 
         SwipeView{
             id: sv
@@ -474,7 +479,7 @@ Page {
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
                         global.mobileAdaptor().vibrateBrief()
-                        global.dataManager().updateGeoMapList()
+                        global.dataManager().updateRemoteDataItemList()
                     }
                 }
             } // ListView
@@ -498,7 +503,7 @@ Page {
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
                         global.mobileAdaptor().vibrateBrief()
-                        global.dataManager().updateGeoMapList()
+                        global.dataManager().updateRemoteDataItemList()
                     }
                 }
             } // ListView
@@ -522,7 +527,7 @@ Page {
                 onFlickEnded: {
                     if ( atYBeginning && refreshFlick ) {
                         global.mobileAdaptor().vibrateBrief()
-                        global.dataManager().updateGeoMapList()
+                        global.dataManager().updateRemoteDataItemList()
                     }
                 }
             } // ListView
@@ -541,15 +546,15 @@ Page {
         anchors.bottom: parent.bottom
 
         color: "white"
-        visible: !global.dataManager().downloadingGeoMapList && !global.dataManager().hasGeoMapList
+        visible: !global.dataManager().downloadingRemoteItemList && !global.dataManager().hasRemoteItemList
 
         Label {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.topMargin: Qt.application.font.pixelSize*2
-            anchors.leftMargin: Qt.application.font.pixelSize*2
-            anchors.rightMargin: Qt.application.font.pixelSize*2
+            anchors.topMargin: view.font.pixelSize*2
+            anchors.leftMargin: view.font.pixelSize*2
+            anchors.rightMargin: view.font.pixelSize*2
 
             horizontalAlignment: Text.AlignHCenter
             textFormat: Text.RichText
@@ -567,7 +572,7 @@ Page {
         anchors.bottom: parent.bottom
 
         color: "white"
-        visible: global.dataManager().downloadingGeoMapList
+        visible: global.dataManager().downloadingRemoteItemList
 
         Label {
             id: downloadIndicatorLabel
@@ -575,9 +580,9 @@ Page {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.topMargin: Qt.application.font.pixelSize*2
-            anchors.leftMargin: Qt.application.font.pixelSize*2
-            anchors.rightMargin: Qt.application.font.pixelSize*2
+            anchors.topMargin: view.font.pixelSize*2
+            anchors.leftMargin: view.font.pixelSize*2
+            anchors.rightMargin: view.font.pixelSize*2
 
             horizontalAlignment: Text.AlignHCenter
             textFormat: Text.RichText
@@ -596,8 +601,8 @@ Page {
         // without any feedback if the download did actually take place.
         Connections {
             target: global.dataManager()
-            function onDownloadingGeoMapListChanged () {
-                if (global.dataManager().downloadingGeoMapList) {
+            function ondownloadingRemoteItemListChanged () {
+                if (global.dataManager().downloadingRemoteItemList) {
                     downloadIndicator.visible = true
                     downloadIndicator.opacity = 1.0
                 } else
@@ -616,34 +621,34 @@ Page {
         width: parent.width
 
         Material.elevation: 3
-        visible: (!global.dataManager().downloadingGeoMapList && !global.dataManager().hasGeoMapList) || (!global.dataManager().geoMaps.downloading && global.dataManager().geoMaps.updatable)
+        visible: (!global.dataManager().downloadingRemoteItemList && !global.dataManager().hasRemoteItemList) || (!global.dataManager().items.downloading && global.dataManager().items.updatable)
         contentHeight: Math.max(downloadMapListActionButton.height, downloadUpdatesActionButton.height)
 
         ToolButton {
             id: downloadMapListActionButton
             anchors.centerIn: parent
-            visible: !global.dataManager().downloadingGeoMapList && !global.dataManager().hasGeoMapList
+            visible: !global.dataManager().downloadingRemoteItemList && !global.dataManager().hasRemoteItemList
 
             text: qsTr("Download list of maps…")
             icon.source: "/icons/material/ic_file_download.svg"
 
             onClicked: {
                 global.mobileAdaptor().vibrateBrief()
-                global.dataManager().updateGeoMapList()
+                global.dataManager().updateRemoteDataItemList()
             }
         }
 
         ToolButton {
             id: downloadUpdatesActionButton
             anchors.centerIn: parent
-            visible: !global.dataManager().geoMaps.downloading && global.dataManager().geoMaps.updatable
+            visible: !global.dataManager().items.downloading && global.dataManager().items.updatable
 
             text: qsTr("Update")
             icon.source: "/icons/material/ic_file_download.svg"
 
             onClicked: {
                 global.mobileAdaptor().vibrateBrief()
-                global.dataManager().geoMaps.updateAll()
+                global.dataManager().items.updateAll()
             }
         }
     }
@@ -666,5 +671,42 @@ Page {
         text: ""
         standardButtons: Dialog.Ok
     }
+
+    Dialog {
+        id: uninstallRasterMapDialog
+
+        property var vectorMap
+
+        // Size is chosen so that the dialog does not cover the parent in full
+        width: Math.min(view.width-view.font.pixelSize, 40*view.font.pixelSize)
+        height: Math.min(view.height-view.font.pixelSize, implicitHeight)
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 5.15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
+        parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
+
+        title: qsTr("Uninstall Raster Maps")
+
+        Label {
+            width: uninstallRasterMapDialog.availableWidth
+            text: qsTr("To avoid conflicts between raster and vector maps, all raster maps will be uninstalled before new vector maps are downloaded.")
+
+            wrapMode: Text.Wrap
+            textFormat: Text.StyledText
+        }
+
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        modal: true
+
+        onAccepted: {
+            global.mobileAdaptor().vibrateBrief()
+            global.dataManager().baseMapsRaster.deleteAllFiles()
+            vectorMap.startFileDownload()
+            toast.doToast( qsTr("Raster maps uninstalled") )
+        }
+
+    } // importDialog
 
 } // Page

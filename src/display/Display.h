@@ -23,11 +23,15 @@ public:
     Display(QWidget *parent = 0);
     ~Display();
     void valueChanged(float value);
+    void initVarioGauge();
+    void initTrafficRadar();
+    void showDisplay();
 private:
     Ui::Display *ui;
 
-	QcGaugeWidget * mSpeedGauge;
-	QcNeedleItem *mSpeedNeedle;
+	QcGaugeWidget * mVarioGauge;
+	QcGaugeWidget * mTrafficRadar;
+	QcNeedleItem *mVarioNeedle;
 	float m_value;
 
 };

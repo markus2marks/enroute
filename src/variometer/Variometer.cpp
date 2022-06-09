@@ -19,8 +19,7 @@ Variometer::Variometer ()
     m_dataswitch->openConnection();
     connect(m_dataswitch, &DataSwitch::sensorDataAvailable,this, &Variometer::readSensordata);
     newDataAvailable = false;
-    m_display = new Display();
-    m_display->setFixedSize(480,480);
+
 //    QScreen * s = QGuiApplication::screens()[1];
 //    qDebug() << "size " << s->size().height();
 //    m_display->show();
@@ -28,15 +27,7 @@ Variometer::Variometer ()
 //    m_display->windowHandle()->setScreen(s);
 //    QScreen * s2 = test->screen();
 //    qDebug() << "size 2 " << s2->size().height();
-    if(QGuiApplication::screens().size() >= 2)
-    {
-        m_display->move(2500,0);
-        m_display->showFullScreen();
-    }
-    else
-    {
-        m_display->show();
-    }
+
 }
 
 

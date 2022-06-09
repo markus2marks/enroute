@@ -175,8 +175,8 @@ QRectF QcItem::resetRect()
 {
 	mRect = parentWidget->rect();
 	float r = getRadius(mRect);
-	mRect.setWidth(2.0*r);
-	mRect.setHeight(2.0*r);
+	mRect.setWidth(2.29 * r);
+	mRect.setHeight(2.29 * r);
 	mRect.moveCenter(parentWidget->rect().center());
 	return mRect;
 }

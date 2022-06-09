@@ -48,7 +48,7 @@ public:
      *
      * @param end End point
      */
-    explicit Leg(const GeoMaps::Waypoint& start, const GeoMaps::Waypoint& end);
+    explicit Leg(GeoMaps::Waypoint  start, GeoMaps::Waypoint  end);
 
     // Default constructor
     explicit Leg() = default;
@@ -65,6 +65,12 @@ public:
 
     /*! \brief Validity */
     Q_PROPERTY(bool isValid READ isValid CONSTANT)
+
+    /*! \brief Distance threshold
+     *
+     *   A position is considered near the leg if the distance is less than this threshold
+     */
+    Q_PROPERTY(Units::Distance nearThreshold MEMBER nearThreshold CONSTANT)
 
     /*! \brief Start point of the leg */
     Q_PROPERTY(GeoMaps::Waypoint startPoint READ startPoint CONSTANT)
@@ -85,31 +91,31 @@ public:
      *
      * @returns Property distance
      */
-    Units::Distance distance() const;
+    [[nodiscard]] auto distance() const -> Units::Distance;
 
     /*! \brief Getter function for property of the same name
      *
      *  @returns Property endPoint
      */
-    GeoMaps::Waypoint endPoint()  const { return m_end; }
+    [[nodiscard]] auto endPoint()  const -> GeoMaps::Waypoint { return m_end; }
 
     /*! \brief Getter function for property of the same name
      *
      * @returns Property valid
      */
-    bool isValid() const;
+    [[nodiscard]] auto isValid() const -> bool;
 
     /*! \brief Getter function for property of the same name
      *
      *  @returns Property startPoint
      */
-    GeoMaps::Waypoint startPoint()  const { return m_start; }
+    [[nodiscard]] auto startPoint()  const -> GeoMaps::Waypoint { return m_start; }
 
     /*! \brief Getter function for property of the same name
      *
      * @returns Property TC
      */
-    Units::Angle TC() const;
+    [[nodiscard]] auto TC() const -> Units::Angle;
 
 
     //
@@ -124,7 +130,7 @@ public:
      *
      *  @returns Estimated WCA on leg
      */
-    Q_INVOKABLE QString description(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const;
+    Q_INVOKABLE [[nodiscard]] QString description(Weather::Wind wind, const Navigation::Aircraft& aircraft) const;
 
     /*! \brief ETE for leg
      *
@@ -134,7 +140,10 @@ public:
      *
      *  @returns ETE for leg
      */
-    Q_INVOKABLE Units::Time ETE(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const{ return distance()/GS(wind, aircraft); }
+    Q_INVOKABLE [[nodiscard]] Units::Time ETE(Weather::Wind wind, const Navigation::Aircraft& aircraft) const
+    {
+        return distance()/GS(wind, aircraft);
+    }
 
     /*! \brief Estimated fuel consumption on leg
      *
@@ -144,7 +153,7 @@ public:
      *
      *  @returns Estimated fuel consumption on leg
      */
-    Q_INVOKABLE Units::Volume Fuel(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const;
+    Q_INVOKABLE [[nodiscard]] Units::Volume Fuel(Weather::Wind wind, const Navigation::Aircraft& aircraft) const;
 
     /*! \brief Estimated ground speed on leg
      *
@@ -154,7 +163,7 @@ public:
      *
      *  @returns Estimated ground speed on leg
      */
-    Q_INVOKABLE Units::Speed GS(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const;
+    Q_INVOKABLE [[nodiscard]] Units::Speed GS(Weather::Wind wind, const Navigation::Aircraft& aircraft) const;
 
     /*! \brief Check if positionInfo is travelling on this leg
      *
@@ -169,7 +178,7 @@ public:
      *
      *  @return True if the conditions are met
      */
-    Q_INVOKABLE bool isFollowing(const Positioning::PositionInfo& positionInfo) const;
+    Q_INVOKABLE [[nodiscard]] bool isFollowing(const Positioning::PositionInfo& positionInfo) const;
 
     /*! \brief Check if position is closer than nearThreshold to this leg
      *
@@ -177,7 +186,7 @@ public:
      *
      *  @return True if all data is valid and position is closer than nearThreshold to this leg.
      */
-    Q_INVOKABLE bool isNear(const Positioning::PositionInfo& positionInfo) const;
+    Q_INVOKABLE [[nodiscard]] bool isNear(const Positioning::PositionInfo& positionInfo) const;
 
     /*! \brief Estimated true heading on leg
      *
@@ -187,7 +196,10 @@ public:
      *
      *  @returns Estimated true heading on leg
      */
-    Q_INVOKABLE Units::Angle TH(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const { return TC()+WCA(wind, aircraft); }
+    Q_INVOKABLE [[nodiscard]] Units::Angle TH(Weather::Wind wind, const Navigation::Aircraft& aircraft) const
+    {
+        return TC()+WCA(wind, aircraft);
+    }
 
     /*! \brief Estimated WCA on leg
      *
@@ -197,17 +209,22 @@ public:
      *
      *  @returns Estimated WCA on leg
      */
-    Q_INVOKABLE Units::Angle WCA(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const;
+    Q_INVOKABLE [[nodiscard]] Units::Angle WCA(Weather::Wind wind, const Navigation::Aircraft& aircraft) const;
 
-private:
-    // Necessary data for computation of wind triangle?
-    bool hasDataForWindTriangle(const Weather::Wind& wind, const Navigation::Aircraft& aircraft) const;
 
-    // Minimum length of the leg in meters. If shorter, no courses are computed.
-    static constexpr Units::Distance minLegLength = Units::Distance::fromM(100.0);
+    //
+    // Members and constants
+    //
 
     // Width of the leg. A position is considered near the leg if the distance is less.
     static constexpr Units::Distance nearThreshold = Units::Distance::fromNM(3.0);
+
+private:
+    // Necessary data for computation of wind triangle?
+    [[nodiscard]] static auto hasDataForWindTriangle(Weather::Wind wind, const Navigation::Aircraft& aircraft) -> bool;
+
+    // Minimum length of the leg in meters. If shorter, no courses are computed.
+    static constexpr Units::Distance minLegLength = Units::Distance::fromM(100.0);
 
     GeoMaps::Waypoint m_start;
     GeoMaps::Waypoint m_end;

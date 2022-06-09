@@ -12,7 +12,7 @@
 #include "DataSwitch.h"
 #include <QThreadPool>
 #include <QMutex>
-#include "Display.h"
+#include "display/Display.h"
 
 #define Z_VARIANCE          20.0f
 #define ZACCEL_VARIANCE     10.0f

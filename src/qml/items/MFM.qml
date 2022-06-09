@@ -57,7 +57,6 @@ Item {
         focus: true
         anchors.fill: parent
 
-        geoJSON: global.geoMapProvider().geoJSON
         copyrightsVisible: false // We have our own copyrights notice
 
         property bool followGPS: true
@@ -228,7 +227,7 @@ Item {
                 text: global.trafficDataProvider().trafficObjectWithoutPosition.description
                 textFormat: Text.RichText
 
-                font.pixelSize: 0.8*Qt.application.font.pixelSize
+                font.pixelSize: 0.8*view.font.pixelSize
 
                 leftInset: -4
                 rightInset: -4
@@ -376,19 +375,18 @@ Item {
         MapPolyline {
             id: flightPath
 
-            line.width: 3
-            line.color: '#008000' //'green'
+            line.width: 4
+            line.color: "#ff00ff"
             path: global.navigator().flightRoute.geoPath
-            opacity: (flightMap.zoomLevel < 11.0) ? 1.0 : 0.3
         }
 
         MapPolyline {
             id: toNextWP
-            visible: global.positionProvider().lastValidCoordinate.isValid && global.navigator().remainingRouteInfo.nextWP.coordinate.isValid
+            visible: global.positionProvider().lastValidCoordinate.isValid &&
+                     (global.navigator().remainingRouteInfo.status === RemainingRouteInfo.OnRoute)
             line.width: 2
-            line.color: '#800000' //'green'
+            line.color: 'darkred'
             path: visible ? [global.positionProvider().lastValidCoordinate, global.navigator().remainingRouteInfo.nextWP.coordinate] : undefined
-            opacity: (flightMap.zoomLevel < 11.0) ? 1.0 : 0.3
         }
 
 
@@ -524,23 +522,29 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         anchors.right: parent.right
     }
 
-    Label {
-        id: airspaceAltLimitLabel
+    Pane {
+        id: airspaceAltLabel
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: remainingRoute.bottom
-        anchors.topMargin: 0.4*Qt.application.font.pixelSize
+        anchors.topMargin: 0.4*view.font.pixelSize
+        topPadding: 0
+        bottomPadding: 0
+        Material.elevation: 2
+        opacity: 0.8
+        visible: global.settings().airspaceAltitudeLimit.isFinite() && !global.dataManager().baseMapsRaster.hasFile
 
-        text: {
-            // Mention
-            global.navigator().aircraft.verticalDistanceUnit
+        Label {
 
-            var airspaceAltitudeLimit = global.settings().airspaceAltitudeLimit
-            var airspaceAltitudeLimitString = global.navigator().aircraft.verticalDistanceToString(airspaceAltitudeLimit)
-            return " "+qsTr("Airspaces up to %1").arg(airspaceAltitudeLimitString)+" "
+            text: {
+                // Mention
+                global.navigator().aircraft.verticalDistanceUnit
+
+                var airspaceAltitudeLimit = global.settings().airspaceAltitudeLimit
+                var airspaceAltitudeLimitString = global.navigator().aircraft.verticalDistanceToString(airspaceAltitudeLimit)
+                return " "+qsTr("Airspaces up to %1").arg(airspaceAltitudeLimitString)+" "
+            }
         }
-        background: Rectangle { color: "white"; opacity: Material.theme === Material.Dark ? 0.1 : 0.8}
-        visible: global.settings().airspaceAltitudeLimit.isFinite()
     }
 
     RoundButton {
@@ -548,9 +552,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         icon.source: "/icons/material/ic_menu.svg"
 
         anchors.left: parent.left
-        anchors.leftMargin: 0.5*Qt.application.font.pixelSize
+        anchors.leftMargin: 0.5*view.font.pixelSize
         anchors.top: remainingRoute.bottom
-        anchors.topMargin: 0.5*Qt.application.font.pixelSize
+        anchors.topMargin: 0.5*view.font.pixelSize
 
         height: 66
         width: 66
@@ -566,7 +570,7 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
 
         anchors.horizontalCenter: zoomIn.horizontalCenter
         anchors.top: remainingRoute.bottom
-        anchors.topMargin: 0.5*Qt.application.font.pixelSize
+        anchors.topMargin: 0.5*view.font.pixelSize
 
         height: 66
         width:  66
@@ -603,9 +607,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         enabled: !flightMap.followGPS
 
         anchors.left: parent.left
-        anchors.leftMargin: 0.5*Qt.application.font.pixelSize
+        anchors.leftMargin: 0.5*view.font.pixelSize
         anchors.bottom: trafficDataReceiverButton.top
-        anchors.bottomMargin: trafficDataReceiverButton.visible ? 0.5*Qt.application.font.pixelSize : 1.5*Qt.application.font.pixelSize
+        anchors.bottomMargin: trafficDataReceiverButton.visible ? 0.5*view.font.pixelSize : 1.5*view.font.pixelSize
 
         height: 66
         width:  66
@@ -627,9 +631,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         visible: !global.trafficDataProvider().receivingHeartbeat
 
         anchors.left: parent.left
-        anchors.leftMargin: 0.5*Qt.application.font.pixelSize
+        anchors.leftMargin: 0.5*view.font.pixelSize
         anchors.bottom: navBar.top
-        anchors.bottomMargin: visible ? 1.5*Qt.application.font.pixelSize : 0
+        anchors.bottomMargin: visible ? 1.5*view.font.pixelSize : 0
 
         height: visible ? 66 : 0
         width:  66
@@ -651,9 +655,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         autoRepeat: true
 
         anchors.right: parent.right
-        anchors.rightMargin: 0.5*Qt.application.font.pixelSize
+        anchors.rightMargin: 0.5*view.font.pixelSize
         anchors.bottom: zoomOut.top
-        anchors.bottomMargin: 0.5*Qt.application.font.pixelSize
+        anchors.bottomMargin: 0.5*view.font.pixelSize
 
         height: 66
         width:  66
@@ -674,9 +678,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         autoRepeat: true
 
         anchors.right: parent.right
-        anchors.rightMargin: 0.5*Qt.application.font.pixelSize
+        anchors.rightMargin: 0.5*view.font.pixelSize
         anchors.bottom: navBar.top
-        anchors.bottomMargin: 1.5*Qt.application.font.pixelSize
+        anchors.bottomMargin: 1.5*view.font.pixelSize
 
         height: 66
         width:  66
@@ -692,9 +696,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         id: leftScale
 
         anchors.top: northButton.bottom
-        anchors.topMargin: 0.5*Qt.application.font.pixelSize
+        anchors.topMargin: 0.5*view.font.pixelSize
         anchors.bottom: followGPSButton.top
-        anchors.bottomMargin: 0.5*Qt.application.font.pixelSize
+        anchors.bottomMargin: 0.5*view.font.pixelSize
         anchors.horizontalCenter: followGPSButton.horizontalCenter
 
         opacity: Material.theme === Material.Dark ? 0.3 : 1.0
@@ -709,9 +713,9 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         id: scale
 
         anchors.left: followGPSButton.right
-        anchors.leftMargin: 0.5*Qt.application.font.pixelSize
+        anchors.leftMargin: 0.5*view.font.pixelSize
         anchors.right: zoomIn.left
-        anchors.rightMargin: 0.5*Qt.application.font.pixelSize
+        anchors.rightMargin: 0.5*view.font.pixelSize
         anchors.verticalCenter: zoomOut.verticalCenter
 
         opacity: Material.theme === Material.Dark ? 0.3 : 1.0
@@ -722,32 +726,27 @@ Choose <strong>Library/Maps and Data</strong> to open the map management page.</
         height: 30
     }
 
-    Label {
-        id: copyrightInfo
+    Pane {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: navBar.top
-        anchors.bottomMargin: 0.4*Qt.application.font.pixelSize
+        anchors.bottomMargin: 0.4*view.font.pixelSize
+        topPadding: 0
+        bottomPadding: 0
+        Material.elevation: 2
+        opacity: 0.8
 
-        text: global.geoMapProvider().copyrightNotice
-        visible: width < parent.width
-        onLinkActivated: Qt.openUrlExternally(link)
-    }
-
-    Label {
+        Label {
         id: noCopyrightInfo
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: navBar.top
-        anchors.bottomMargin: 0.4*Qt.application.font.pixelSize
         text: "<a href='xx'>"+qsTr("Map Data Copyright Info")+"</a>"
-        visible: !copyrightInfo.visible
         onLinkActivated: copyrightDialog.open()
 
         LongTextDialog {
             id: copyrightDialog
             title: qsTr("Map Data Copyright Information")
-            text: global.geoMapProvider().copyrightNotice.replace("•", "<br><br>").replace("•", "<br><br>").replace("•", "<br><br>")
+            text: global.geoMapProvider().copyrightNotice
             standardButtons: Dialog.Cancel
         }
+    }
     }
 
     NavBar {

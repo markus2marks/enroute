@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -28,11 +28,15 @@ Rectangle {
     color: "#AA000000"
     height: grid.implicitHeight // grid.rri.isValid ? grid.implicitHeight : 0
 
+    visible: grid.rri.status !== RemainingRouteInfo.NoRoute
+
     GridLayout {
         id: grid
 
         anchors.fill: parent
-        anchors.leftMargin: Qt.application.font.pixelSize
+        anchors.leftMargin: view.font.pixelSize
+        anchors.rightMargin: view.font.pixelSize
+        rowSpacing: 0
         columns: 4
 
         property var rri: global.navigator().remainingRouteInfo
@@ -45,25 +49,29 @@ Rectangle {
         Label {
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
+            font.pixelSize: view.font.pixelSize*0.9
         }
         Label {
             text: "DIST"
             color: "white"
             Layout.alignment: Qt.AlignHCenter
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
+            font.pixelSize: view.font.pixelSize*0.9
         }
         Label {
             text: "ETE"
             color: "white"
             Layout.alignment: Qt.AlignHCenter
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
+            font.pixelSize: view.font.pixelSize*0.9
         }
         Label {
             text: "ETA"
             color: "white"
             Layout.alignment: Qt.AlignHCenter
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
+            font.pixelSize: view.font.pixelSize*0.9
         }
 
         Label {
@@ -72,32 +80,36 @@ Rectangle {
             color: "white"
             Layout.fillWidth: true
             Layout.maximumWidth: implicitWidth
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
         Label {
             text: global.navigator().aircraft.horizontalDistanceToString(grid.rri.nextWP_DIST)
             color: "white"
             Layout.alignment: Qt.AlignHCenter
             Layout.minimumWidth: implicitWidth
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
         Label {
             text: "%1 h".arg(grid.rri.nextWP_ETE.toHoursAndMinutes())
             color: "white"
             Layout.alignment: Qt.AlignHCenter
             Layout.minimumWidth: implicitWidth
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
         Label {
-            text: grid.rri.nextWP_ETE.isFinite() ? Qt.formatDateTime(grid.rri.nextWP_ETA, "h:mm") : "-:--"
+            text: grid.rri.nextWP_ETAAsUTCString
             color: "white"
             Layout.alignment: Qt.AlignHCenter
             Layout.minimumWidth: implicitWidth
-            visible: grid.rri.isValid
+            visible: grid.rri.status === RemainingRouteInfo.OnRoute
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
 
 
@@ -107,33 +119,66 @@ Rectangle {
             color: "white"
             Layout.fillWidth: true
             Layout.maximumWidth: implicitWidth
-            visible: grid.rri.hasFinalWP
+            visible: (grid.rri.status === RemainingRouteInfo.OnRoute) && grid.rri.finalWP.isValid
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
         Label {
             text: global.navigator().aircraft.horizontalDistanceToString(grid.rri.finalWP_DIST)
             color: "white"
             Layout.alignment: Qt.AlignHCenter
             Layout.minimumWidth: implicitWidth
-            visible: grid.rri.hasFinalWP
+            visible: (grid.rri.status === RemainingRouteInfo.OnRoute) && grid.rri.finalWP.isValid
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
         Label {
             text: "%1 h".arg(grid.rri.finalWP_ETE.toHoursAndMinutes())
             color: "white"
             Layout.alignment: Qt.AlignHCenter
             Layout.minimumWidth: implicitWidth
-            visible: grid.rri.hasFinalWP
+            visible: (grid.rri.status === RemainingRouteInfo.OnRoute) && grid.rri.finalWP.isValid
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
         Label {
-            text: grid.rri.finalWP_ETE.isFinite() ? Qt.formatDateTime(grid.rri.finalWP_ETA, "h:mm") : "-:--"
+            text: grid.rri.finalWP_ETAAsUTCString
             color: "white"
             Layout.alignment: Qt.AlignHCenter
             Layout.minimumWidth: implicitWidth
-            visible: grid.rri.hasFinalWP
+            visible: (grid.rri.status === RemainingRouteInfo.OnRoute) && grid.rri.finalWP.isValid
             font.weight: Font.Bold
+            font.pixelSize: view.font.pixelSize*1.3
         }
+
+        Label {
+            Layout.columnSpan: 4
+            Layout.fillWidth: true
+            visible: text !== ""
+            color: "white"
+            wrapMode: Text.Wrap
+            horizontalAlignment:  Text.AlignHCenter
+
+            text: {
+                switch (grid.rri.status) {
+                    case RemainingRouteInfo.PositionUnknown:
+                        return qsTr("Position unknown.");
+                    case RemainingRouteInfo.OffRoute:
+                        return qsTr("More than %1 off route.").arg(global.navigator().aircraft.horizontalDistanceToString(leg.nearThreshold));
+                    case RemainingRouteInfo.NearDestination:
+                        return qsTr("Near destination.");
+                }
+                return grid.rri.note
+            }
+
+        }
+
+        Item {
+            Layout.columnSpan: 4
+            Layout.fillWidth: true
+            height: 0.2*view.font.pixelSize
+        }
+
 
     }
 

@@ -13,7 +13,6 @@
         <file alias="dialogs/PasswordDialog.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/PasswordDialog.qml</file>
         <file alias="dialogs/PasswordStorageDialog.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/PasswordStorageDialog.qml</file>
         <file alias="dialogs/TooManyDownloadsDialog.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/TooManyDownloadsDialog.qml</file>
-        <file alias="dialogs/UpdateMapDialog.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/UpdateMapDialog.qml</file>
         <file alias="dialogs/WaypointDescription.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/WaypointDescription.qml</file>
         <file alias="dialogs/WaypointEditor.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/WaypointEditor.qml</file>
         <file alias="dialogs/WeatherReport.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/dialogs/WeatherReport.qml</file>
@@ -27,11 +26,13 @@
         <file alias="items/NavBar.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/NavBar.qml</file>
         <file alias="items/RemainingRoute.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/RemainingRoute.qml</file>
         <file alias="items/StandardHeader.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/StandardHeader.qml</file>	
+        <file alias="items/SwipeToDeleteDelegate.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/SwipeToDeleteDelegate.qml</file>	
         <file alias="items/Traffic.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/Traffic.qml</file>
         <file alias="items/TrafficLabel.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/TrafficLabel.qml</file>
         <file alias="items/WordWrappingCheckDelegate.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/WordWrappingCheckDelegate.qml</file>	
         <file alias="items/WordWrappingItemDelegate.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/WordWrappingItemDelegate.qml</file>	
         <file alias="items/WordWrappingSwitchDelegate.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/WordWrappingSwitchDelegate.qml</file>
+        <file alias="items/Radar.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/items/Radar.qml</file>
         <file alias="pages/Aircraft.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/Aircraft.qml</file>
         <file alias="pages/AircraftLibrary.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/AircraftLibrary.qml</file>
         <file alias="pages/BugReportPage.qml">${CMAKE_CURRENT_SOURCE_DIR}/qml/pages/BugReportPage.qml</file>

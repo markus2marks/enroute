@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -607,7 +607,7 @@ ApplicationWindow {
     Label {
         id: toast
 
-        width: Math.min(parent.width-4*Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
+        width: Math.min(parent.width-4*view.font.pixelSize, 40*view.font.pixelSize)
         x: (parent.width-width)/2.0
         y: parent.height*(3.0/4.0)-height/2.0
 
@@ -718,8 +718,8 @@ ApplicationWindow {
     // Connections
     //
 
-    Connections { // GeoMaps
-        target: global.dataManager().geoMaps
+    Connections { // items
+        target: global.dataManager().items
 
         function onDownloadingChanged(downloading) {
             if (downloading) {
@@ -762,7 +762,7 @@ ApplicationWindow {
                 stackView.push("pages/DataManager.qml")
             }
             if (act === Notifier.GeoMapUpdatePending_UpdateRequested) {
-                global.dataManager().geoMaps.updateAll()
+                global.dataManager().items.updateAll()
                 toast.doToast(qsTr("Starting map update"))
             }
         }

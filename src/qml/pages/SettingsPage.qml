@@ -36,7 +36,7 @@ Page {
         id: view
         focus: true
         anchors.fill: parent
-        anchors.topMargin: Qt.application.font.pixelSize
+        anchors.topMargin: view.font.pixelSize
         contentWidth: availableWidth
 
         ColumnLayout {
@@ -45,10 +45,10 @@ Page {
             implicitWidth: settingsPage.width
 
             Label {
-                Layout.leftMargin: Qt.application.font.pixelSize
+                Layout.leftMargin: view.font.pixelSize
                 Layout.fillWidth: true
                 text: qsTr("Moving Map")
-                font.pixelSize: Qt.application.font.pixelSize*1.2
+                font.pixelSize: view.font.pixelSize*1.2
                 font.bold: true
                 color: Material.accent
             }
@@ -125,9 +125,9 @@ Page {
             }
 
             Label {
-                Layout.leftMargin: Qt.application.font.pixelSize
+                Layout.leftMargin: view.font.pixelSize
                 text: qsTr("System")
-                font.pixelSize: Qt.application.font.pixelSize*1.2
+                font.pixelSize: view.font.pixelSize*1.2
                 font.bold: true
                 color: Material.accent
             }
@@ -207,7 +207,7 @@ Page {
             }
 
             Label {
-                Layout.leftMargin: Qt.application.font.pixelSize
+                Layout.leftMargin: view.font.pixelSize
                 text: qsTr("Help")
                 font.pixelSize: Qt.application.font.pixelSize*1.2
                 font.bold: true
@@ -239,7 +239,7 @@ Page {
         id: clearPasswordDialog
 
         // Size is chosen so that the dialog does not cover the parent in full
-        width: Math.min(parent.width-Qt.application.font.pixelSize, 40*Qt.application.font.pixelSize)
+        width: Math.min(parent.width-view.font.pixelSize, 40*view.font.pixelSize)
 
         // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
         // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
@@ -247,8 +247,8 @@ Page {
         x: (parent.width-width)/2.0
         y: (parent.height-height)/2.0
 
-        topMargin: Qt.application.font.pixelSize/2.0
-        bottomMargin: Qt.application.font.pixelSize/2.0
+        topMargin: view.font.pixelSize/2.0
+        bottomMargin: view.font.pixelSize/2.0
 
         modal: true
 
@@ -280,7 +280,157 @@ Page {
         }
 
     }
-    
+
+    Dialog {
+        id: heightLimitDialog
+
+        // Size is chosen so that the dialog does not cover the parent in full
+        width: Math.min(parent.width-view.font.pixelSize, 40*view.font.pixelSize)
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
+        parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
+
+        topMargin: view.font.pixelSize/2.0
+        bottomMargin: view.font.pixelSize/2.0
+
+        modal: true
+
+        title: qsTr("Airspace Altitude Limit")
+        standardButtons: (slider.from < slider.to) ? Dialog.Ok|Dialog.Cancel : Dialog.Cancel
+
+
+        ColumnLayout {
+            width: heightLimitDialog.availableWidth
+
+            Label {
+                text: qsTr("Set an altitude limit to improve the readability of the moving map. Once set, the app will show only airspaces below that limit.")
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+            }
+
+            SwitchDelegate {
+                id: altLimitCheck
+                enabled: slider.from < slider.to
+                text: qsTr("Set altitude limit")
+                Layout.fillWidth: true
+            }
+
+            Slider {
+                id: slider
+                Layout.fillWidth: true
+                enabled: (from < to) && (altLimitCheck.checked)
+                from: {
+                    var positionInfo = global.positionProvider().positionInfo
+                    if (!positionInfo.isValid())
+                        return global.settings().airspaceAltitudeLimit_min.toFeet()
+                    var trueAlt = positionInfo.trueAltitude()
+                    if (!trueAlt.isFinite())
+                        return global.settings().airspaceAltitudeLimit_min.toFeet()
+                    return Math.min(global.settings().airspaceAltitudeLimit_max.toFeet(), 500.0*Math.ceil(trueAlt.toFeet()/500.0+2))
+                }
+                to: global.settings().airspaceAltitudeLimit_max.toFeet()
+
+                stepSize: 500
+            }
+
+            Label {
+                enabled: slider.from < slider.to
+                text: {
+                    if (altLimitCheck.checked) {
+                        return qsTr("Show airspaces up to %1 ft / %2 m.").arg(slider.value.toLocaleString()).arg( (slider.value/3.2808).toLocaleString(Qt.locale(),'f',0) )
+                    } else {
+                        return qsTr("No limit, all airspaces shown")
+                    }
+                }
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+            }
+
+            Label {
+                visible: slider.from >= slider.to
+                text: qsTr("Cannot set reasonable airspaces altitude limit because the present own altitude is too high.")
+                color: "red"
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+            }
+
+
+
+        }
+
+        onAccepted: {
+            if (altLimitCheck.checked) {
+                global.settings().airspaceAltitudeLimit = distance.fromFT(slider.value)
+            } else {
+                global.settings().airspaceAltitudeLimit = distance.fromFT(99999)
+            }
+        }
+
+        onAboutToShow: {
+            altLimitCheck.checked = (global.settings().airspaceAltitudeLimit.toM() < global.settings().airspaceAltitudeLimit_max.toM())
+            slider.value = global.settings().lastValidAirspaceAltitudeLimit.toFeet()
+        }
+
+    }
+
+
+    Dialog {
+        id: primaryPositionDataSourceDialog
+
+        // Size is chosen so that the dialog does not cover the parent in full
+        width: Math.min(parent.width-view.font.pixelSize, 40*view.font.pixelSize)
+
+        // Center in Overlay.overlay. This is a funny workaround against a bug, I believe,
+        // in Qt 15.1 where setting the parent (as recommended in the Qt documentation) does not seem to work right if the Dialog is opend more than once.
+        parent: Overlay.overlay
+        x: (parent.width-width)/2.0
+        y: (parent.height-height)/2.0
+
+        topMargin: view.font.pixelSize/2.0
+        bottomMargin: view.font.pixelSize/2.0
+
+        modal: true
+
+        title: qsTr("Position data source")
+        standardButtons: Dialog.Ok|Dialog.Cancel
+
+
+        ColumnLayout {
+            width: primaryPositionDataSourceDialog.availableWidth
+
+            Label {
+                text: qsTr("Most users will choose the built-in satnav receiver. Choose the traffic data receiver when the satnav receiver of your device has reception problems, or when you use this app together with a flight simulator.")
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+            }
+
+            WordWrappingCheckDelegate {
+                id: a
+                text: qsTr("Built-in satnav receiver")
+                Layout.fillWidth: true
+                checked: !global.settings().positioningByTrafficDataReceiver
+                onCheckedChanged: b.checked = !checked
+            }
+
+            WordWrappingCheckDelegate {
+                id: b
+                text: qsTr("Traffic data reveiver (when available)")
+                Layout.fillWidth: true
+                onCheckedChanged: a.checked = !checked
+            }
+        }
+
+        onAboutToShow: {
+            a.checked = !global.settings().positioningByTrafficDataReceiver
+            b.checked = !a.checked
+        }
+
+        onAccepted: global.settings().positioningByTrafficDataReceiver = b.checked
+
+    }
     Keys.onPressed: 
     {
         event.accepted = true;

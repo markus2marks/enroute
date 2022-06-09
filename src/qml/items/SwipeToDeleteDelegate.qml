@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019-2021 by Stefan Kebekus                             *
+ *   Copyright (C) 2019-2022 by Stefan Kebekus                             *
  *   stefan.kebekus@gmail.com                                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,23 +20,27 @@
 
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+import QtQuick.Controls.Material 2.15
 
-LongTextDialog {
-    id: mud
+// This is a version of SwitchDelegate that does word wrapping in the text
 
-    title: qsTr("Updates available")
-    text: qsTr("<p>One or several of your installed maps or databases can be updated. The estimated download size is %1.</p>").arg(global.dataManager().geoMaps.updateSize)
+SwipeDelegate {
+    id: itemDelegate
 
-    footer: DialogButtonBox {
-        ToolButton {
-            text: qsTr("Update now")
-            DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+    swipe.enabled: true
+
+    swipe.right: Item {
+        anchors.fill: parent
+
+        Icon {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            opacity: iDel.swipe.position < -0.1 ? 1.0 : 0.0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+
+            source: "/icons/material/ic_delete.svg"
         }
-        ToolButton {
-            text: qsTr("Later")
-            DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
-        }
+    }
 
-        onAccepted: global.dataManager().geoMaps.updateAll()
-    } // DialogButtonBox
 }
