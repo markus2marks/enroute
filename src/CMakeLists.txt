@@ -80,11 +80,15 @@ set(SOURCES
     dataManagement/UpdateNotifier.h
     DemoRunner.h
     geomaps/Airspace.h
+    geomaps/CUP.h
+    geomaps/GeoJSON.h
     geomaps/GeoMapProvider.h
+    geomaps/GPX.h
     geomaps/MBTILES.h
     geomaps/TileHandler.h
     geomaps/TileServer.h
     geomaps/Waypoint.h
+    geomaps/WaypointLibrary.h
     GlobalObject.h
     Librarian.h
     MobileAdaptor.h
@@ -146,11 +150,15 @@ set(SOURCES
     dataManagement/UpdateNotifier.cpp
     DemoRunner.cpp
     geomaps/Airspace.cpp
+    geomaps/CUP.cpp
+    geomaps/GeoJSON.cpp
     geomaps/GeoMapProvider.cpp
+    geomaps/GPX.cpp
     geomaps/MBTILES.cpp
     geomaps/TileHandler.cpp
     geomaps/TileServer.cpp
     geomaps/Waypoint.cpp
+    geomaps/WaypointLibrary.cpp
     GlobalObject.cpp
     Librarian.cpp
     main.cpp

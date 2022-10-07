@@ -77,7 +77,8 @@ void DataManagement::DataManager::cleanDataDirectory()
         {
             misnamedFiles += fileIterator.filePath();
         }
-        if (!fileIterator.filePath().endsWith(QLatin1String(".geojson")) &&
+        if (!fileIterator.filePath().endsWith(QLatin1String(".terrain")) &&
+                !fileIterator.filePath().endsWith(QLatin1String(".geojson")) &&
                 !fileIterator.filePath().endsWith(QLatin1String(".mbtiles")) &&
                 !fileIterator.filePath().endsWith(QLatin1String(".raster")) &&
                 !fileIterator.filePath().endsWith(QLatin1String(".txt")))
@@ -145,9 +146,10 @@ auto DataManagement::DataManager::describeDataItem(const QString &fileName) -> Q
     }
 
     // Extract infomation from MBTILES
-    if (fileName.endsWith(u".mbtiles"))
+    if (fileName.endsWith(u".mbtiles") || fileName.endsWith(u".terrain"))
     {
-        result += GeoMaps::MBTILES::info(fileName);
+        GeoMaps::MBTILES mbtiles(fileName);
+        result += mbtiles.info();
     }
 
     // Extract infomation from text file - this is simply the first line
@@ -168,11 +170,14 @@ auto DataManagement::DataManager::import(const QString& fileName, const QString&
 
     auto path = m_dataDirectory+"/Unsupported";
     auto newFileName = path + "/" + newName;
-    switch(GeoMaps::MBTILES::format(fileName))
+
+    GeoMaps::MBTILES mbtiles(fileName);
+    switch(mbtiles.format())
     {
     case GeoMaps::MBTILES::Raster:
         newFileName += QLatin1String(".raster");
-        foreach(auto downloadable, m_baseMapsVector.downloadablesWithFile()) {
+        foreach(auto downloadable, m_baseMapsVector.downloadablesWithFile())
+        {
             if (!downloadable.isNull())
             {
                 downloadable->deleteFile();
@@ -181,7 +186,8 @@ auto DataManagement::DataManager::import(const QString& fileName, const QString&
         break;
     case GeoMaps::MBTILES::Vector:
         newFileName += QLatin1String(".mbtiles");
-        foreach(auto downloadable, m_baseMapsRaster.downloadablesWithFile()) {
+        foreach(auto downloadable, m_baseMapsRaster.downloadablesWithFile())
+        {
             if (!downloadable.isNull())
             {
                 downloadable->deleteFile();
@@ -249,7 +255,10 @@ DataManagement::Downloadable *DataManagement::DataManager::createOrRecycleItem(c
 
     // Construct a new downloadable object and add to appropriate groups
     auto* downloadable = new DataManagement::Downloadable(url, localFileName, this);
-    if (localFileName.endsWith(QLatin1String("geojson")) || localFileName.endsWith(QLatin1String("mbtiles")) || localFileName.endsWith(QLatin1String("raster")))
+    if (localFileName.endsWith(QLatin1String("geojson")) ||
+            localFileName.endsWith(QLatin1String("mbtiles")) ||
+            localFileName.endsWith(QLatin1String("raster")) ||
+            localFileName.endsWith(QLatin1String("terrain")))
     {
         if (url.isValid())
         {
@@ -263,6 +272,10 @@ DataManagement::Downloadable *DataManagement::DataManager::createOrRecycleItem(c
     }
 
     m_items.addToGroup(downloadable);
+    if (localFileName.endsWith(QLatin1String("terrain")))
+    {
+        m_terrainMaps.addToGroup(downloadable);
+    }
     if (localFileName.endsWith(QLatin1String("geojson")))
     {
         m_aviationMaps.addToGroup(downloadable);
@@ -325,7 +338,7 @@ void DataManagement::DataManager::updateDataItemListAndWhatsNew()
         auto mapUrlName = baseURL + "/" + obj.value(QStringLiteral("path")).toString();
         QUrl mapUrl(mapUrlName);
         auto fileModificationDateTime = QDateTime::fromString(obj.value(QStringLiteral("time")).toString(), QStringLiteral("yyyyMMdd"));
-        auto fileSize = obj.value(QStringLiteral("size")).toInt();
+        qint64 fileSize = qRound64(obj.value(QStringLiteral("size")).toDouble());
 
         auto *downloadable = createOrRecycleItem(mapUrl, localFileName);
         oldMaps.removeAll(downloadable);

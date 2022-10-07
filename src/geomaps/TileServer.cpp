@@ -23,7 +23,6 @@
 
 #include "TileHandler.h"
 #include "TileServer.h"
-#include "dataManagement/Downloadable.h"
 
 
 GeoMaps::TileServer::TileServer(QUrl baseUrl, QObject *parent)
@@ -42,7 +41,7 @@ auto GeoMaps::TileServer::serverUrl() const -> QString
 }
 
 
-void GeoMaps::TileServer::addMbtilesFileSet(const QVector<QPointer<DataManagement::Downloadable>>& baseMapsWithFiles, const QString& baseName)
+void GeoMaps::TileServer::addMbtilesFileSet(const QVector<QPointer<GeoMaps::MBTILES>>& baseMapsWithFiles, const QString& baseName)
 {
     mbtileFileNameSets[baseName] = baseMapsWithFiles;
     setUpTileHandlers();
@@ -66,7 +65,7 @@ void GeoMaps::TileServer::setUpTileHandlers()
     currentFileSystemHandler = newFileSystemHandler;
 
     // Now add subhandlers for each tile
-    QMapIterator<QString, QVector<QPointer<DataManagement::Downloadable>>> iterator(mbtileFileNameSets);
+    QMapIterator<QString, QVector<QPointer<GeoMaps::MBTILES>>> iterator(mbtileFileNameSets);
     while (iterator.hasNext()) {
         iterator.next();
 

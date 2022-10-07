@@ -19,12 +19,14 @@
  ***************************************************************************/
 
 #include <QtConcurrent/QtConcurrentRun>
+#include <QImage>
 #include <QJsonArray>
 #include <QLockFile>
 #include <QRandomGenerator>
 
 #include "geomaps/GeoMapProvider.h"
 #include "geomaps/MBTILES.h"
+#include "geomaps/WaypointLibrary.h"
 #include "navigation/Navigator.h"
 
 
@@ -38,7 +40,8 @@ GeoMaps::GeoMapProvider::GeoMapProvider(QObject *parent)
 void GeoMaps::GeoMapProvider::deferredInitialization()
 {
     connect(GlobalObject::dataManager()->aviationMaps(), &DataManagement::DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::onAviationMapsChanged);
-    connect(GlobalObject::dataManager()->baseMaps(), &DataManagement::DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::onBaseMapsChanged);
+    connect(GlobalObject::dataManager()->baseMaps(), &DataManagement::DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::onMBTILESChanged);
+    connect(GlobalObject::dataManager()->terrainMaps(), &DataManagement::DownloadableGroup::localFileContentChanged_delayed, this, &GeoMaps::GeoMapProvider::onMBTILESChanged);
     connect(GlobalObject::settings(), &Settings::airspaceAltitudeLimitChanged, this, &GeoMaps::GeoMapProvider::onAviationMapsChanged);
     connect(GlobalObject::settings(), &Settings::hideGlidingSectorsChanged, this, &GeoMaps::GeoMapProvider::onAviationMapsChanged);
 
@@ -47,9 +50,10 @@ void GeoMaps::GeoMapProvider::deferredInitialization()
     connect(&_aviationDataCacheTimer, &QTimer::timeout, this, &GeoMaps::GeoMapProvider::onAviationMapsChanged);
 
     onAviationMapsChanged();
-    onBaseMapsChanged();
+    onMBTILESChanged();
     GlobalObject::dataManager()->aviationMaps()->killLocalFileContentChanged_delayed();
     GlobalObject::dataManager()->baseMaps()->killLocalFileContentChanged_delayed();
+    GlobalObject::dataManager()->terrainMaps()->killLocalFileContentChanged_delayed();
 }
 
 
@@ -68,9 +72,11 @@ auto GeoMaps::GeoMapProvider::copyrightNotice() -> QString
 
     foreach(auto baseMap, GlobalObject::dataManager()->baseMaps()->downloadablesWithFile())
     {
+        GeoMaps::MBTILES mbtiles(baseMap->fileName());
+
         auto name = baseMap->fileName().split(QStringLiteral("aviation_maps/")).last();
         result += ("<h4>"+tr("Basemap")+ " %1</h4>").arg(name);
-        result += MBTILES::attribution(baseMap->fileName());
+        result += mbtiles.attribution();
     }
 
     return result;
@@ -137,6 +143,19 @@ auto GeoMaps::GeoMapProvider::closestWaypoint(QGeoCoordinate position, const QGe
         }
     }
 
+    const auto wpLibrary = GlobalObject::waypointLibrary()->waypoints();
+    for(const auto& wp : wpLibrary) {
+        if (!wp.isValid()) {
+            continue;
+        }
+        if (!result.isValid()) {
+            result = wp;
+        }
+        if (position.distanceTo(wp.coordinate()) < position.distanceTo(result.coordinate())) {
+            result = wp;
+        }
+    }
+
     for(auto& variant : GlobalObject::navigator()->flightRoute()->midFieldWaypoints() ) {
         auto wp = variant.value<GeoMaps::Waypoint>();
         if (!wp.isValid()) {
@@ -148,10 +167,80 @@ auto GeoMaps::GeoMapProvider::closestWaypoint(QGeoCoordinate position, const QGe
     }
 
     if (position.distanceTo(result.coordinate()) > position.distanceTo(distPosition)) {
+        position.setAltitude( terrainElevationAMSL(position).toM() );
         return {position};
     }
 
     return result;
+}
+
+auto GeoMaps::GeoMapProvider::terrainElevationAMSL(const QGeoCoordinate& coordinate) -> Units::Distance
+{
+    int zoomMin = 6;
+    int zoomMax = 10;
+
+    for(int zoom = zoomMax; zoom >= zoomMin; zoom--)
+    {
+        auto tilex = (coordinate.longitude()+180.0)/360.0 * (1<<zoom);
+        auto tiley = (1.0 - asinh(tan(qDegreesToRadians(coordinate.latitude())))/M_PI)/2.0 * (1<<zoom);
+        auto intraTileX = qRound(255.0*(tilex-floor(tilex)));
+        auto intraTileY = qRound(255.0*(tiley-floor(tiley)));
+
+        qint64 keyA = qFloor(tilex)&0xFFFF;
+        qint64 keyB = qFloor(tiley)&0xFFFF;
+        qint64 key = (keyA<<32) + (keyB<<16) + zoom;
+
+        if (terrainTileCache.contains(key))
+        {
+            auto* tileImg = terrainTileCache.object(key);
+            if (tileImg->isNull())
+            {
+                continue;
+            }
+            auto pix = tileImg->pixel(intraTileX, intraTileY);
+            double elevation = (qRed(pix)*256.0 + qGreen(pix) + qBlue(pix)/256.0) - 32768.0;
+            return Units::Distance::fromM(elevation);
+        }
+    }
+
+
+    foreach(auto mbtPtr, m_terrainMapTiles)
+    {
+        if (mbtPtr.isNull())
+        {
+            continue;
+        }
+
+        for(int zoom = zoomMax; zoom >= zoomMin; zoom--)
+        {
+            auto tilex = (coordinate.longitude()+180.0)/360.0 * (1<<zoom);
+            auto tiley = (1.0 - asinh(tan(qDegreesToRadians(coordinate.latitude())))/M_PI)/2.0 * (1<<zoom);
+            auto intraTileX = qRound(255.0*(tilex-floor(tilex)));
+            auto intraTileY = qRound(255.0*(tiley-floor(tiley)));
+
+            qint64 keyA = qFloor(tilex)&0xFFFF;
+            qint64 keyB = qFloor(tiley)&0xFFFF;
+            qint64 key = (keyA<<32) + (keyB<<16) + zoom;
+
+            auto tileData = mbtPtr->tile(zoom, qFloor(tilex), qFloor(tiley));
+            if (!tileData.isEmpty())
+            {
+                auto* tileImg = new QImage();
+                tileImg->loadFromData(tileData);
+                if (tileImg->isNull())
+                {
+                    delete tileImg;
+                    continue;
+                }
+                terrainTileCache.insert(key,tileImg);
+
+                auto pix = tileImg->pixel(intraTileX, intraTileY);
+                double elevation = (qRed(pix)*256.0 + qGreen(pix) + qBlue(pix)/256.0) - 32768.0;
+                return Units::Distance::fromM(elevation);
+            }
+        }
+    }
+    return {};
 }
 
 auto GeoMaps::GeoMapProvider::emptyGeoJSON() -> QByteArray
@@ -163,9 +252,8 @@ auto GeoMaps::GeoMapProvider::emptyGeoJSON() -> QByteArray
     return geoDoc.toJson(QJsonDocument::JsonFormat::Compact);
 }
 
-auto GeoMaps::GeoMapProvider::filteredWaypointObjects(const QString &filter) -> QVariantList
+auto GeoMaps::GeoMapProvider::filteredWaypoints(const QString &filter) -> QVector<GeoMaps::Waypoint>
 {
-    auto wps = waypoints();
 
     QStringList filterWords;
     foreach(auto word, filter.simplified().split(' ', Qt::SkipEmptyParts)) {
@@ -176,26 +264,45 @@ auto GeoMaps::GeoMapProvider::filteredWaypointObjects(const QString &filter) -> 
         filterWords.append(simplifiedWord);
     }
 
-    QVariantList result;
-    foreach(auto wp, wps) {
+    QVector<GeoMaps::Waypoint> result;
+
+    const auto wps = waypoints();
+    for(const auto& wp : wps) {
         if (!wp.isValid()) {
             continue;
         }
         bool allWordsFound = true;
         foreach(auto word, filterWords) {
             QString fullName = GlobalObject::librarian()->simplifySpecialChars(wp.name());
-            QString codeName = GlobalObject::librarian()->simplifySpecialChars(wp.ICAOCode());
-            QString wordx = GlobalObject::librarian()->simplifySpecialChars(word);
-
-            if (!fullName.contains(wordx, Qt::CaseInsensitive) && !codeName.contains(wordx, Qt::CaseInsensitive)) {
+            if (!fullName.contains(word, Qt::CaseInsensitive) && !wp.ICAOCode().contains(word, Qt::CaseInsensitive)) {
                 allWordsFound = false;
                 break;
             }
         }
         if (allWordsFound) {
-            result.append( QVariant::fromValue(wp) );
+            result.append( wp );
         }
     }
+
+    const auto wpsLib = GlobalObject::waypointLibrary()->waypoints();
+    for(const auto& wp : wpsLib) {
+        if (!wp.isValid()) {
+            continue;
+        }
+        bool allWordsFound = true;
+        foreach(auto word, filterWords) {
+            QString fullName = GlobalObject::librarian()->simplifySpecialChars(wp.name());
+            if (!fullName.contains(word, Qt::CaseInsensitive) && !wp.ICAOCode().contains(word, Qt::CaseInsensitive)) {
+                allWordsFound = false;
+                break;
+            }
+        }
+        if (allWordsFound) {
+            result.append( wp );
+        }
+    }
+
+    std::sort(result.begin(), result.end(), [](const Waypoint& a, const Waypoint& b) {return a.name() < b.name(); });
 
     return result;
 }
@@ -282,36 +389,64 @@ void GeoMaps::GeoMapProvider::onAviationMapsChanged()
     _aviationDataCacheFuture = QtConcurrent::run(this, &GeoMaps::GeoMapProvider::fillAviationDataCache, JSONFileNames, GlobalObject::settings()->airspaceAltitudeLimit(), GlobalObject::settings()->hideGlidingSectors());
 }
 
-void GeoMaps::GeoMapProvider::onBaseMapsChanged()
+void GeoMaps::GeoMapProvider::onMBTILESChanged()
 {
+    terrainTileCache.clear();
+
+    qDeleteAll(m_baseMapRasterTiles);
+    m_baseMapRasterTiles.clear();
+    foreach(auto downloadable, GlobalObject::dataManager()->baseMapsRaster()->downloadablesWithFile())
+    {
+        m_baseMapRasterTiles.append(new GeoMaps::MBTILES(downloadable->fileName(), this));
+    }
+    qDeleteAll(m_baseMapVectorTiles);
+    m_baseMapVectorTiles.clear();
+    foreach(auto downloadable, GlobalObject::dataManager()->baseMapsVector()->downloadablesWithFile())
+    {
+        m_baseMapVectorTiles.append(new GeoMaps::MBTILES(downloadable->fileName(), this));
+    }
+    emit baseMapTilesChanged();
+
+    qDeleteAll(m_terrainMapTiles);
+    m_terrainMapTiles.clear();
+    foreach(auto downloadable, GlobalObject::dataManager()->terrainMaps()->downloadablesWithFile())
+    {
+        m_terrainMapTiles.append(new GeoMaps::MBTILES(downloadable->fileName(), this));
+    }
+    emit terrainMapTilesChanged();
 
     // Delete old style file, stop serving tiles
     delete _styleFile;
-    _tileServer.removeMbtilesFileSet(_currentPath);
-    _currentPath = QString::number(QRandomGenerator::global()->bounded(static_cast<quint32>(1000000000)));
+    _tileServer.removeMbtilesFileSet(_currentBaseMapPath);
+    _tileServer.removeMbtilesFileSet(_currentTerrainMapPath);
+    _currentBaseMapPath = QString::number(QRandomGenerator::global()->bounded(static_cast<quint32>(1000000000)));
+    _currentTerrainMapPath = QString::number(QRandomGenerator::global()->bounded(static_cast<quint32>(1000000000)));
 
     QFile file;
     if (GlobalObject::dataManager()->baseMaps()->hasFile())
     {
-        bool hasRaster = GlobalObject::dataManager()->baseMapsRaster()->hasFile();
         // Serve new tile set under new name
-        if (hasRaster)
+        if (!m_baseMapRasterTiles.isEmpty())
         {
-            _tileServer.addMbtilesFileSet(GlobalObject::dataManager()->baseMapsRaster()->downloadablesWithFile(), _currentPath);
+            _tileServer.addMbtilesFileSet(m_baseMapRasterTiles, _currentBaseMapPath);
             file.setFileName(QStringLiteral(":/flightMap/mapstyle-raster.json"));
-        } else
+        }
+        else
         {
-            _tileServer.addMbtilesFileSet(GlobalObject::dataManager()->baseMaps()->downloadablesWithFile(), _currentPath);
+            _tileServer.addMbtilesFileSet(m_baseMapVectorTiles, _currentBaseMapPath);
             file.setFileName(QStringLiteral(":/flightMap/osm-liberty.json"));
         }
-    } else
+    }
+    else
     {
         file.setFileName(QStringLiteral(":/flightMap/empty.json"));
     }
+    _tileServer.addMbtilesFileSet(m_terrainMapTiles, _currentTerrainMapPath);
 
     file.open(QIODevice::ReadOnly);
     QByteArray data = file.readAll();
-    data.replace("%URL%", (_tileServer.serverUrl()+"/"+_currentPath).toLatin1());
+    data.replace("%URL%", (_tileServer.serverUrl()+"/"+_currentBaseMapPath).toLatin1());
+    data.replace("%URLT%", (_tileServer.serverUrl()+"/"+_currentTerrainMapPath).toLatin1());
     data.replace("%URL2%", _tileServer.serverUrl().toLatin1());
     _styleFile = new QTemporaryFile(this);
     _styleFile->open();

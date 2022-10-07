@@ -22,7 +22,10 @@
 #include <QJsonArray>
 #include <QUrl>
 
+#include "GlobalObject.h"
 #include "Waypoint.h"
+#include "navigation/Aircraft.h"
+#include "navigation/Navigator.h"
 #include "units/Distance.h"
 
 
@@ -43,6 +46,9 @@ GeoMaps::Waypoint::Waypoint(const QGeoCoordinate& coordinate)
     m_properties.insert(QStringLiteral("CAT"), QStringLiteral("WP"));
     m_properties.insert(QStringLiteral("NAM"), QStringLiteral("Waypoint"));
     m_properties.insert(QStringLiteral("TYP"), QStringLiteral("WP"));
+    if (coordinate.type() == QGeoCoordinate::Coordinate3D) {
+        m_properties.insert(QStringLiteral("ELE"), coordinate.altitude() );
+    }
 
     // Set cached property
     m_isValid = computeIsValid();
@@ -254,6 +260,28 @@ auto GeoMaps::Waypoint::toJSON() const -> QJsonObject
 }
 
 
+void GeoMaps::Waypoint::toGPX(QXmlStreamWriter& stream) const
+{
+    if (!isValid())
+    {
+        return;
+    }
+
+    auto lat = QString::number(m_coordinate.latitude(), 'f', 8);
+    auto lon = QString::number(m_coordinate.longitude(), 'f', 8);
+
+    stream.writeStartElement(QStringLiteral("wpt"));
+    stream.writeAttribute(QStringLiteral("lat"), lat);
+    stream.writeAttribute(QStringLiteral("lon"), lon);
+    if (m_coordinate.type() == QGeoCoordinate::Coordinate3D) {
+        auto elevation = QString::number(m_coordinate.altitude(), 'f', 2);
+        stream.writeTextElement(QStringLiteral("ele"), elevation);
+    }
+    stream.writeTextElement(QStringLiteral("name"), extendedName());
+    stream.writeEndElement(); // wpt
+}
+
+
 //
 // PROPERTIES
 //
@@ -291,9 +319,6 @@ auto GeoMaps::Waypoint::tabularDescription() const -> QList<QString>
     if (m_properties.value(QStringLiteral("TYP")).toString() == QLatin1String("NAV")) {
         result.append("ID  " + m_properties.value(QStringLiteral("COD")).toString() + " " + m_properties.value(QStringLiteral("MOR")).toString());
         result.append("NAV " + m_properties.value(QStringLiteral("NAV")).toString());
-        if (m_properties.contains(QStringLiteral("ELE"))) {
-            result.append(QStringLiteral("ELEV%1 ft AMSL").arg(qRound(Units::Distance::fromM(m_properties.value(QStringLiteral("ELE")).toDouble()).toFeet())));
-        }
     }
 
     if (m_properties.value(QStringLiteral("TYP")).toString() == QLatin1String("AD")) {
@@ -315,8 +340,6 @@ auto GeoMaps::Waypoint::tabularDescription() const -> QList<QString>
         if (m_properties.contains(QStringLiteral("RWY"))) {
             result.append("RWY " + m_properties.value(QStringLiteral("RWY")).toString().replace(QLatin1String("\n"), QLatin1String("<br>")));
         }
-
-        result.append( QStringLiteral("ELEV%1 ft AMSL").arg(qRound(Units::Distance::fromM(m_properties.value(QStringLiteral("ELE")).toDouble()).toFeet())));
     }
 
     if (m_properties.value(QStringLiteral("TYP")).toString() == QLatin1String("WP")) {
@@ -326,6 +349,12 @@ auto GeoMaps::Waypoint::tabularDescription() const -> QList<QString>
         if (m_properties.contains(QStringLiteral("COM"))) {
             result.append("COM " + m_properties.value(QStringLiteral("COM")).toString());
         }
+    }
+
+    if (m_properties.contains(QStringLiteral("ELE"))) {
+        auto ele = Units::Distance::fromM( m_properties.value(QStringLiteral("ELE")).toDouble() );
+        auto eleString = GlobalObject::navigator()->aircraft().verticalDistanceToString(ele);
+        result.append(QStringLiteral("ELEV%1 AMSL").arg(eleString));
     }
 
     return result;

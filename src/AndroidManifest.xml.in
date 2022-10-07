@@ -4,11 +4,7 @@
 	  android:versionName="${PROJECT_VERSION}"
 	  android:versionCode="${PROJECT_VERSION_CODE}0"
 	  android:installLocation="auto">
-<<<<<<< HEAD
-  <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="29"/>
-=======
   <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="31"/>
->>>>>>> master
   
   <!-- The following comment will be replaced upon deployment with default permissions based on the dependencies of the application.
        Remove the comment if you do not require these default permissions. -->
@@ -16,37 +12,22 @@
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+  <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.VIBRATE"/>
-<<<<<<< HEAD
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-  
-=======
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
->>>>>>> master
   <!-- The following comment will be replaced upon deployment with default features based on the dependencies of the application.
        Remove the comment if you do not require these default features. -->
   
   
   <supports-screens android:largeScreens="true" android:normalScreens="true" android:anyDensity="true" android:smallScreens="true"/>
   
-  <application android:hardwareAccelerated="true"
+  <application android:allowBackup="false"
+	       android:hardwareAccelerated="true"
 	       android:name="org.qtproject.qt5.android.bindings.QtApplication"
-<<<<<<< HEAD
-	       android:label="Enroute"
-	       android:icon="@drawable/icon"
-	       android:requestLegacyExternalStorage="true"
-	       android:extractNativeLibs="true">
-    <activity android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
-	      android:name="de.akaflieg_freiburg.enroute.MobileAdaptor"
-              android:label="Enroute"
-              android:screenOrientation="unspecified"
-              android:launchMode="singleInstance"
-	      android:showWhenLocked="true">
-=======
 	       android:label="Enroute Flight Navigation"
                android:icon="@mipmap/ic_launcher"
 	       android:requestLegacyExternalStorage="true">
@@ -59,7 +40,6 @@
               android:showWhenLocked="true"
 	      android:theme="@style/SplashScreenTheme"
               android:windowSoftInputMode="adjustResize">
->>>>>>> master
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
@@ -195,11 +175,7 @@
            * minimal - useful for Quick Controls 2 apps, it is much faster than "full"
            * none - useful for apps that don't use any of the above Qt modules
       -->
-<<<<<<< HEAD
-      <meta-data android:name="android.app.extract_android_style" android:value="minimal"/>
-=======
       <meta-data android:name="android.app.extract_android_style" android:value="none"/>
->>>>>>> master
       <!-- extract android style -->
     </activity>
     
