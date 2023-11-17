@@ -209,7 +209,8 @@ auto main(int argc, char *argv[]) -> int
     //vario.start();
 
     Display*  display = new Display();
-    display->initTrafficRadar();
+    //display->initTrafficRadar();
+    display->initVarioGauge();
     display->setFixedSize(480,480);
     display->showDisplay();
     // Load GUI and enter event loop
